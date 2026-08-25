@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-labelledby="title desc">
+  <title id="title">Mock PromptPay QR Code</title>
+  <desc id="desc">A placeholder QR code for development payment testing.</desc>
+  <rect width="240" height="240" fill="#ffffff"/>
+  <rect x="12" y="12" width="216" height="216" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="4"/>
+  <g fill="#0f172a">
+    <rect x="30" y="30" width="54" height="54"/>
+    <rect x="42" y="42" width="30" height="30" fill="#ffffff"/>
+    <rect x="48" y="48" width="18" height="18"/>
+    <rect x="156" y="30" width="54" height="54"/>
+    <rect x="168" y="42" width="30" height="30" fill="#ffffff"/>
+    <rect x="174" y="48" width="18" height="18"/>
+    <rect x="30" y="156" width="54" height="54"/>
+    <rect x="42" y="168" width="30" height="30" fill="#ffffff"/>
+    <rect x="48" y="174" width="18" height="18"/>
+    <rect x="102" y="30" width="12" height="12"/>
+    <rect x="126" y="30" width="12" height="24"/>
+    <rect x="102" y="54" width="24" height="12"/>
+    <rect x="114" y="78" width="12" height="24"/>
+    <rect x="138" y="78" width="12" height="12"/>
+    <rect x="96" y="102" width="24" height="12"/>
+    <rect x="132" y="102" width="48" height="12"/>
+    <rect x="192" y="102" width="18" height="12"/>
+    <rect x="96" y="126" width="12" height="24"/>
+    <rect x="120" y="126" width="36" height="12"/>
+    <rect x="168" y="126" width="12" height="36"/>
+    <rect x="192" y="126" width="18" height="18"/>
+    <rect x="102" y="168" width="12" height="42"/>
+    <rect x="126" y="156" width="12" height="12"/>
+    <rect x="144" y="168" width="24" height="12"/>
+    <rect x="180" y="168" width="30" height="12"/>
+    <rect x="126" y="192" width="24" height="18"/>
+    <rect x="162" y="192" width="12" height="18"/>
+    <rect x="192" y="192" width="18" height="18"/>
+  </g>
+  <text x="120" y="232" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#64748b">MOCK ONLY</text>
+</svg>
