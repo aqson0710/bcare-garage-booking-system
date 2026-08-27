@@ -83,6 +83,7 @@ export type AdminService = Service & {
 export type AdminServiceUpdateInput = {
   base_price: number;
   estimated_duration_minutes: number;
+  image_url: string | null;
   service_category_id: string;
   status: AdminService["status"];
 };

@@ -20,15 +20,15 @@ const currencyFormatter = new Intl.NumberFormat("th-TH", {
 
 function formatDuration(minutes: number) {
   if (minutes < 60) {
-    return `${minutes} min`;
+    return `${minutes} นาที`;
   }
 
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
 
   return remainingMinutes > 0
-    ? `${hours} hr ${remainingMinutes} min`
-    : `${hours} hr`;
+    ? `${hours} ชม. ${remainingMinutes} นาที`
+    : `${hours} ชม.`;
 }
 
 function getStatusStyle(status: MyBooking["status"]) {
@@ -45,6 +45,26 @@ function getStatusStyle(status: MyBooking["status"]) {
   }
 
   return "bg-slate-100 text-slate-700";
+}
+
+function formatBookingStatus(status: MyBooking["status"]) {
+  if (status === "pending") {
+    return "รอยืนยัน";
+  }
+
+  if (status === "confirmed") {
+    return "ยืนยันแล้ว";
+  }
+
+  if (status === "cancelled") {
+    return "ยกเลิก";
+  }
+
+  if (status === "completed") {
+    return "เสร็จสิ้น";
+  }
+
+  return status;
 }
 
 function getRepairJobStatusStyle(status: NonNullable<MyBooking["repairJob"]>["status"]) {
@@ -67,6 +87,30 @@ function getRepairJobStatusStyle(status: NonNullable<MyBooking["repairJob"]>["st
   return "bg-red-50 text-red-700";
 }
 
+function formatRepairJobStatus(status: NonNullable<MyBooking["repairJob"]>["status"]) {
+  if (status === "pending") {
+    return "รอดำเนินการ";
+  }
+
+  if (status === "assigned") {
+    return "มอบหมายช่างแล้ว";
+  }
+
+  if (status === "in_progress") {
+    return "กำลังซ่อม";
+  }
+
+  if (status === "completed") {
+    return "เสร็จสิ้น";
+  }
+
+  if (status === "cancelled") {
+    return "ยกเลิก";
+  }
+
+  return status;
+}
+
 function formatTime(time: string) {
   return time.slice(0, 5);
 }
@@ -77,10 +121,10 @@ function BookingCard({ booking }: { booking: MyBooking }) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-[var(--brand)]">
-            {booking.service?.name ?? "Service not found"}
+            {booking.service?.name ?? "ไม่พบบริการ"}
           </p>
           <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">
-            {booking.booking_date} at {formatTime(booking.booking_time)}
+            {booking.booking_date} เวลา {formatTime(booking.booking_time)}
           </h2>
         </div>
         <span
@@ -88,13 +132,13 @@ function BookingCard({ booking }: { booking: MyBooking }) {
             booking.status,
           )}`}
         >
-          {booking.status}
+          {formatBookingStatus(booking.status)}
         </span>
       </div>
 
       <dl className="mt-5 grid gap-4 border-t border-[var(--line)] pt-4 text-sm sm:grid-cols-3">
         <div>
-          <dt className="text-[var(--muted)]">Vehicle plate</dt>
+          <dt className="text-[var(--muted)]">ทะเบียนรถ</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
             {booking.vehicle?.license_plate ?? "-"}
           </dd>
@@ -103,12 +147,12 @@ function BookingCard({ booking }: { booking: MyBooking }) {
               className="mt-2 inline-block text-xs font-semibold text-[var(--brand)]"
               href="/my-vehicles"
             >
-              Edit vehicle
+              แก้ไขข้อมูลรถ
             </Link>
           ) : null}
         </div>
         <div>
-          <dt className="text-[var(--muted)]">Base price</dt>
+          <dt className="text-[var(--muted)]">ราคาเริ่มต้น</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
             {booking.service
               ? currencyFormatter.format(booking.service.base_price)
@@ -116,7 +160,7 @@ function BookingCard({ booking }: { booking: MyBooking }) {
           </dd>
         </div>
         <div>
-          <dt className="text-[var(--muted)]">Estimated time</dt>
+          <dt className="text-[var(--muted)]">เวลาประมาณ</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
             {booking.service
               ? formatDuration(booking.service.estimated_duration_minutes)
@@ -134,7 +178,7 @@ function BookingCard({ booking }: { booking: MyBooking }) {
       <section className="mt-4 rounded-md border border-[var(--line)] bg-slate-50 p-3 text-sm">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="font-semibold text-[var(--foreground)]">
-            Work order progress
+            ความคืบหน้างานซ่อม
           </p>
           {booking.repairJob ? (
             <span
@@ -142,28 +186,36 @@ function BookingCard({ booking }: { booking: MyBooking }) {
                 booking.repairJob.status,
               )}`}
             >
-              {booking.repairJob.status}
+              {formatRepairJobStatus(booking.repairJob.status)}
             </span>
           ) : (
             <span className="w-fit rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-              Not created yet
+              ยังไม่ได้สร้างงานซ่อม
             </span>
           )}
         </div>
         <p className="mt-2 text-[var(--muted)]">
-          Mechanic: {booking.repairJob?.mechanic?.full_name ?? "-"}
+          ช่างผู้รับผิดชอบ: {booking.repairJob?.mechanic?.full_name ?? "-"}
         </p>
       </section>
 
       <p className="mt-4 break-all text-xs text-[var(--muted)]">
-        Booking ID: {booking.id}
+        รหัสการจอง: {booking.id}
       </p>
-      <Link
-        className="mt-4 inline-block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
-        href={`/my-bookings/${booking.id}`}
-      >
-        View details
-      </Link>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Link
+          className="inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+          href={`/my-bookings/${booking.id}`}
+        >
+          ดูรายละเอียด
+        </Link>
+        <Link
+          className="inline-flex min-h-10 items-center rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+          href={`/my-bookings/${booking.id}/receipt`}
+        >
+          เอกสารการจอง
+        </Link>
+      </div>
     </article>
   );
 }
@@ -253,29 +305,25 @@ export function MyBookingsPanel() {
   }, []);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 py-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand)]">
-            BCare
-          </p>
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-[var(--foreground)]">
-              My Bookings
+              การจองของฉัน
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-              Review booking requests linked to your signed-in customer
-              profile.
+              ดูรายการจอง สถานะบริการ และเอกสารการจองของบัญชีที่เข้าสู่ระบบอยู่
             </p>
           </div>
           <Link
             className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
             href="/"
           >
-            New booking
+            จองบริการใหม่
           </Link>
         </div>
       </header>
@@ -283,7 +331,7 @@ export function MyBookingsPanel() {
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            Loading bookings...
+            กำลังโหลดรายการจอง...
           </div>
         </section>
       ) : null}
@@ -291,13 +339,13 @@ export function MyBookingsPanel() {
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
-            <p className="font-semibold">Login required</p>
-            <p className="mt-1">Sign in before viewing your bookings.</p>
+            <p className="font-semibold">ต้องเข้าสู่ระบบก่อน</p>
+            <p className="mt-1">เข้าสู่ระบบก่อนดูรายการจองของคุณ</p>
             <Link
               className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
               href="/auth"
             >
-              Go to account
+              ไปที่หน้าบัญชี
             </Link>
           </div>
         </section>
@@ -321,7 +369,7 @@ export function MyBookingsPanel() {
             </div>
           ) : (
             <div className="rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
-              No booking requests yet. Start by selecting a service.
+              ยังไม่มีรายการจอง เริ่มจากเลือกบริการที่ต้องการจองก่อน
             </div>
           )}
         </section>

@@ -1,0 +1,14 @@
+<svg width="480" height="320" viewBox="0 0 480 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="480" height="320" fill="#EEF7F6"/>
+  <rect x="56" y="96" width="368" height="128" rx="18" fill="#FFFFFF" stroke="#CFE1DE" stroke-width="4"/>
+  <path d="M150 191h180c11 0 20-9 20-20v-28c0-11-9-20-20-20H150c-11 0-20 9-20 20v28c0 11 9 20 20 20Z" fill="#0F8277" opacity=".12"/>
+  <path d="M157 178h166c7 0 13-6 13-13v-16c0-7-6-13-13-13H157c-7 0-13 6-13 13v16c0 7 6 13 13 13Z" fill="#0F8277"/>
+  <path d="M178 137l16-25h92l16 25" stroke="#0F8277" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="181" cy="181" r="22" fill="#1F2937"/>
+  <circle cx="299" cy="181" r="22" fill="#1F2937"/>
+  <circle cx="181" cy="181" r="9" fill="#EEF7F6"/>
+  <circle cx="299" cy="181" r="9" fill="#EEF7F6"/>
+  <path d="M208 152h64" stroke="#EEF7F6" stroke-width="10" stroke-linecap="round"/>
+  <path d="M72 248h336" stroke="#CFE1DE" stroke-width="6" stroke-linecap="round"/>
+  <text x="240" y="280" fill="#50687F" font-family="Arial, sans-serif" font-size="22" font-weight="700" text-anchor="middle">BCare service</text>
+</svg>

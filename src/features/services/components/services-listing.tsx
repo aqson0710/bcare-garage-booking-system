@@ -1,6 +1,9 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
+
 import Link from "next/link";
+import type { SyntheticEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { AppNav } from "@/components/app-nav";
@@ -72,6 +75,7 @@ const currencyFormatter = new Intl.NumberFormat("th-TH", {
   maximumFractionDigits: 0,
   style: "currency",
 });
+const serviceImagePlaceholder = "/service-placeholder.svg";
 const bookingStartTime = "09:00";
 const bookingEndTime = "18:00";
 const bookingSlotIntervalMinutes = 30;
@@ -219,6 +223,36 @@ function getClosedDayMessage(operatingStatus: BookingOperatingStatus | null) {
     : "ร้านปิดในวันที่เลือก กรุณาเลือกวันอื่น";
 }
 
+function handleServiceImageError(event: SyntheticEvent<HTMLImageElement>) {
+  const image = event.currentTarget;
+
+  if (image.src.endsWith(serviceImagePlaceholder)) {
+    return;
+  }
+
+  image.src = serviceImagePlaceholder;
+  image.alt = "Service image placeholder";
+}
+
+function ServiceImage({
+  className,
+  imageUrl,
+  label,
+}: {
+  className: string;
+  imageUrl: string | null;
+  label: string;
+}) {
+  return (
+    <img
+      alt={label}
+      className={className}
+      onError={handleServiceImageError}
+      src={imageUrl || serviceImagePlaceholder}
+    />
+  );
+}
+
 function getServicesCount(categories: ServiceCategoryWithServices[]) {
   return categories.reduce(
     (total, category) => total + category.services.length,
@@ -254,11 +288,17 @@ function ServiceCard({
     <article
       className={
         isSelected
-          ? "flex min-h-52 flex-col justify-between rounded-lg border-2 border-[var(--brand)] bg-white p-5 shadow-sm"
-          : "flex min-h-52 flex-col justify-between rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm"
+          ? "flex min-h-80 flex-col justify-between overflow-hidden rounded-lg border-2 border-[var(--brand)] bg-white shadow-sm"
+          : "flex min-h-80 flex-col justify-between overflow-hidden rounded-lg border border-[var(--line)] bg-white shadow-sm"
       }
     >
-      <div>
+      <ServiceImage
+        className="h-40 w-full bg-slate-50 object-cover"
+        imageUrl={service.image_url}
+        label={`${service.name} image`}
+      />
+
+      <div className="p-5 pb-0">
         <div className="flex items-start justify-between gap-4">
           <h3 className="text-lg font-semibold leading-6 text-[var(--foreground)]">
             {service.name}
@@ -274,7 +314,7 @@ function ServiceCard({
         ) : null}
       </div>
 
-      <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-[var(--line)] pt-4 text-sm">
+      <dl className="mx-5 mt-5 grid grid-cols-2 gap-3 border-t border-[var(--line)] pt-4 text-sm">
         <div>
           <dt className="text-[var(--muted)]">ราคาเริ่มต้น</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
@@ -292,8 +332,8 @@ function ServiceCard({
       <button
         className={
           isSelected
-            ? "mt-5 min-h-10 rounded-md border border-[var(--brand)] bg-emerald-50 px-3 text-sm font-semibold text-[var(--brand-strong)]"
-            : "mt-5 min-h-10 rounded-md bg-[var(--brand)] px-3 text-sm font-semibold text-white"
+            ? "mx-5 mb-5 mt-5 min-h-10 rounded-md border border-[var(--brand)] bg-emerald-50 px-3 text-sm font-semibold text-[var(--brand-strong)]"
+            : "mx-5 mb-5 mt-5 min-h-10 rounded-md bg-[var(--brand)] px-3 text-sm font-semibold text-white"
         }
         onClick={onSelect}
         type="button"
@@ -1032,12 +1072,9 @@ export function ServicesListing() {
   }, [categories, selectedCategoryId]);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-5 py-6 sm:px-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-5 pb-6 pt-0 sm:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand)]">
-            BCare
-          </p>
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -1168,6 +1205,11 @@ export function ServicesListing() {
             </p>
             {selectedService ? (
               <div className="mt-4">
+                <ServiceImage
+                  className="mb-4 h-40 w-full rounded-md border border-[var(--line)] bg-slate-50 object-cover"
+                  imageUrl={selectedService.image_url}
+                  label={`${selectedService.name} image`}
+                />
                 <h2 className="text-xl font-bold leading-7 text-[var(--foreground)]">
                   {selectedService.name}
                 </h2>

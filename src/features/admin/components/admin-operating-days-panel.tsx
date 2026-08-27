@@ -598,12 +598,9 @@ export function AdminOperatingDaysPanel() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand)]">
-            BCare
-          </p>
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

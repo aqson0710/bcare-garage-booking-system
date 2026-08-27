@@ -836,6 +836,67 @@ export async function getAdminBookings(supabase: BCareSupabaseClient) {
   return attachAdminBookingDetails(supabase, bookings);
 }
 
+export async function getAdminDashboardBookingCounts(
+  supabase: BCareSupabaseClient,
+  todayDate: string,
+) {
+  const statuses = [
+    "pending",
+    "confirmed",
+    "cancelled",
+    "completed",
+  ] as const;
+  const [pendingResult, confirmedResult, cancelledResult, completedResult, todayResult] =
+    await Promise.all([
+      supabase
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("status", statuses[0]),
+      supabase
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("status", statuses[1]),
+      supabase
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("status", statuses[2]),
+      supabase
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("status", statuses[3]),
+      supabase
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("booking_date", todayDate),
+    ]);
+  const firstError =
+    pendingResult.error ??
+    confirmedResult.error ??
+    cancelledResult.error ??
+    completedResult.error ??
+    todayResult.error;
+
+  if (firstError) {
+    return {
+      data: null,
+      error: firstError,
+    };
+  }
+
+  return {
+    data: {
+      statusCounts: {
+        cancelled: cancelledResult.count ?? 0,
+        completed: completedResult.count ?? 0,
+        confirmed: confirmedResult.count ?? 0,
+        pending: pendingResult.count ?? 0,
+      },
+      todayCount: todayResult.count ?? 0,
+    },
+    error: null,
+  };
+}
+
 export async function getAdminBookingsPage(
   supabase: BCareSupabaseClient,
   params: AdminBookingListParams,
@@ -1131,6 +1192,27 @@ export async function getAdminRepairJobs(supabase: BCareSupabaseClient) {
     .from("repair_jobs")
     .select("*")
     .order("created_at", { ascending: false });
+
+  if (repairJobsResult.error) {
+    return {
+      data: null,
+      error: repairJobsResult.error,
+    };
+  }
+
+  return attachAdminRepairJobDetails(supabase, repairJobsResult.data ?? []);
+}
+
+export async function getAdminOpenRepairJobs(
+  supabase: BCareSupabaseClient,
+  limit = 50,
+) {
+  const repairJobsResult = await supabase
+    .from("repair_jobs")
+    .select("*")
+    .in("status", ["pending", "assigned", "in_progress"])
+    .order("created_at", { ascending: false })
+    .limit(limit);
 
   if (repairJobsResult.error) {
     return {

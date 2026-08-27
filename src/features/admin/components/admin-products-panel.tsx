@@ -95,21 +95,33 @@ function getStatusStyle(status: AdminProduct["status"]) {
   return "bg-slate-100 text-slate-700";
 }
 
+function formatProductStatus(status: StatusFilter) {
+  if (status === "active") {
+    return "เปิดใช้งาน";
+  }
+
+  if (status === "inactive") {
+    return "ปิดใช้งาน";
+  }
+
+  return "ทั้งหมด";
+}
+
 function validateProductInput(input: AdminProductUpdateInput) {
   if (!input.name.trim()) {
-    return "Product name is required.";
+    return "กรุณากรอกชื่อสินค้า";
   }
 
   if (!input.product_category_id) {
-    return "Category is required.";
+    return "กรุณาเลือกหมวดสินค้า";
   }
 
   if (!Number.isFinite(input.unit_price) || input.unit_price < 0) {
-    return "Sale price must be 0 or more.";
+    return "ราคาขายต้องเป็น 0 บาทขึ้นไป";
   }
 
   if (!Number.isFinite(input.cost_price) || input.cost_price < 0) {
-    return "Cost price must be 0 or more.";
+    return "ต้นทุนต้องเป็น 0 บาทขึ้นไป";
   }
 
   return null;
@@ -166,7 +178,7 @@ function handleProductImageError(event: SyntheticEvent<HTMLImageElement>) {
   }
 
   image.src = productImagePlaceholder;
-  image.alt = "Product image placeholder";
+  image.alt = "รูปสินค้าเริ่มต้น";
 }
 
 async function uploadProductImage(file: File) {
@@ -289,7 +301,7 @@ function AddProductForm({
     setImageUrl(result.publicUrl);
     setImageUploadState({
       error: null,
-      message: "อัปโหลดรูปแล้ว กด Add product เพื่อบันทึกสินค้า",
+      message: "อัปโหลดรูปแล้ว กดเพิ่มสินค้าเพื่อบันทึกสินค้า",
       status: "uploaded",
     });
   }
@@ -313,17 +325,16 @@ function AddProductForm({
   return (
     <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
       <div className="border-b border-[var(--line)] pb-4">
-        <p className="text-sm font-semibold text-[var(--brand)]">Add product</p>
+        <p className="text-sm font-semibold text-[var(--brand)]">เพิ่มสินค้า</p>
         <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
-          New products start with 0 stock. Stock in/out adjustments will be
-          handled from inventory movements in the next part.
+          สินค้าใหม่จะเริ่มต้นที่สต๊อก 0 รายการ การเพิ่มหรือลดสต๊อกให้ทำจากหน้าคลังสินค้า
         </p>
       </div>
 
       <form className="mt-4 grid gap-3" onSubmit={handleSubmit}>
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_150px_150px_140px] lg:items-end">
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            Product name
+            ชื่อสินค้า
             <input
               className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) => setName(event.target.value)}
@@ -332,7 +343,7 @@ function AddProductForm({
           </label>
 
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            Category
+            หมวดสินค้า
             <select
               className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) => setProductCategoryId(event.target.value)}
@@ -341,14 +352,14 @@ function AddProductForm({
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
-                  {category.status === "inactive" ? " (inactive)" : ""}
+                  {category.status === "inactive" ? " (ปิดใช้งาน)" : ""}
                 </option>
               ))}
             </select>
           </label>
 
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            Sale price
+            ราคาขาย
             <input
               className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               min={0}
@@ -360,7 +371,7 @@ function AddProductForm({
           </label>
 
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            Cost price
+            ต้นทุน
             <input
               className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               min={0}
@@ -372,7 +383,7 @@ function AddProductForm({
           </label>
 
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            Status
+            สถานะ
             <select
               className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) =>
@@ -380,8 +391,8 @@ function AddProductForm({
               }
               value={status}
             >
-              <option value="active">active</option>
-              <option value="inactive">inactive</option>
+              <option value="active">เปิดใช้งาน</option>
+              <option value="inactive">ปิดใช้งาน</option>
             </select>
           </label>
         </div>
@@ -397,7 +408,7 @@ function AddProductForm({
           </label>
 
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            Description
+            รายละเอียด
             <input
               className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) => setDescription(event.target.value)}
@@ -407,10 +418,10 @@ function AddProductForm({
         </div>
 
         <div className="grid gap-3 lg:grid-cols-[96px_minmax(0,1fr)_220px] lg:items-end">
-          <ProductImagePreview imageUrl={imageUrl} label="New product preview" />
+          <ProductImagePreview imageUrl={imageUrl} label="ตัวอย่างรูปสินค้าใหม่" />
 
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            Product image URL
+            URL รูปสินค้า
             <input
               className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) => setImageUrl(event.target.value)}
@@ -420,7 +431,7 @@ function AddProductForm({
           </label>
 
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            Upload image
+            อัปโหลดรูปสินค้า
             <input
               accept="image/png,image/jpeg,image/webp"
               className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)]"
@@ -458,7 +469,7 @@ function AddProductForm({
             disabled={isCreating || categories.length === 0}
             type="submit"
           >
-            {isCreating ? "Adding..." : "Add product"}
+            {isCreating ? "กำลังเพิ่ม..." : "เพิ่มสินค้า"}
           </button>
 
           {createState.status === "error" ? (
@@ -540,7 +551,7 @@ function AdminProductRow({
     setImageUrl(result.publicUrl);
     setImageUploadState({
       error: null,
-      message: "อัปโหลดรูปแล้ว กด Save product เพื่อใช้รูปนี้",
+      message: "อัปโหลดรูปแล้ว กดบันทึกสินค้าเพื่อใช้รูปนี้",
       status: "uploaded",
     });
   }
@@ -568,19 +579,19 @@ function AdminProductRow({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           <ProductImagePreview
             imageUrl={product.image_url}
-            label={`${product.name} image`}
+            label={`รูปสินค้า ${product.name}`}
           />
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--brand)]">
-                {product.category?.name ?? "No category"}
+                {product.category?.name ?? "ยังไม่มีหมวดสินค้า"}
               </p>
               <span
                 className={`rounded-md px-2.5 py-1 text-xs font-semibold ${getStatusStyle(
                   product.status,
                 )}`}
               >
-                {product.status}
+                {formatProductStatus(product.status)}
               </span>
             </div>
             <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">
@@ -597,19 +608,19 @@ function AdminProductRow({
 
         <div className="grid grid-cols-3 gap-3 text-sm lg:min-w-[360px]">
           <div className="rounded-md bg-slate-50 p-3">
-            <p className="text-xs text-[var(--muted)]">Sale</p>
+            <p className="text-xs text-[var(--muted)]">ราคาขาย</p>
             <p className="mt-1 font-semibold text-[var(--foreground)]">
               {currencyFormatter.format(product.unit_price)}
             </p>
           </div>
           <div className="rounded-md bg-slate-50 p-3">
-            <p className="text-xs text-[var(--muted)]">Cost</p>
+            <p className="text-xs text-[var(--muted)]">ต้นทุน</p>
             <p className="mt-1 font-semibold text-[var(--foreground)]">
               {currencyFormatter.format(product.cost_price)}
             </p>
           </div>
           <div className="rounded-md bg-slate-50 p-3">
-            <p className="text-xs text-[var(--muted)]">Stock</p>
+            <p className="text-xs text-[var(--muted)]">สต๊อก</p>
             <p className="mt-1 font-semibold text-[var(--foreground)]">
               {product.stock_quantity}
             </p>
@@ -620,7 +631,7 @@ function AdminProductRow({
       <form className="mt-4 grid gap-3" onSubmit={handleSubmit}>
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_150px_150px_140px] lg:items-end">
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            Product name
+            ชื่อสินค้า
             <input
               className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) => setName(event.target.value)}
@@ -629,7 +640,7 @@ function AdminProductRow({
           </label>
 
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            Category
+            หมวดสินค้า
             <select
               className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) => setProductCategoryId(event.target.value)}
@@ -638,14 +649,14 @@ function AdminProductRow({
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
-                  {category.status === "inactive" ? " (inactive)" : ""}
+                  {category.status === "inactive" ? " (ปิดใช้งาน)" : ""}
                 </option>
               ))}
             </select>
           </label>
 
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            Sale price
+            ราคาขาย
             <input
               className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               min={0}
@@ -657,7 +668,7 @@ function AdminProductRow({
           </label>
 
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            Cost price
+            ต้นทุน
             <input
               className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               min={0}
@@ -669,7 +680,7 @@ function AdminProductRow({
           </label>
 
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            Status
+            สถานะ
             <select
               className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) =>
@@ -677,17 +688,17 @@ function AdminProductRow({
               }
               value={status}
             >
-              <option value="active">active</option>
-              <option value="inactive">inactive</option>
+              <option value="active">เปิดใช้งาน</option>
+              <option value="inactive">ปิดใช้งาน</option>
             </select>
           </label>
         </div>
 
         <div className="grid gap-3 lg:grid-cols-[96px_minmax(0,1fr)_220px] lg:items-end">
-          <ProductImagePreview imageUrl={imageUrl} label={`${name} preview`} />
+          <ProductImagePreview imageUrl={imageUrl} label={`ตัวอย่างรูป ${name}`} />
 
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            Product image URL
+            URL รูปสินค้า
             <input
               className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) => setImageUrl(event.target.value)}
@@ -697,7 +708,7 @@ function AdminProductRow({
           </label>
 
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            Upload image
+            อัปโหลดรูปสินค้า
             <input
               accept="image/png,image/jpeg,image/webp"
               className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)]"
@@ -740,7 +751,7 @@ function AdminProductRow({
           </label>
 
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            Description
+            รายละเอียด
             <input
               className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) => setDescription(event.target.value)}
@@ -753,7 +764,7 @@ function AdminProductRow({
             disabled={!hasChanges || isSaving}
             type="submit"
           >
-            {isSaving ? "Saving..." : "Save product"}
+            {isSaving ? "กำลังบันทึก..." : "บันทึกสินค้า"}
           </button>
         </div>
       </form>
@@ -966,7 +977,7 @@ export function AdminProductsPanel() {
 
     if (duplicateSku) {
       setCreateState({
-        error: "This SKU already exists.",
+        error: "SKU นี้มีอยู่แล้ว",
         message: null,
         status: "error",
       });
@@ -1007,7 +1018,7 @@ export function AdminProductsPanel() {
     });
     setCreateState({
       error: null,
-      message: "Product added successfully.",
+      message: "เพิ่มสินค้าเรียบร้อยแล้ว",
       status: "created",
     });
   }
@@ -1042,7 +1053,7 @@ export function AdminProductsPanel() {
 
     if (duplicateSku) {
       setActionState({
-        error: "This SKU already exists.",
+        error: "SKU นี้มีอยู่แล้ว",
         message: null,
         productId: product.id,
         status: "error",
@@ -1090,29 +1101,25 @@ export function AdminProductsPanel() {
     });
     setActionState({
       error: null,
-      message: "Product saved successfully.",
+      message: "บันทึกสินค้าเรียบร้อยแล้ว",
       productId: product.id,
       status: "saved",
     });
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand)]">
-            BCare
-          </p>
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-[var(--foreground)]">
-              Admin Products
+              จัดการสินค้า
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-              Manage product details, SKU, price, cost, visibility, and current
-              stock count.
+              จัดการรายละเอียดสินค้า SKU ราคา ต้นทุน สถานะการขาย และจำนวนสต๊อกปัจจุบัน
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -1120,25 +1127,25 @@ export function AdminProductsPanel() {
               className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
               href="/admin/inventory"
             >
-              Manage inventory
+              จัดการคลังสินค้า
             </Link>
             <Link
               className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
               href="/admin/inventory-review"
             >
-              Review stock
+              ตรวจสต๊อก
             </Link>
             <Link
               className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
               href="/admin/product-categories"
             >
-              Product categories
+              หมวดสินค้า
             </Link>
             <Link
               className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
               href="/admin"
             >
-              Admin home
+              หน้าแอดมิน
             </Link>
           </div>
         </div>
@@ -1147,7 +1154,7 @@ export function AdminProductsPanel() {
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            Loading admin products...
+            กำลังโหลดสินค้า...
           </div>
         </section>
       ) : null}
@@ -1155,13 +1162,13 @@ export function AdminProductsPanel() {
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
-            <p className="font-semibold">Login required</p>
-            <p className="mt-1">Sign in with an admin account.</p>
+            <p className="font-semibold">ต้องเข้าสู่ระบบ</p>
+            <p className="mt-1">กรุณาเข้าสู่ระบบด้วยบัญชีแอดมิน</p>
             <Link
               className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
               href="/auth"
             >
-              Go to account
+              ไปที่บัญชี
             </Link>
           </div>
         </section>
@@ -1170,7 +1177,7 @@ export function AdminProductsPanel() {
       {loadState.status === "access-denied" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
-            <p className="text-lg font-bold">Access denied</p>
+            <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
             <p className="mt-2">{loadState.access.reason}</p>
           </div>
         </section>
@@ -1196,7 +1203,7 @@ export function AdminProductsPanel() {
           <div className="mt-5 grid gap-3 md:grid-cols-3">
             <div className="rounded-lg border border-[var(--line)] bg-white p-5">
               <p className="text-sm font-semibold text-[var(--muted)]">
-                Products
+                สินค้าทั้งหมด
               </p>
               <p className="mt-2 text-3xl font-bold text-[var(--foreground)]">
                 {loadState.products.length}
@@ -1204,7 +1211,7 @@ export function AdminProductsPanel() {
             </div>
             <div className="rounded-lg border border-[var(--line)] bg-white p-5">
               <p className="text-sm font-semibold text-[var(--muted)]">
-                Active products
+                สินค้าที่เปิดขาย
               </p>
               <p className="mt-2 text-3xl font-bold text-[var(--foreground)]">
                 {
@@ -1216,7 +1223,7 @@ export function AdminProductsPanel() {
             </div>
             <div className="rounded-lg border border-[var(--line)] bg-white p-5">
               <p className="text-sm font-semibold text-[var(--muted)]">
-                Low stock
+                สต๊อกใกล้หมด
               </p>
               <p className="mt-2 text-3xl font-bold text-[var(--foreground)]">
                 {lowStockProducts.length}
@@ -1228,10 +1235,10 @@ export function AdminProductsPanel() {
             <div>
               <p className="text-sm font-semibold text-[var(--foreground)]">
                 {filteredProducts.length} of {loadState.products.length}{" "}
-                products
+                รายการ
               </p>
               <p className="mt-1 text-sm text-[var(--muted)]">
-                Stock is shown here but changed through inventory movements.
+                หน้านี้แสดงจำนวนสต๊อกเท่านั้น การปรับสต๊อกให้ทำผ่านหน้าคลังสินค้า
               </p>
             </div>
 
@@ -1239,7 +1246,7 @@ export function AdminProductsPanel() {
               <input
                 className="min-h-10 flex-1 rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                 onChange={(event) => setSearchInput(event.target.value)}
-                placeholder="Search product, SKU, or category"
+                placeholder="ค้นหาสินค้า SKU หรือหมวดสินค้า"
                 type="search"
                 value={searchInput}
               />
@@ -1255,7 +1262,7 @@ export function AdminProductsPanel() {
                     onClick={() => setStatusFilter(status)}
                     type="button"
                   >
-                    {status}
+                    {formatProductStatus(status)}
                   </button>
                 ))}
               </div>
@@ -1276,7 +1283,7 @@ export function AdminProductsPanel() {
             </div>
           ) : (
             <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
-              No products match the current filters.
+              ไม่พบสินค้าที่ตรงกับตัวกรองปัจจุบัน
             </div>
           )}
         </section>

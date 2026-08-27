@@ -15,18 +15,20 @@ export async function upsertCurrentProfile(
   supabase: BCareSupabaseClient,
   input: ProfileInput,
 ) {
+  const payload: Database["public"]["Tables"]["profiles"]["Insert"] = {
+    email: input.email,
+    full_name: input.fullName,
+    id: input.userId,
+    phone_number: input.phoneNumber,
+  };
+
+  if (input.avatarUrl !== undefined) {
+    payload.avatar_url = input.avatarUrl;
+  }
+
   return supabase
     .from("profiles")
-    .upsert(
-      {
-        email: input.email,
-        full_name: input.fullName,
-        id: input.userId,
-        phone_number: input.phoneNumber,
-      },
-      { onConflict: "id" },
-    )
+    .upsert(payload, { onConflict: "id" })
     .select("*")
     .single();
 }
-

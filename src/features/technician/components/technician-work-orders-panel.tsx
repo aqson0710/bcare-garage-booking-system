@@ -39,7 +39,7 @@ function formatBookingSchedule(workOrder: TechnicianWorkOrder) {
     return "-";
   }
 
-  return `${workOrder.booking.booking_date} at ${workOrder.booking.booking_time.slice(
+  return `${workOrder.booking.booking_date} เวลา ${workOrder.booking.booking_time.slice(
     0,
     5,
   )}`;
@@ -65,6 +65,30 @@ function getStatusStyle(status: TechnicianWorkOrder["status"]) {
   return "bg-red-50 text-red-700";
 }
 
+function formatWorkOrderStatus(status: StatusFilter) {
+  if (status === "pending") {
+    return "รอดำเนินการ";
+  }
+
+  if (status === "assigned") {
+    return "มอบหมายแล้ว";
+  }
+
+  if (status === "in_progress") {
+    return "กำลังซ่อม";
+  }
+
+  if (status === "completed") {
+    return "เสร็จสิ้น";
+  }
+
+  if (status === "cancelled") {
+    return "ยกเลิก";
+  }
+
+  return "ทั้งหมด";
+}
+
 function TechnicianWorkOrderRow({
   workOrder,
 }: {
@@ -76,14 +100,14 @@ function TechnicianWorkOrderRow({
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-semibold text-[var(--brand)]">
-              {workOrder.service?.name ?? "Service not found"}
+              {workOrder.service?.name ?? "ไม่พบบริการ"}
             </p>
             <span
               className={`rounded-md px-2.5 py-1 text-xs font-semibold ${getStatusStyle(
                 workOrder.status,
               )}`}
             >
-              {workOrder.status}
+              {formatWorkOrderStatus(workOrder.status)}
             </span>
           </div>
           <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">
@@ -95,13 +119,13 @@ function TechnicianWorkOrderRow({
           className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
           href={`/technician/work-orders/${workOrder.id}`}
         >
-          Open work order
+          เปิดงานซ่อม
         </Link>
       </div>
 
       <dl className="mt-5 grid gap-4 border-t border-[var(--line)] pt-4 text-sm md:grid-cols-4">
         <div>
-          <dt className="text-[var(--muted)]">Customer</dt>
+          <dt className="text-[var(--muted)]">ลูกค้า</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
             {workOrder.customer?.full_name ?? "-"}
           </dd>
@@ -110,7 +134,7 @@ function TechnicianWorkOrderRow({
           </dd>
         </div>
         <div>
-          <dt className="text-[var(--muted)]">Vehicle</dt>
+          <dt className="text-[var(--muted)]">รถ</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
             {workOrder.vehicle?.license_plate ?? "-"}
           </dd>
@@ -123,13 +147,13 @@ function TechnicianWorkOrderRow({
           </dd>
         </div>
         <div>
-          <dt className="text-[var(--muted)]">Started</dt>
+          <dt className="text-[var(--muted)]">เริ่มงาน</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
             {formatDateTime(workOrder.started_at)}
           </dd>
         </div>
         <div>
-          <dt className="text-[var(--muted)]">Updated</dt>
+          <dt className="text-[var(--muted)]">อัปเดตล่าสุด</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
             {formatDateTime(workOrder.updated_at)}
           </dd>
@@ -138,13 +162,13 @@ function TechnicianWorkOrderRow({
 
       <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
         <div className="rounded-md bg-slate-50 p-3">
-          <p className="font-semibold text-[var(--foreground)]">Diagnosis</p>
+          <p className="font-semibold text-[var(--foreground)]">ผลวิเคราะห์อาการ</p>
           <p className="mt-2 leading-6 text-[var(--muted)]">
             {workOrder.diagnosis || "-"}
           </p>
         </div>
         <div className="rounded-md bg-slate-50 p-3">
-          <p className="font-semibold text-[var(--foreground)]">Repair notes</p>
+          <p className="font-semibold text-[var(--foreground)]">บันทึกงานซ่อม</p>
           <p className="mt-2 leading-6 text-[var(--muted)]">
             {workOrder.repair_notes || "-"}
           </p>
@@ -153,15 +177,15 @@ function TechnicianWorkOrderRow({
 
       <dl className="mt-4 grid gap-3 border-t border-[var(--line)] pt-4 text-xs text-[var(--muted)] md:grid-cols-3">
         <div>
-          <dt className="font-semibold text-[var(--foreground)]">Completed</dt>
+          <dt className="font-semibold text-[var(--foreground)]">เสร็จงาน</dt>
           <dd className="mt-1">{formatDateTime(workOrder.completed_at)}</dd>
         </div>
         <div>
-          <dt className="font-semibold text-[var(--foreground)]">Booking ID</dt>
+          <dt className="font-semibold text-[var(--foreground)]">รหัสการจอง</dt>
           <dd className="mt-1 break-all">{workOrder.booking_id}</dd>
         </div>
         <div>
-          <dt className="font-semibold text-[var(--foreground)]">Repair Job ID</dt>
+          <dt className="font-semibold text-[var(--foreground)]">รหัสงานซ่อม</dt>
           <dd className="mt-1 break-all">{workOrder.id}</dd>
         </div>
       </dl>
@@ -285,27 +309,23 @@ export function TechnicianWorkOrdersPanel() {
   }, [loadState, statusFilter]);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand)]">
-            BCare
-          </p>
           <AppNav />
         </div>
         <h1 className="text-3xl font-bold text-[var(--foreground)]">
-          My Work Orders
+          งานซ่อมของฉัน
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-          Review repair jobs assigned to your technician account. Open a work
-          order to update status, diagnosis, and repair notes.
+          ตรวจสอบงานซ่อมที่ถูกมอบหมายให้บัญชีช่างของคุณ และเปิดรายละเอียดเพื่ออัปเดตสถานะ ผลวิเคราะห์อาการ และบันทึกงานซ่อม
         </p>
       </header>
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            Loading technician work orders...
+            กำลังโหลดงานซ่อมของช่าง...
           </div>
         </section>
       ) : null}
@@ -313,13 +333,13 @@ export function TechnicianWorkOrdersPanel() {
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
-            <p className="font-semibold">Login required</p>
-            <p className="mt-1">Sign in with a technician account.</p>
+            <p className="font-semibold">ต้องเข้าสู่ระบบ</p>
+            <p className="mt-1">กรุณาเข้าสู่ระบบด้วยบัญชีช่าง</p>
             <Link
               className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
               href="/auth"
             >
-              Go to account
+              ไปที่บัญชี
             </Link>
           </div>
         </section>
@@ -336,7 +356,7 @@ export function TechnicianWorkOrdersPanel() {
       {loadState.status === "ready" && !loadState.result?.allowed ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
-            <p className="text-lg font-bold">Access denied</p>
+            <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
             <p className="mt-2">{loadState.result?.reason}</p>
           </div>
         </section>
@@ -355,7 +375,7 @@ export function TechnicianWorkOrdersPanel() {
               type="button"
             >
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                Total
+                ทั้งหมด
               </p>
               <p className="mt-2 text-2xl font-bold text-[var(--foreground)]">
                 {loadState.result.workOrders.length}
@@ -373,7 +393,7 @@ export function TechnicianWorkOrdersPanel() {
                 type="button"
               >
                 <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                  {status}
+                  {formatWorkOrderStatus(status)}
                 </p>
                 <p className="mt-2 text-2xl font-bold text-[var(--foreground)]">
                   {statusCounts.get(status) ?? 0}
@@ -385,11 +405,11 @@ export function TechnicianWorkOrdersPanel() {
           <div className="mt-5 flex flex-col gap-3 rounded-lg border border-[var(--line)] bg-white p-4 text-sm shadow-sm sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-semibold text-[var(--foreground)]">
-                Showing {filteredWorkOrders.length} of{" "}
-                {loadState.result.workOrders.length} work orders
+                แสดง {filteredWorkOrders.length} จาก{" "}
+                {loadState.result.workOrders.length} งานซ่อม
               </p>
               <p className="mt-1 text-[var(--muted)]">
-                Filter: {statusFilter === "all" ? "all statuses" : statusFilter}
+                ตัวกรอง: {formatWorkOrderStatus(statusFilter)}
               </p>
             </div>
             <button
@@ -398,7 +418,7 @@ export function TechnicianWorkOrdersPanel() {
               onClick={() => setStatusFilter("all")}
               type="button"
             >
-              Clear filter
+              ล้างตัวกรอง
             </button>
           </div>
 
@@ -413,11 +433,11 @@ export function TechnicianWorkOrdersPanel() {
             </div>
           ) : loadState.result.workOrders.length > 0 ? (
             <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
-              No work orders match this filter.
+              ไม่พบงานซ่อมที่ตรงกับตัวกรองนี้
             </div>
           ) : (
             <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
-              No work orders are assigned to you yet.
+              ยังไม่มีงานซ่อมที่มอบหมายให้คุณ
             </div>
           )}
         </section>

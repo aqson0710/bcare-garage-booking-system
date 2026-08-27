@@ -105,18 +105,38 @@ function getStatusStyle(status: AdminBooking["status"]) {
   return "bg-slate-100 text-slate-700";
 }
 
+function formatBookingStatus(status: StatusFilter | AdminBooking["status"]) {
+  if (status === "pending") {
+    return "รอยืนยัน";
+  }
+
+  if (status === "confirmed") {
+    return "ยืนยันแล้ว";
+  }
+
+  if (status === "cancelled") {
+    return "ยกเลิก";
+  }
+
+  if (status === "completed") {
+    return "เสร็จสิ้น";
+  }
+
+  return "ทั้งหมด";
+}
+
 function getAdminActions(
   status: AdminBooking["status"],
 ): Array<{ label: string; status: AdminBookingStatusAction; tone: string }> {
   if (status === "pending") {
     return [
       {
-        label: "Confirm",
+        label: "ยืนยันการจอง",
         status: "confirmed",
         tone: "bg-[var(--brand)] text-white",
       },
       {
-        label: "Cancel",
+        label: "ยกเลิก",
         status: "cancelled",
         tone: "border border-red-200 bg-red-50 text-red-700",
       },
@@ -126,12 +146,12 @@ function getAdminActions(
   if (status === "confirmed") {
     return [
       {
-        label: "Mark completed",
+        label: "ทำเครื่องหมายเสร็จสิ้น",
         status: "completed",
         tone: "bg-[var(--brand)] text-white",
       },
       {
-        label: "Cancel",
+        label: "ยกเลิก",
         status: "cancelled",
         tone: "border border-red-200 bg-red-50 text-red-700",
       },
@@ -171,7 +191,7 @@ function AdminPaginationControls({
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-[var(--line)] bg-white p-4 lg:flex-row lg:items-center lg:justify-between">
       <p className="text-sm text-[var(--muted)]">
-        Showing page {result.page} of {result.totalPages}
+        หน้า {result.page} จาก {result.totalPages}
       </p>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -182,7 +202,7 @@ function AdminPaginationControls({
             onClick={() => onPageChange(result.page - 1)}
             type="button"
           >
-            Previous
+            ก่อนหน้า
           </button>
           <button
             className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-50"
@@ -190,7 +210,7 @@ function AdminPaginationControls({
             onClick={() => onPageChange(result.page + 1)}
             type="button"
           >
-            Next
+            ถัดไป
           </button>
         </div>
 
@@ -203,7 +223,7 @@ function AdminPaginationControls({
             className="whitespace-nowrap text-sm font-semibold text-[var(--muted)]"
             htmlFor={inputId}
           >
-            Go to
+            ไปหน้า
           </label>
           <input
             className="min-h-10 w-24 rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
@@ -219,7 +239,7 @@ function AdminPaginationControls({
             className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
             type="submit"
           >
-            Go
+            ไป
           </button>
         </form>
       </div>
@@ -258,25 +278,25 @@ function AdminBookingRow({
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-semibold text-[var(--brand)]">
-              {booking.service?.name ?? "Service not found"}
+              {booking.service?.name ?? "ไม่พบบริการ"}
             </p>
             <span
               className={`rounded-md px-2.5 py-1 text-xs font-semibold ${getStatusStyle(
                 booking.status,
               )}`}
             >
-              {booking.status}
+              {formatBookingStatus(booking.status)}
             </span>
           </div>
           <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">
-            {booking.booking_date} at {formatTime(booking.booking_time)}
+            {booking.booking_date} เวลา {formatTime(booking.booking_time)}
           </h2>
         </div>
       </div>
 
       <dl className="mt-5 grid gap-4 border-t border-[var(--line)] pt-4 text-sm md:grid-cols-4">
         <div>
-          <dt className="text-[var(--muted)]">Customer</dt>
+          <dt className="text-[var(--muted)]">ลูกค้า</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
             {booking.customer?.full_name ?? "-"}
           </dd>
@@ -288,7 +308,7 @@ function AdminBookingRow({
           </dd>
         </div>
         <div>
-          <dt className="text-[var(--muted)]">Vehicle</dt>
+          <dt className="text-[var(--muted)]">รถ</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
             {booking.vehicle?.license_plate ?? "-"}
           </dd>
@@ -301,7 +321,7 @@ function AdminBookingRow({
           </dd>
         </div>
         <div>
-          <dt className="text-[var(--muted)]">Price</dt>
+          <dt className="text-[var(--muted)]">ราคา</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
             {booking.service
               ? currencyFormatter.format(booking.service.base_price)
@@ -309,7 +329,7 @@ function AdminBookingRow({
           </dd>
         </div>
         <div>
-          <dt className="text-[var(--muted)]">Created</dt>
+          <dt className="text-[var(--muted)]">สร้างเมื่อ</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
             {new Date(booking.created_at).toLocaleString("th-TH")}
           </dd>
@@ -323,14 +343,14 @@ function AdminBookingRow({
       ) : null}
 
       <p className="mt-4 break-all text-xs text-[var(--muted)]">
-        Booking ID: {booking.id}
+        รหัสการจอง: {booking.id}
       </p>
 
       <div className="mt-5 flex flex-col gap-3 border-t border-[var(--line)] pt-5 sm:flex-row sm:items-center sm:justify-between">
         {isEditingStatus ? (
           <div className="flex w-full flex-col gap-3 rounded-md border border-[var(--line)] bg-slate-50 p-3 sm:flex-row sm:items-end sm:justify-between">
             <label className="text-sm font-semibold text-[var(--foreground)]">
-              Edit status
+              แก้ไขสถานะ
               <select
                 className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)] sm:w-56"
                 disabled={isUpdating}
@@ -343,7 +363,7 @@ function AdminBookingRow({
               >
                 {editableStatuses.map((status) => (
                   <option key={status} value={status}>
-                    {status}
+                    {formatBookingStatus(status)}
                   </option>
                 ))}
               </select>
@@ -355,7 +375,7 @@ function AdminBookingRow({
                 onClick={cancelStatusEdit}
                 type="button"
               >
-                Cancel edit
+                ยกเลิกการแก้ไข
               </button>
               <button
                 className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
@@ -363,7 +383,7 @@ function AdminBookingRow({
                 onClick={() => onStatusChange(booking, selectedStatus)}
                 type="button"
               >
-                {isUpdating ? "Saving..." : "Save status"}
+                {isUpdating ? "กำลังบันทึก..." : "บันทึกสถานะ"}
               </button>
             </div>
           </div>
@@ -377,7 +397,7 @@ function AdminBookingRow({
                 onClick={() => onStatusChange(booking, action.status)}
                 type="button"
               >
-                {isUpdating ? "Updating..." : action.label}
+                {isUpdating ? "กำลังอัปเดต..." : action.label}
               </button>
             ))}
             <button
@@ -386,13 +406,13 @@ function AdminBookingRow({
               onClick={() => setIsEditingStatus(true)}
               type="button"
             >
-              Edit status
+              แก้ไขสถานะ
             </button>
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-sm font-semibold text-[var(--muted)]">
-              No quick actions for this status.
+              ไม่มีปุ่มลัดสำหรับสถานะนี้
             </p>
             <button
               className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
@@ -400,7 +420,7 @@ function AdminBookingRow({
               onClick={() => setIsEditingStatus(true)}
               type="button"
             >
-              Edit status
+              แก้ไขสถานะ
             </button>
           </div>
         )}
@@ -411,12 +431,20 @@ function AdminBookingRow({
         ) : null}
       </div>
 
-      <Link
-        className="mt-4 inline-block min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
-        href={`/admin/bookings/${booking.id}`}
-      >
-        View detail
-      </Link>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Link
+          className="inline-flex min-h-10 items-center rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+          href={`/admin/bookings/${booking.id}`}
+        >
+          ดูรายละเอียด
+        </Link>
+        <Link
+          className="inline-flex min-h-10 items-center rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+          href={`/admin/bookings/${booking.id}/receipt`}
+        >
+          เอกสารการจอง
+        </Link>
+      </div>
     </article>
   );
 }
@@ -623,29 +651,25 @@ export function AdminBookingsPanel() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand)]">
-            BCare
-          </p>
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-[var(--foreground)]">
-              Admin Bookings
+              รายการจองทั้งหมด
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-              Review booking requests from all customers and manage their
-              status.
+              ตรวจสอบคำขอจองจากลูกค้าทั้งหมด และจัดการสถานะการจอง
             </p>
           </div>
           <Link
             className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href="/admin"
           >
-            Admin home
+            หน้าแอดมิน
           </Link>
         </div>
       </header>
@@ -653,7 +677,7 @@ export function AdminBookingsPanel() {
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            Loading admin bookings...
+            กำลังโหลดรายการจอง...
           </div>
         </section>
       ) : null}
@@ -661,13 +685,13 @@ export function AdminBookingsPanel() {
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
-            <p className="font-semibold">Login required</p>
-            <p className="mt-1">Sign in with an admin account.</p>
+            <p className="font-semibold">ต้องเข้าสู่ระบบก่อน</p>
+            <p className="mt-1">เข้าสู่ระบบด้วยบัญชี admin</p>
             <Link
               className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
               href="/auth"
             >
-              Go to account
+              ไปที่หน้าบัญชี
             </Link>
           </div>
         </section>
@@ -676,7 +700,7 @@ export function AdminBookingsPanel() {
       {loadState.status === "access-denied" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
-            <p className="text-lg font-bold">Access denied</p>
+            <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
             <p className="mt-2">{loadState.access.reason}</p>
           </div>
         </section>
@@ -696,10 +720,10 @@ export function AdminBookingsPanel() {
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <p className="text-sm font-semibold text-[var(--foreground)]">
-                  {loadState.result.totalCount} bookings found
+                  พบรายการจอง {loadState.result.totalCount} รายการ
                 </p>
                 <p className="mt-1 text-sm text-[var(--muted)]">
-                  Page {loadState.result.page} of{" "}
+                  หน้า {loadState.result.page} จาก{" "}
                   {loadState.result.totalPages}
                 </p>
               </div>
@@ -711,7 +735,7 @@ export function AdminBookingsPanel() {
                 <input
                   className="min-h-10 flex-1 rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   onChange={(event) => setSearchInput(event.target.value)}
-                  placeholder="Search customer, phone, plate, service, note, or booking ID"
+                  placeholder="ค้นหาลูกค้า เบอร์โทร ทะเบียนรถ บริการ หมายเหตุ หรือรหัสการจอง"
                   type="search"
                   value={searchInput}
                 />
@@ -719,7 +743,7 @@ export function AdminBookingsPanel() {
                   className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
                   type="submit"
                 >
-                  Search
+                  ค้นหา
                 </button>
                 {submittedSearch ? (
                   <button
@@ -733,7 +757,7 @@ export function AdminBookingsPanel() {
                     }}
                     type="button"
                   >
-                    Clear
+                    ล้าง
                   </button>
                 ) : null}
               </form>
@@ -756,7 +780,7 @@ export function AdminBookingsPanel() {
                   }
                   type="button"
                 >
-                  {status}
+                  {formatBookingStatus(status)}
                 </button>
               ))}
             </div>
@@ -783,7 +807,7 @@ export function AdminBookingsPanel() {
             </div>
           ) : (
             <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
-              No bookings match the current filters.
+              ไม่พบรายการจองที่ตรงกับตัวกรองปัจจุบัน
             </div>
           )}
 

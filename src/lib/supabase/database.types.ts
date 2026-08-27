@@ -239,6 +239,7 @@ export type Database = {
       profiles: {
         Row: {
           id: string;
+          avatar_url: string | null;
           full_name: string;
           phone_number: string;
           email: string | null;
@@ -249,6 +250,7 @@ export type Database = {
         };
         Insert: {
           id?: string;
+          avatar_url?: string | null;
           full_name: string;
           phone_number: string;
           email?: string | null;
@@ -259,6 +261,7 @@ export type Database = {
         };
         Update: {
           id?: string;
+          avatar_url?: string | null;
           full_name?: string;
           phone_number?: string;
           email?: string | null;
@@ -773,6 +776,7 @@ export type Database = {
           service_category_id: string;
           name: string;
           description: string | null;
+          image_url: string | null;
           base_price: number;
           estimated_duration_minutes: number;
           status: ServiceStatus;
@@ -784,6 +788,7 @@ export type Database = {
           service_category_id: string;
           name: string;
           description?: string | null;
+          image_url?: string | null;
           base_price: number;
           estimated_duration_minutes: number;
           status?: ServiceStatus;
@@ -795,6 +800,7 @@ export type Database = {
           service_category_id?: string;
           name?: string;
           description?: string | null;
+          image_url?: string | null;
           base_price?: number;
           estimated_duration_minutes?: number;
           status?: ServiceStatus;

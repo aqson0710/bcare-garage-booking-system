@@ -848,7 +848,7 @@ function StockReturnSummary({ order }: { order: AdminProductOrder }) {
   return (
     <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
       <p className="text-sm font-semibold text-[var(--brand)]">
-        Stock return
+        การคืนสต็อก
       </p>
 
       {order.status === "cancelled" ? (
@@ -867,7 +867,7 @@ function StockReturnSummary({ order }: { order: AdminProductOrder }) {
                 : "ไม่มี sale movement ที่ต้องคืน"}
           </p>
           <p className="mt-1">
-            Return {returnedItemCount} / Sale {soldItemCount} ชิ้น
+            คืนแล้ว {returnedItemCount} / ขายออก {soldItemCount} ชิ้น
           </p>
         </div>
       ) : (
@@ -1078,7 +1078,7 @@ export function AdminProductOrderDetailPanel({
 
     if (refreshedOrderResult.error) {
       setActionState({
-        error: `Status updated, but refresh failed: ${refreshedOrderResult.error.message}`,
+        error: `อัปเดตสถานะแล้ว แต่โหลดข้อมูลล่าสุดไม่สำเร็จ: ${refreshedOrderResult.error.message}`,
         status: "error",
       });
       return;
@@ -1150,12 +1150,9 @@ export function AdminProductOrderDetailPanel({
     !isUpdating;
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand)]">
-            BCare
-          </p>
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -1202,7 +1199,7 @@ export function AdminProductOrderDetailPanel({
       {loadState.status === "access-denied" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
-            <p className="text-lg font-bold">Access denied</p>
+            <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
             <p className="mt-2">{loadState.access.reason}</p>
           </div>
         </section>
@@ -1469,10 +1466,16 @@ export function AdminProductOrderDetailPanel({
                 <div className="border-t border-[var(--line)] pt-4">
                   <dt className="text-sm text-[var(--muted)]">ยอดรวม</dt>
                   <dd className="mt-1 text-2xl font-bold text-[var(--foreground)]">
-                    {currencyFormatter.format(loadState.order.total_amount)}
-                  </dd>
-                </div>
-              </dl>
+                  {currencyFormatter.format(loadState.order.total_amount)}
+                </dd>
+              </div>
+            </dl>
+              <Link
+                className="mt-5 flex min-h-10 items-center justify-center rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                href={`/admin/product-orders/${loadState.order.id}/receipt`}
+              >
+                เปิดใบเสร็จ / ใบแจ้งชำระเงิน
+              </Link>
             </section>
 
             {loadState.order.delivery_method === "delivery" ? (

@@ -49,7 +49,7 @@ function formatBookingSchedule(workOrder: TechnicianWorkOrder) {
     return "-";
   }
 
-  return `${workOrder.booking.booking_date} at ${workOrder.booking.booking_time.slice(
+  return `${workOrder.booking.booking_date} เวลา ${workOrder.booking.booking_time.slice(
     0,
     5,
   )}`;
@@ -75,6 +75,30 @@ function getStatusStyle(status: TechnicianRepairJobStatus) {
   return "bg-red-50 text-red-700";
 }
 
+function formatWorkOrderStatus(status: TechnicianRepairJobStatus) {
+  if (status === "pending") {
+    return "รอดำเนินการ";
+  }
+
+  if (status === "assigned") {
+    return "มอบหมายแล้ว";
+  }
+
+  if (status === "in_progress") {
+    return "กำลังซ่อม";
+  }
+
+  if (status === "completed") {
+    return "เสร็จสิ้น";
+  }
+
+  if (status === "cancelled") {
+    return "ยกเลิก";
+  }
+
+  return status;
+}
+
 function normalizeText(value: string) {
   const trimmedValue = value.trim();
   return trimmedValue ? trimmedValue : null;
@@ -95,7 +119,7 @@ function WorkOrderSummary({ workOrder }: { workOrder: TechnicianWorkOrder }) {
     <section className="grid gap-4 rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm md:grid-cols-2">
       <div>
         <p className="text-sm font-semibold text-[var(--brand)]">
-          {workOrder.service?.name ?? "Service not found"}
+          {workOrder.service?.name ?? "ไม่พบบริการ"}
         </p>
         <h2 className="mt-2 text-2xl font-bold text-[var(--foreground)]">
           {formatBookingSchedule(workOrder)}
@@ -105,13 +129,13 @@ function WorkOrderSummary({ workOrder }: { workOrder: TechnicianWorkOrder }) {
             workOrder.status,
           )}`}
         >
-          {workOrder.status}
+          {formatWorkOrderStatus(workOrder.status)}
         </span>
       </div>
 
       <dl className="grid gap-3 text-sm sm:grid-cols-2">
         <div>
-          <dt className="text-[var(--muted)]">Customer</dt>
+          <dt className="text-[var(--muted)]">ลูกค้า</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
             {workOrder.customer?.full_name ?? "-"}
           </dd>
@@ -120,7 +144,7 @@ function WorkOrderSummary({ workOrder }: { workOrder: TechnicianWorkOrder }) {
           </dd>
         </div>
         <div>
-          <dt className="text-[var(--muted)]">Vehicle</dt>
+          <dt className="text-[var(--muted)]">รถ</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
             {workOrder.vehicle?.license_plate ?? "-"}
           </dd>
@@ -133,13 +157,13 @@ function WorkOrderSummary({ workOrder }: { workOrder: TechnicianWorkOrder }) {
           </dd>
         </div>
         <div>
-          <dt className="text-[var(--muted)]">Started</dt>
+          <dt className="text-[var(--muted)]">เริ่มงาน</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
             {formatDateTime(workOrder.started_at)}
           </dd>
         </div>
         <div>
-          <dt className="text-[var(--muted)]">Completed</dt>
+          <dt className="text-[var(--muted)]">เสร็จงาน</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
             {formatDateTime(workOrder.completed_at)}
           </dd>
@@ -313,29 +337,25 @@ export function TechnicianWorkOrderDetailPanel({
   const isSaving = saveState.status === "saving";
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 py-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand)]">
-            BCare
-          </p>
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-[var(--foreground)]">
-              Technician Work Order
+              รายละเอียดงานซ่อม
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-              Update the status, diagnosis, and repair notes for your assigned
-              repair job.
+              อัปเดตสถานะ ผลวิเคราะห์อาการ และบันทึกงานซ่อมของงานที่ได้รับมอบหมาย
             </p>
           </div>
           <Link
             className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href="/technician/work-orders"
           >
-            Back to work orders
+            กลับไปหน้างานซ่อม
           </Link>
         </div>
       </header>
@@ -343,7 +363,7 @@ export function TechnicianWorkOrderDetailPanel({
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            Loading work order...
+            กำลังโหลดงานซ่อม...
           </div>
         </section>
       ) : null}
@@ -351,13 +371,13 @@ export function TechnicianWorkOrderDetailPanel({
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
-            <p className="font-semibold">Login required</p>
-            <p className="mt-1">Sign in with a technician account.</p>
+            <p className="font-semibold">ต้องเข้าสู่ระบบ</p>
+            <p className="mt-1">กรุณาเข้าสู่ระบบด้วยบัญชีช่าง</p>
             <Link
               className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
               href="/auth"
             >
-              Go to account
+              ไปที่บัญชี
             </Link>
           </div>
         </section>
@@ -374,7 +394,7 @@ export function TechnicianWorkOrderDetailPanel({
       {loadState.status === "ready" && !loadState.result?.allowed ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
-            <p className="text-lg font-bold">Access denied</p>
+            <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
             <p className="mt-2">{loadState.result?.reason}</p>
           </div>
         </section>
@@ -385,9 +405,9 @@ export function TechnicianWorkOrderDetailPanel({
       !loadState.result.workOrder ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
-            <p className="text-lg font-bold">Work order not found</p>
+            <p className="text-lg font-bold">ไม่พบงานซ่อม</p>
             <p className="mt-2">
-              This work order may not be assigned to the signed-in technician.
+              งานซ่อมนี้อาจไม่ได้ถูกมอบหมายให้บัญชีช่างที่เข้าสู่ระบบอยู่
             </p>
           </div>
         </section>
@@ -401,10 +421,10 @@ export function TechnicianWorkOrderDetailPanel({
             <div className="flex flex-col gap-3 border-b border-[var(--line)] pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-xl font-bold text-[var(--foreground)]">
-                  Work update
+                  อัปเดตงานซ่อม
                 </h2>
                 <p className="mt-1 text-sm text-[var(--muted)]">
-                  Save progress notes while the work order is still open.
+                  บันทึกความคืบหน้าขณะที่งานซ่อมยังเปิดอยู่
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -414,7 +434,7 @@ export function TechnicianWorkOrderDetailPanel({
                   onClick={() => handleSave("in_progress")}
                   type="button"
                 >
-                  Start work
+                  เริ่มซ่อม
                 </button>
                 <button
                   className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
@@ -422,14 +442,14 @@ export function TechnicianWorkOrderDetailPanel({
                   onClick={() => handleSave("completed")}
                   type="button"
                 >
-                  Complete work
+                  ปิดงานซ่อม
                 </button>
               </div>
             </div>
 
             <div className="mt-5 grid gap-4">
               <label className="text-sm font-semibold text-[var(--foreground)]">
-                Status
+                สถานะ
                 <select
                   className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   disabled={isClosed || isSaving}
@@ -443,14 +463,14 @@ export function TechnicianWorkOrderDetailPanel({
                 >
                   {technicianStatusOptions.map((status) => (
                     <option key={status} value={status}>
-                      {status}
+                      {formatWorkOrderStatus(status)}
                     </option>
                   ))}
                 </select>
               </label>
 
               <label className="text-sm font-semibold text-[var(--foreground)]">
-                Diagnosis
+                ผลวิเคราะห์อาการ
                 <textarea
                   className="mt-2 min-h-32 w-full rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm leading-6 text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   disabled={isClosed || isSaving}
@@ -465,7 +485,7 @@ export function TechnicianWorkOrderDetailPanel({
               </label>
 
               <label className="text-sm font-semibold text-[var(--foreground)]">
-                Repair notes
+                บันทึกงานซ่อม
                 <textarea
                   className="mt-2 min-h-32 w-full rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm leading-6 text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   disabled={isClosed || isSaving}
@@ -486,12 +506,12 @@ export function TechnicianWorkOrderDetailPanel({
                   onClick={() => handleSave()}
                   type="button"
                 >
-                  {isSaving ? "Saving..." : "Save update"}
+                  {isSaving ? "กำลังบันทึก..." : "บันทึกการอัปเดต"}
                 </button>
 
                 {saveState.status === "saved" ? (
                   <p className="text-sm font-semibold text-[var(--brand-strong)]">
-                    Work order updated.
+                    อัปเดตงานซ่อมเรียบร้อยแล้ว
                   </p>
                 ) : null}
 
@@ -503,7 +523,7 @@ export function TechnicianWorkOrderDetailPanel({
 
                 {isClosed ? (
                   <p className="text-sm font-semibold text-[var(--muted)]">
-                    Closed work orders are read-only.
+                    งานซ่อมที่ปิดแล้วจะดูได้อย่างเดียว
                   </p>
                 ) : null}
               </div>
@@ -512,12 +532,12 @@ export function TechnicianWorkOrderDetailPanel({
 
           <dl className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-5 text-xs text-[var(--muted)] shadow-sm md:grid-cols-2">
             <div>
-              <dt className="font-semibold text-[var(--foreground)]">Booking ID</dt>
+              <dt className="font-semibold text-[var(--foreground)]">รหัสการจอง</dt>
               <dd className="mt-1 break-all">{workOrder.booking_id}</dd>
             </div>
             <div>
               <dt className="font-semibold text-[var(--foreground)]">
-                Repair Job ID
+                รหัสงานซ่อม
               </dt>
               <dd className="mt-1 break-all">{workOrder.id}</dd>
             </div>

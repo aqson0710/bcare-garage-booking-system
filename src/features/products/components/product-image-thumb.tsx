@@ -19,7 +19,7 @@ function handleProductImageError(event: SyntheticEvent<HTMLImageElement>) {
   }
 
   image.src = productImagePlaceholder;
-  image.alt = "Product image placeholder";
+  image.alt = "รูปสินค้าสำรอง";
 }
 
 export function ProductImageThumb({

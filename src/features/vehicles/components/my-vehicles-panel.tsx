@@ -43,7 +43,7 @@ function getInitialValues(vehicle: Vehicle): VehicleFormValues {
 
 function validateVehicle(values: VehicleFormValues) {
   if (!values.licensePlate.trim()) {
-    return "Vehicle plate is required.";
+    return "กรุณากรอกทะเบียนรถ";
   }
 
   if (values.year.trim()) {
@@ -51,7 +51,7 @@ function validateVehicle(values: VehicleFormValues) {
     const currentYear = new Date().getFullYear() + 1;
 
     if (!Number.isInteger(year) || year < 1950 || year > currentYear) {
-      return `Year must be between 1950 and ${currentYear}.`;
+      return `ปีรถต้องอยู่ระหว่าง 1950 ถึง ${currentYear}`;
     }
   }
 
@@ -141,7 +141,7 @@ function VehicleCard({
     setValues(getInitialValues(data));
     setCardState({
       error: null,
-      message: "Vehicle saved successfully.",
+      message: "บันทึกข้อมูลรถเรียบร้อยแล้ว",
       status: "saved",
     });
   }
@@ -157,7 +157,7 @@ function VehicleCard({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-[var(--brand)]">
-              Vehicle
+              รถของลูกค้า
             </p>
             {isEditing ? (
               <input
@@ -181,14 +181,14 @@ function VehicleCard({
                 onClick={cancelEdit}
                 type="button"
               >
-                Cancel
+                ยกเลิก
               </button>
               <button
                 className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={cardState.status === "saving"}
                 type="submit"
               >
-                {cardState.status === "saving" ? "Saving..." : "Save"}
+                {cardState.status === "saving" ? "กำลังบันทึก..." : "บันทึก"}
               </button>
             </div>
           ) : (
@@ -203,7 +203,7 @@ function VehicleCard({
               }
               type="button"
             >
-              Edit
+              แก้ไข
             </button>
           )}
         </div>
@@ -211,7 +211,7 @@ function VehicleCard({
         <div className="mt-5 grid gap-4 border-t border-[var(--line)] pt-4 sm:grid-cols-2">
           <div>
             <label className="text-sm font-medium text-[var(--foreground)]">
-              Brand
+              ยี่ห้อรถ
               {isEditing ? (
                 <input
                   className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
@@ -228,7 +228,7 @@ function VehicleCard({
 
           <div>
             <label className="text-sm font-medium text-[var(--foreground)]">
-              Model
+              รุ่นรถ
               {isEditing ? (
                 <input
                   className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
@@ -245,7 +245,7 @@ function VehicleCard({
 
           <div>
             <label className="text-sm font-medium text-[var(--foreground)]">
-              Year
+              ปีรถ
               {isEditing ? (
                 <input
                   className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
@@ -263,7 +263,7 @@ function VehicleCard({
 
           <div>
             <label className="text-sm font-medium text-[var(--foreground)]">
-              Color
+              สีรถ
               {isEditing ? (
                 <input
                   className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
@@ -399,28 +399,25 @@ export function MyVehiclesPanel() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 py-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand)]">
-            BCare
-          </p>
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-[var(--foreground)]">
-              My Vehicles
+              รถของฉัน
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-              Review and update vehicles linked to your customer profile.
+              ตรวจสอบและแก้ไขข้อมูลรถที่เชื่อมกับโปรไฟล์ลูกค้าของคุณ
             </p>
           </div>
           <Link
             className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
             href="/"
           >
-            New booking
+            จองบริการใหม่
           </Link>
         </div>
       </header>
@@ -428,7 +425,7 @@ export function MyVehiclesPanel() {
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            Loading vehicles...
+            กำลังโหลดข้อมูลรถ...
           </div>
         </section>
       ) : null}
@@ -436,13 +433,13 @@ export function MyVehiclesPanel() {
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
-            <p className="font-semibold">Login required</p>
-            <p className="mt-1">Sign in before viewing your vehicles.</p>
+            <p className="font-semibold">ต้องเข้าสู่ระบบ</p>
+            <p className="mt-1">กรุณาเข้าสู่ระบบก่อนดูข้อมูลรถของคุณ</p>
             <Link
               className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
               href="/auth"
             >
-              Go to account
+              ไปที่บัญชี
             </Link>
           </div>
         </section>
@@ -471,8 +468,7 @@ export function MyVehiclesPanel() {
             </div>
           ) : (
             <div className="rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
-              No vehicles yet. Create a booking first, then the vehicle will
-              appear here.
+              ยังไม่มีข้อมูลรถ เริ่มจองบริการก่อน แล้วข้อมูลรถจะมาแสดงที่นี่
             </div>
           )}
         </section>

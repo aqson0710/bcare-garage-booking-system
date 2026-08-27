@@ -57,7 +57,7 @@ function formatBookingSchedule(booking: AdminRepairJob["booking"]) {
     return "-";
   }
 
-  return `${booking.booking_date} at ${booking.booking_time.slice(0, 5)}`;
+  return `${booking.booking_date} เวลา ${booking.booking_time.slice(0, 5)}`;
 }
 
 function getStatusStyle(status: AdminRepairJob["status"]) {
@@ -80,6 +80,26 @@ function getStatusStyle(status: AdminRepairJob["status"]) {
   return "bg-red-50 text-red-700";
 }
 
+function formatRepairJobStatus(status: AdminRepairJob["status"]) {
+  if (status === "pending") {
+    return "รอเริ่มงาน";
+  }
+
+  if (status === "assigned") {
+    return "มอบหมายช่างแล้ว";
+  }
+
+  if (status === "in_progress") {
+    return "กำลังซ่อม";
+  }
+
+  if (status === "completed") {
+    return "เสร็จสิ้น";
+  }
+
+  return "ยกเลิก";
+}
+
 function getMechanicSkillsLabel(mechanic: AdminMechanic | null) {
   if (!mechanic) {
     return "-";
@@ -89,7 +109,7 @@ function getMechanicSkillsLabel(mechanic: AdminMechanic | null) {
     return mechanic.skills.map((skill) => skill.name).join(", ");
   }
 
-  return mechanic.technician_specialty?.trim() || "No skills set";
+  return mechanic.technician_specialty?.trim() || "ยังไม่ได้ตั้งค่าทักษะ";
 }
 
 function getMechanicOptionLabel(mechanic: AdminMechanic) {
@@ -127,14 +147,14 @@ function AdminRepairJobRow({
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-semibold text-[var(--brand)]">
-              {repairJob.service?.name ?? "Service not found"}
+              {repairJob.service?.name ?? "ไม่พบบริการ"}
             </p>
             <span
               className={`rounded-md px-2.5 py-1 text-xs font-semibold ${getStatusStyle(
                 repairJob.status,
               )}`}
             >
-              {repairJob.status}
+              {formatRepairJobStatus(repairJob.status)}
             </span>
           </div>
           <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">
@@ -147,14 +167,14 @@ function AdminRepairJobRow({
             className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href={`/admin/bookings/${repairJob.booking.id}`}
           >
-            View booking
+            ดูการจอง
           </Link>
         ) : null}
       </div>
 
       <dl className="mt-5 grid gap-4 border-t border-[var(--line)] pt-4 text-sm md:grid-cols-4">
         <div>
-          <dt className="text-[var(--muted)]">Customer</dt>
+          <dt className="text-[var(--muted)]">ลูกค้า</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
             {repairJob.customer?.full_name ?? "-"}
           </dd>
@@ -163,7 +183,7 @@ function AdminRepairJobRow({
           </dd>
         </div>
         <div>
-          <dt className="text-[var(--muted)]">Vehicle</dt>
+          <dt className="text-[var(--muted)]">รถ</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
             {repairJob.vehicle?.license_plate ?? "-"}
           </dd>
@@ -176,9 +196,9 @@ function AdminRepairJobRow({
           </dd>
         </div>
         <div>
-          <dt className="text-[var(--muted)]">Mechanic</dt>
+          <dt className="text-[var(--muted)]">ช่างผู้รับผิดชอบ</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
-            {repairJob.mechanic?.full_name ?? "Unassigned"}
+            {repairJob.mechanic?.full_name ?? "ยังไม่ได้มอบหมาย"}
           </dd>
           <dd className="mt-1 text-xs text-[var(--muted)]">
             {getMechanicSkillsLabel(repairJob.mechanic)}
@@ -188,7 +208,7 @@ function AdminRepairJobRow({
           </dd>
         </div>
         <div>
-          <dt className="text-[var(--muted)]">Updated</dt>
+          <dt className="text-[var(--muted)]">อัปเดตล่าสุด</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
             {formatDateTime(repairJob.updated_at)}
           </dd>
@@ -198,14 +218,14 @@ function AdminRepairJobRow({
       <section className="mt-4 rounded-md border border-[var(--line)] bg-slate-50 p-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            Assign mechanic
+            มอบหมายช่าง
             <select
               className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)] lg:w-80"
               disabled={isClosed || isSaving || mechanics.length === 0}
               onChange={(event) => setSelectedMechanicId(event.target.value)}
               value={selectedMechanicId}
             >
-              <option value="">Unassigned</option>
+              <option value="">ยังไม่ได้มอบหมาย</option>
               {mechanics.map((mechanic) => (
                 <option key={mechanic.id} value={mechanic.id}>
                   {getMechanicOptionLabel(mechanic)}
@@ -222,19 +242,19 @@ function AdminRepairJobRow({
             }
             type="button"
           >
-            {isSaving ? "Saving..." : "Save mechanic"}
+            {isSaving ? "กำลังบันทึก..." : "บันทึกช่าง"}
           </button>
         </div>
 
         {mechanics.length === 0 ? (
           <p className="mt-2 text-xs font-semibold text-amber-800">
-            No technician profiles found yet.
+            ยังไม่พบโปรไฟล์ช่างในระบบ
           </p>
         ) : null}
 
         {isClosed ? (
           <p className="mt-2 text-xs font-semibold text-[var(--muted)]">
-            Closed work orders cannot be reassigned in this MVP step.
+            ใบงานที่ปิดแล้วไม่สามารถเปลี่ยนช่างได้ในขั้นนี้
           </p>
         ) : null}
 
@@ -246,13 +266,13 @@ function AdminRepairJobRow({
 
       <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
         <div className="rounded-md bg-slate-50 p-3">
-          <p className="font-semibold text-[var(--foreground)]">Diagnosis</p>
+          <p className="font-semibold text-[var(--foreground)]">ผลตรวจ/วิเคราะห์อาการ</p>
           <p className="mt-2 leading-6 text-[var(--muted)]">
             {repairJob.diagnosis || "-"}
           </p>
         </div>
         <div className="rounded-md bg-slate-50 p-3">
-          <p className="font-semibold text-[var(--foreground)]">Repair notes</p>
+          <p className="font-semibold text-[var(--foreground)]">บันทึกการซ่อม</p>
           <p className="mt-2 leading-6 text-[var(--muted)]">
             {repairJob.repair_notes || "-"}
           </p>
@@ -261,15 +281,15 @@ function AdminRepairJobRow({
 
       <dl className="mt-4 grid gap-3 border-t border-[var(--line)] pt-4 text-xs text-[var(--muted)] md:grid-cols-3">
         <div>
-          <dt className="font-semibold text-[var(--foreground)]">Started</dt>
+          <dt className="font-semibold text-[var(--foreground)]">เริ่มงาน</dt>
           <dd className="mt-1">{formatDateTime(repairJob.started_at)}</dd>
         </div>
         <div>
-          <dt className="font-semibold text-[var(--foreground)]">Completed</dt>
+          <dt className="font-semibold text-[var(--foreground)]">เสร็จงาน</dt>
           <dd className="mt-1">{formatDateTime(repairJob.completed_at)}</dd>
         </div>
         <div>
-          <dt className="font-semibold text-[var(--foreground)]">Repair Job ID</dt>
+          <dt className="font-semibold text-[var(--foreground)]">รหัสใบงานซ่อม</dt>
           <dd className="mt-1 break-all">{repairJob.id}</dd>
         </div>
       </dl>
@@ -463,29 +483,25 @@ export function AdminRepairJobsPanel() {
   }, [loadState]);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand)]">
-            BCare
-          </p>
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-[var(--foreground)]">
-              Admin Work Orders
+              ใบงานซ่อมหลังบ้าน
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-              Review repair jobs from the work order table and assign mechanic
-              ownership for confirmed service work.
+              ตรวจสอบใบงานซ่อมจากการจองที่ยืนยันแล้ว และมอบหมายช่างผู้รับผิดชอบ
             </p>
           </div>
           <Link
             className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href="/admin"
           >
-            Admin home
+            หน้าหลังบ้าน
           </Link>
         </div>
       </header>
@@ -493,7 +509,7 @@ export function AdminRepairJobsPanel() {
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            Loading work orders...
+            กำลังโหลดใบงานซ่อม...
           </div>
         </section>
       ) : null}
@@ -501,13 +517,13 @@ export function AdminRepairJobsPanel() {
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
-            <p className="font-semibold">Login required</p>
-            <p className="mt-1">Sign in with an admin account.</p>
+            <p className="font-semibold">ต้องเข้าสู่ระบบก่อน</p>
+            <p className="mt-1">เข้าสู่ระบบด้วยบัญชี admin</p>
             <Link
               className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
               href="/auth"
             >
-              Go to account
+              ไปที่หน้าบัญชี
             </Link>
           </div>
         </section>
@@ -516,7 +532,7 @@ export function AdminRepairJobsPanel() {
       {loadState.status === "access-denied" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
-            <p className="text-lg font-bold">Access denied</p>
+            <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
             <p className="mt-2">{loadState.access.reason}</p>
           </div>
         </section>
@@ -535,7 +551,7 @@ export function AdminRepairJobsPanel() {
           <div className="grid gap-3 border-b border-[var(--line)] pb-5 sm:grid-cols-2 lg:grid-cols-6">
             <div className="rounded-lg border border-[var(--line)] bg-white p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                Total
+                ทั้งหมด
               </p>
               <p className="mt-2 text-2xl font-bold text-[var(--foreground)]">
                 {loadState.repairJobs.length}
@@ -547,7 +563,7 @@ export function AdminRepairJobsPanel() {
                 key={status}
               >
                 <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                  {status}
+                  {formatRepairJobStatus(status)}
                 </p>
                 <p className="mt-2 text-2xl font-bold text-[var(--foreground)]">
                   {statusCounts.get(status) ?? 0}
@@ -570,7 +586,7 @@ export function AdminRepairJobsPanel() {
             </div>
           ) : (
             <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
-              No work orders found in repair_jobs yet.
+              ยังไม่พบใบงานซ่อมในระบบ
             </div>
           )}
         </section>

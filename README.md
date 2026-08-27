@@ -4,7 +4,16 @@ BCare is the garage booking system for BigO-RepairCar.
 
 ## Current Step
 
-Step 13 Part 2: Admin SlipOK Verify Button
+Step 21: Final Design Polish
+
+Production and feature review checklists:
+
+```text
+docs/production-readiness.md
+docs/invoice-receipt-review.md
+docs/notification-system-review.md
+docs/final-design-polish.md
+```
 
 Completed in this part:
 
@@ -91,6 +100,33 @@ Completed in this part:
 - Step 13 Part 0: SlipOK readiness and safe integration planning
 - Step 13 Part 1: SlipOK server verification route
 - Step 13 Part 2: Admin SlipOK verify button
+- Step 13 Part 3: Payment verification session handling and customer status review
+- Step 13 Part 4: Final automated payment verification review
+- Step 14 Part 0: Payment settings planning
+- Step 14 Part 1: Payment settings database and admin UI
+- Step 14 Part 2: Payment QR asset upload storage
+- Step 14 Part 3: Customer payment page uses active payment settings
+- Step 15: Product Images Everywhere
+- Step 16 Part 1: Real admin dashboard foundation
+- Step 16 Part 2: Dashboard booking and revenue summary
+- Step 16 Part 3: Dashboard repair, product, and payment summary
+- Step 16 Part 4: Dashboard quick links and final admin overview
+- Extra: Service images for booking and admin service management
+- Step 17 Part 1: Production readiness checklist and deploy preparation
+- Step 19 Part 1: Product order invoice and receipt pages
+- Step 19 Part 2: Booking confirmation and service work document pages
+- Step 19 Part 3: Receipt and booking document links from list pages
+- Step 19 Part 4: Receipt UI Thai wording and print layout polish
+- Step 19 Part 5: Final invoice and receipt review
+- Step 18 Part 1: Customer web notification center foundation
+- Step 18 Part 2: Admin web notification center foundation
+- Step 18 Part 3: Notification unread badge counts in navigation
+- Step 18 Part 4: Notification filters for customer and admin inboxes
+- Step 18 Part 5: Final web notification system review
+- Step 21 Part 1: Design system foundation and role-aware navigation
+- Step 21 Part 2: Thai UI copy pass for customer, technician, and admin screens
+- Step 21 Part 3: Navigation login, logout, and notification bell actions
+- Step 21 Part 4: Shared navigation layout structure and admin setup grouping
 
 ## Tech Stack
 
@@ -129,17 +165,6 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-or-anon-key
 ```
 
-After starting the development server, verify the client-side Supabase
-connection in the browser:
-
-```text
-http://localhost:3000/supabase-check
-```
-
-The Data API root endpoint requires elevated access. If the browser check
-returns `ok: true` with status `401` or `403`, the project is still reachable
-and the public key is being sent correctly.
-
 There is also a server-side diagnostic endpoint:
 
 ```text
@@ -172,50 +197,12 @@ currently include the confirmed readable tables `services` and
 `service_categories`. They can be replaced with generated Supabase types after
 the full schema is finalized.
 
-## Data Query Check
-
-Use this setup-only page to query one real table from Supabase:
-
-```text
-http://localhost:3000/supabase-data-check
-```
-
-Enter a table name such as `services`, `bookings`, or the exact table name from
-the Supabase database created in Step 4.
-
-Use this setup-only page to check access across the confirmed core BCare tables:
-
-```text
-http://localhost:3000/supabase-table-access-check
-```
-
-The current confirmed readable tables are `services`, `service_categories`,
-`vehicles`, `bookings`, and `profiles`.
-
 ## Services Data Layer
 
 Use the shared services data layer for the first feature UI:
 
 ```ts
 import { getServicesWithCategories } from "@/features/services";
-```
-
-Use this setup-only page to verify the grouped services data:
-
-```text
-http://localhost:3000/services-data-check
-```
-
-Use this setup-only page before inserting bookings:
-
-```text
-http://localhost:3000/supabase-schema-check
-```
-
-Use this setup-only page to check whether guest profile insert is allowed:
-
-```text
-http://localhost:3000/supabase-insert-check
 ```
 
 ## Auth
@@ -240,12 +227,6 @@ test flow can be completed in the browser:
 6. Open `/my-bookings/[id]` from a booking card to review detail or cancel a
    pending booking.
 7. Open `/my-vehicles` to update vehicle brand, model, year, color, and plate.
-
-Use this page after applying authenticated RLS policies:
-
-```text
-http://localhost:3000/auth-rls-check
-```
 
 ## Admin Access
 
@@ -354,13 +335,7 @@ and completed bookings, and top services, customers, and vehicles.
 Step 9 starts by checking whether the database already has a work order table
 candidate before building the technician workflow.
 
-Open this local diagnostic page:
-
-```text
-http://localhost:3000/work-order-schema-check
-```
-
-For direct database confirmation, run this read-only SQL in Supabase SQL Editor:
+For database confirmation, run this read-only SQL in Supabase SQL Editor:
 
 ```text
 supabase/work-order-schema-check.sql
@@ -560,13 +535,7 @@ Step 9 is complete when this flow works end to end:
 Step 10 starts by checking whether the database already has schedule or capacity
 tables before adding capacity rules.
 
-Open this local diagnostic page:
-
-```text
-http://localhost:3000/schedule-capacity-schema-check
-```
-
-The page checks these table candidates:
+The read-only SQL check covers these table candidates:
 
 ```text
 bookings
@@ -582,7 +551,7 @@ It also summarizes recent booking slots from `bookings.booking_date` and
 `bookings.booking_time` so duplicate active booking times are visible before
 capacity rules are added.
 
-For direct database confirmation, run this read-only SQL in Supabase SQL Editor:
+Run this read-only SQL in Supabase SQL Editor:
 
 ```text
 supabase/schedule-capacity-schema-check.sql
@@ -802,13 +771,7 @@ database overbooking guard all agree on the same open/closed state.
 Step 11 starts by checking whether the database already has product, inventory,
 or product order table candidates before creating the product and stock schema.
 
-Open this local diagnostic page:
-
-```text
-http://localhost:3000/product-inventory-schema-check
-```
-
-The page checks these table candidates:
+The read-only SQL check covers these table candidates:
 
 ```text
 product_categories
@@ -1010,13 +973,7 @@ Step 12 starts by checking whether the database already has customer product
 sales, cart, delivery, or payment table candidates before creating the
 storefront order schema.
 
-Open this local diagnostic page:
-
-```text
-http://localhost:3000/product-sales-schema-check
-```
-
-The page checks these table candidates:
+The read-only SQL check covers these table candidates:
 
 ```text
 products
@@ -1324,13 +1281,7 @@ This SQL adds SlipOK-ready payment fields to `product_payments`:
 - Customer insert/update policies for their own pending payment proof without
   allowing customers to mark a payment as paid themselves.
 
-After running the schema SQL, verify it from the browser:
-
-```text
-http://localhost:3000/product-sales-schema-check
-```
-
-Or verify it directly in Supabase SQL Editor:
+After running the schema SQL, verify it directly in Supabase SQL Editor:
 
 ```text
 supabase/product-payment-slipok-schema-check.sql
@@ -1494,12 +1445,6 @@ SlipOK automatic verification remains a future optional integration.
 
 Step 13 Part 0 prepares the project for automatic SlipOK verification without
 calling the SlipOK API yet.
-
-Use this local readiness page:
-
-```text
-http://localhost:3000/slipok-readiness-check
-```
 
 Required server-only environment variables:
 

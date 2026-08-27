@@ -63,12 +63,12 @@ type CreateState =
 type MovementType = AdminInventoryMovement["movement_type"];
 
 const movementOptions: { label: string; value: MovementType }[] = [
-  { label: "Stock in", value: "stock_in" },
-  { label: "Stock out", value: "stock_out" },
-  { label: "Adjustment in", value: "adjustment_in" },
-  { label: "Adjustment out", value: "adjustment_out" },
-  { label: "Repair usage", value: "repair_usage" },
-  { label: "Return", value: "return" },
+  { label: "รับสินค้าเข้า", value: "stock_in" },
+  { label: "ตัดสินค้าออก", value: "stock_out" },
+  { label: "ปรับเพิ่มสต๊อก", value: "adjustment_in" },
+  { label: "ปรับลดสต๊อก", value: "adjustment_out" },
+  { label: "ใช้ในงานซ่อม", value: "repair_usage" },
+  { label: "รับคืนสินค้า", value: "return" },
 ];
 
 const stockIncreasingMovements: MovementType[] = [
@@ -98,6 +98,13 @@ function getMovementStyle(movementType: MovementType) {
   return "bg-amber-50 text-amber-800";
 }
 
+function formatMovementType(movementType: MovementType) {
+  return (
+    movementOptions.find((option) => option.value === movementType)?.label ??
+    movementType
+  );
+}
+
 function getProductLabel(product: AdminProduct) {
   return `${product.name}${product.sku ? ` (${product.sku})` : ""}`;
 }
@@ -107,11 +114,11 @@ function validateMovementInput(
   products: AdminProduct[],
 ) {
   if (!input.product_id) {
-    return "Product is required.";
+    return "กรุณาเลือกสินค้า";
   }
 
   if (!Number.isFinite(input.quantity) || input.quantity < 1) {
-    return "Quantity must be at least 1.";
+    return "จำนวนต้องอย่างน้อย 1";
   }
 
   const product = products.find(
@@ -119,13 +126,13 @@ function validateMovementInput(
   );
 
   if (!product) {
-    return "Selected product was not found.";
+    return "ไม่พบสินค้าที่เลือก";
   }
 
   const isStockOut = !stockIncreasingMovements.includes(input.movement_type);
 
   if (isStockOut && input.quantity > product.stock_quantity) {
-    return "Quantity is greater than current stock.";
+    return "จำนวนมากกว่าสต๊อกปัจจุบัน";
   }
 
   return null;
@@ -161,18 +168,17 @@ function MovementForm({
     <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
       <div className="border-b border-[var(--line)] pb-4">
         <p className="text-sm font-semibold text-[var(--brand)]">
-          Record inventory movement
+          บันทึกการเคลื่อนไหวสต๊อก
         </p>
         <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
-          Each movement creates a history row and updates product stock through
-          the database trigger.
+          ทุกการบันทึกจะสร้างประวัติและปรับจำนวนสต๊อกของสินค้าให้อัตโนมัติ
         </p>
       </div>
 
       <form className="mt-4 grid gap-3" onSubmit={handleSubmit}>
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_140px] lg:items-end">
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            Product
+            สินค้า
             <select
               className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) => setProductId(event.target.value)}
@@ -180,14 +186,14 @@ function MovementForm({
             >
               {products.map((product) => (
                 <option key={product.id} value={product.id}>
-                  {getProductLabel(product)} / stock {product.stock_quantity}
+                  {getProductLabel(product)} / สต๊อก {product.stock_quantity}
                 </option>
               ))}
             </select>
           </label>
 
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            Movement type
+            ประเภทการปรับสต๊อก
             <select
               className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) =>
@@ -204,7 +210,7 @@ function MovementForm({
           </label>
 
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            Quantity
+            จำนวน
             <input
               className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               min={1}
@@ -216,7 +222,7 @@ function MovementForm({
         </div>
 
         <label className="text-sm font-semibold text-[var(--foreground)]">
-          Note
+          หมายเหตุ
           <textarea
             className="mt-2 min-h-20 w-full resize-y rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
             onChange={(event) => setNote(event.target.value)}
@@ -228,13 +234,13 @@ function MovementForm({
           <div className="text-sm text-[var(--muted)]">
             {selectedProduct ? (
               <span>
-                Current stock:{" "}
+                สต๊อกปัจจุบัน:{" "}
                 <span className="font-semibold text-[var(--foreground)]">
                   {selectedProduct.stock_quantity}
                 </span>
               </span>
             ) : (
-              <span>No product selected.</span>
+              <span>ยังไม่ได้เลือกสินค้า</span>
             )}
           </div>
 
@@ -243,7 +249,7 @@ function MovementForm({
             disabled={isSaving || products.length === 0}
             type="submit"
           >
-            {isSaving ? "Saving..." : "Record movement"}
+            {isSaving ? "กำลังบันทึก..." : "บันทึกการปรับสต๊อก"}
           </button>
         </div>
 
@@ -280,7 +286,7 @@ function MovementRow({ movement }: { movement: AdminInventoryMovement }) {
           />
           <div>
             <div className="font-semibold text-[var(--foreground)]">
-              {movement.product?.name ?? "Product not found"}
+              {movement.product?.name ?? "ไม่พบสินค้า"}
             </div>
             <div className="text-xs text-[var(--muted)]">
               SKU {movement.product?.sku ?? "-"}
@@ -294,7 +300,7 @@ function MovementRow({ movement }: { movement: AdminInventoryMovement }) {
             movement.movement_type,
           )}`}
         >
-          {movement.movement_type}
+          {formatMovementType(movement.movement_type)}
         </span>
       </td>
       <td
@@ -497,28 +503,24 @@ export function AdminInventoryPanel() {
     await loadInventory();
     setCreateState({
       error: null,
-      message: "Inventory movement saved successfully.",
+      message: "บันทึกการปรับสต๊อกเรียบร้อยแล้ว",
       status: "saved",
     });
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand)]">
-            BCare
-          </p>
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-[var(--foreground)]">
-              Admin Inventory
+              จัดการคลังสินค้า
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-              Record stock in, stock out, adjustments, repair usage, and
-              returns with a full movement history.
+              บันทึกรับเข้า ตัดออก ปรับสต๊อก ใช้อะไหล่ในงานซ่อม และรับคืน พร้อมประวัติครบถ้วน
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -526,13 +528,13 @@ export function AdminInventoryPanel() {
               className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
               href="/admin/inventory-review"
             >
-              Review stock
+              ตรวจสต๊อก
             </Link>
             <Link
               className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
               href="/admin/products"
             >
-              Manage products
+              จัดการสินค้า
             </Link>
           </div>
         </div>
@@ -541,7 +543,7 @@ export function AdminInventoryPanel() {
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            Loading inventory...
+            กำลังโหลดคลังสินค้า...
           </div>
         </section>
       ) : null}
@@ -549,13 +551,13 @@ export function AdminInventoryPanel() {
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
-            <p className="font-semibold">Login required</p>
-            <p className="mt-1">Sign in with an admin account.</p>
+            <p className="font-semibold">ต้องเข้าสู่ระบบ</p>
+            <p className="mt-1">กรุณาเข้าสู่ระบบด้วยบัญชีแอดมิน</p>
             <Link
               className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
               href="/auth"
             >
-              Go to account
+              ไปที่บัญชี
             </Link>
           </div>
         </section>
@@ -564,7 +566,7 @@ export function AdminInventoryPanel() {
       {loadState.status === "access-denied" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
-            <p className="text-lg font-bold">Access denied</p>
+            <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
             <p className="mt-2">{loadState.access.reason}</p>
           </div>
         </section>
@@ -589,7 +591,7 @@ export function AdminInventoryPanel() {
           <div className="mt-5 grid gap-3 md:grid-cols-3">
             <div className="rounded-lg border border-[var(--line)] bg-white p-5">
               <p className="text-sm font-semibold text-[var(--muted)]">
-                Products
+                สินค้าทั้งหมด
               </p>
               <p className="mt-2 text-3xl font-bold text-[var(--foreground)]">
                 {loadState.products.length}
@@ -597,7 +599,7 @@ export function AdminInventoryPanel() {
             </div>
             <div className="rounded-lg border border-[var(--line)] bg-white p-5">
               <p className="text-sm font-semibold text-[var(--muted)]">
-                Total stock
+                สต๊อกรวม
               </p>
               <p className="mt-2 text-3xl font-bold text-[var(--foreground)]">
                 {stockSummary.totalStock}
@@ -605,7 +607,7 @@ export function AdminInventoryPanel() {
             </div>
             <div className="rounded-lg border border-[var(--line)] bg-white p-5">
               <p className="text-sm font-semibold text-[var(--muted)]">
-                Low stock
+                สต๊อกใกล้หมด
               </p>
               <p className="mt-2 text-3xl font-bold text-[var(--foreground)]">
                 {stockSummary.lowStockCount}
@@ -616,10 +618,10 @@ export function AdminInventoryPanel() {
           <section className="mt-5 rounded-lg border border-[var(--line)] bg-white shadow-sm">
             <div className="border-b border-[var(--line)] p-5">
               <h2 className="text-xl font-bold text-[var(--foreground)]">
-                Recent inventory movements
+                ประวัติการเคลื่อนไหวสต๊อกล่าสุด
               </h2>
               <p className="mt-1 text-sm text-[var(--muted)]">
-                Latest stock changes across all products.
+                รายการเปลี่ยนแปลงสต๊อกล่าสุดของสินค้าทั้งหมด
               </p>
             </div>
 
@@ -628,12 +630,12 @@ export function AdminInventoryPanel() {
                 <table className="w-full min-w-[980px] border-collapse text-left text-sm">
                   <thead className="border-b border-[var(--line)] bg-slate-50 text-[var(--foreground)]">
                     <tr>
-                      <th className="px-4 py-3 font-semibold">Date</th>
-                      <th className="px-4 py-3 font-semibold">Product</th>
-                      <th className="px-4 py-3 font-semibold">Type</th>
-                      <th className="px-4 py-3 font-semibold">Quantity</th>
-                      <th className="px-4 py-3 font-semibold">Note</th>
-                      <th className="px-4 py-3 font-semibold">Created by</th>
+                      <th className="px-4 py-3 font-semibold">วันที่</th>
+                      <th className="px-4 py-3 font-semibold">สินค้า</th>
+                      <th className="px-4 py-3 font-semibold">ประเภท</th>
+                      <th className="px-4 py-3 font-semibold">จำนวน</th>
+                      <th className="px-4 py-3 font-semibold">หมายเหตุ</th>
+                      <th className="px-4 py-3 font-semibold">ผู้บันทึก</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -645,7 +647,7 @@ export function AdminInventoryPanel() {
               </div>
             ) : (
               <div className="p-6 text-sm leading-6 text-[var(--muted)]">
-                No inventory movements yet.
+                ยังไม่มีประวัติการเคลื่อนไหวสต๊อก
               </div>
             )}
           </section>

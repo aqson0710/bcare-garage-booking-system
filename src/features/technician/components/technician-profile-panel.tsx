@@ -163,7 +163,7 @@ export function TechnicianProfilePanel() {
 
     if (!fullName.trim()) {
       setSaveState({
-        error: "Full name is required.",
+        error: "กรุณากรอกชื่อ-นามสกุล",
         message: null,
         status: "error",
       });
@@ -172,7 +172,7 @@ export function TechnicianProfilePanel() {
 
     if (!phoneNumber.trim()) {
       setSaveState({
-        error: "Phone number is required.",
+        error: "กรุณากรอกเบอร์โทรศัพท์",
         message: null,
         status: "error",
       });
@@ -216,33 +216,29 @@ export function TechnicianProfilePanel() {
     });
     setSaveState({
       error: null,
-      message: "Technician profile saved.",
+      message: "บันทึกโปรไฟล์ช่างเรียบร้อยแล้ว",
       status: "success",
     });
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 py-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand)]">
-            BCare
-          </p>
           <AppNav />
         </div>
         <h1 className="text-3xl font-bold text-[var(--foreground)]">
-          Technician Profile
+          โปรไฟล์ช่าง
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-          Keep mechanic contact details and repair skills ready for admin
-          assignment.
+          จัดการข้อมูลติดต่อและทักษะงานซ่อม เพื่อให้แอดมินมอบหมายงานได้ถูกต้อง
         </p>
       </header>
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            Loading technician profile...
+            กำลังโหลดโปรไฟล์ช่าง...
           </div>
         </section>
       ) : null}
@@ -250,13 +246,13 @@ export function TechnicianProfilePanel() {
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
-            <p className="font-semibold">Login required</p>
-            <p className="mt-1">Sign in with a technician account.</p>
+            <p className="font-semibold">ต้องเข้าสู่ระบบ</p>
+            <p className="mt-1">กรุณาเข้าสู่ระบบด้วยบัญชีช่าง</p>
             <Link
               className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
               href="/auth"
             >
-              Go to account
+              ไปที่บัญชี
             </Link>
           </div>
         </section>
@@ -273,7 +269,7 @@ export function TechnicianProfilePanel() {
       {loadState.status === "ready" && !loadState.profile.allowed ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
-            <p className="text-lg font-bold">Access denied</p>
+            <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
             <p className="mt-2">{loadState.profile.reason}</p>
           </div>
         </section>
@@ -286,12 +282,12 @@ export function TechnicianProfilePanel() {
         >
           <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold text-[var(--brand)]">
-              Profile
+              ข้อมูลช่าง
             </p>
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <label className="text-sm font-medium text-[var(--foreground)]">
-                Full name
+                ชื่อ-นามสกุล
                 <input
                   className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   onChange={(event) => setFullName(event.target.value)}
@@ -299,7 +295,7 @@ export function TechnicianProfilePanel() {
                 />
               </label>
               <label className="text-sm font-medium text-[var(--foreground)]">
-                Phone number
+                เบอร์โทรศัพท์
                 <input
                   className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   inputMode="tel"
@@ -308,13 +304,13 @@ export function TechnicianProfilePanel() {
                 />
               </label>
               <label className="text-sm font-medium text-[var(--foreground)] sm:col-span-2">
-                Short specialty label
+                ความเชี่ยวชาญโดยย่อ
                 <input
                   className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   onChange={(event) =>
                     setTechnicianSpecialty(event.target.value)
                   }
-                  placeholder="Example: Electrical and diagnostics"
+                  placeholder="เช่น ระบบไฟฟ้าและวิเคราะห์อาการ"
                   value={technicianSpecialty}
                 />
               </label>
@@ -322,13 +318,13 @@ export function TechnicianProfilePanel() {
 
             <div className="mt-5 rounded-md bg-slate-50 p-3 text-sm leading-6 text-[var(--muted)]">
               <p>
-                Email:{" "}
+                อีเมล:{" "}
                 <span className="font-semibold text-[var(--foreground)]">
                   {loadState.profile.profile.email ?? "-"}
                 </span>
               </p>
               <p>
-                Role:{" "}
+                สิทธิ์ผู้ใช้:{" "}
                 <span className="font-semibold text-[var(--foreground)]">
                   {loadState.profile.profile.role}
                 </span>
@@ -337,7 +333,7 @@ export function TechnicianProfilePanel() {
 
             <section className="mt-6 border-t border-[var(--line)] pt-5">
               <p className="text-sm font-semibold text-[var(--brand)]">
-                Skills
+                ทักษะงานซ่อม
               </p>
               {loadState.profile.skills.length > 0 ? (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -365,7 +361,7 @@ export function TechnicianProfilePanel() {
                 </div>
               ) : (
                 <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                  No active technician skills found.
+                  ยังไม่มีทักษะช่างที่เปิดใช้งาน
                 </div>
               )}
             </section>
@@ -375,7 +371,7 @@ export function TechnicianProfilePanel() {
               disabled={saveState.status === "saving"}
               type="submit"
             >
-              {saveState.status === "saving" ? "Saving..." : "Save profile"}
+              {saveState.status === "saving" ? "กำลังบันทึก..." : "บันทึกโปรไฟล์"}
             </button>
 
             {saveState.status === "success" ? (
@@ -393,7 +389,7 @@ export function TechnicianProfilePanel() {
 
           <aside className="h-fit rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold text-[var(--brand)]">
-              Selected skills
+              ทักษะที่เลือก
             </p>
             {selectedSkillNames.length > 0 ? (
               <div className="mt-4 flex flex-wrap gap-2">
@@ -408,7 +404,7 @@ export function TechnicianProfilePanel() {
               </div>
             ) : (
               <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
-                No skills selected yet.
+                ยังไม่ได้เลือกทักษะ
               </p>
             )}
           </aside>

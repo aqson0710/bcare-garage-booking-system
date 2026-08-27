@@ -515,12 +515,20 @@ function AdminProductOrderCard({
             {formatDeliveryMethod(order.delivery_method)} · {itemCount} รายการ
           </p>
         </div>
-        <Link
-          className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
-          href={`/admin/product-orders/${order.id}`}
-        >
-          ดูรายละเอียด
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            href={`/admin/product-orders/${order.id}`}
+          >
+            ดูรายละเอียด
+          </Link>
+          <Link
+            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            href={`/admin/product-orders/${order.id}/receipt`}
+          >
+            ใบเสร็จ / ใบแจ้งชำระเงิน
+          </Link>
+        </div>
       </div>
 
       <dl className="mt-5 grid gap-4 border-t border-[var(--line)] pt-4 text-sm md:grid-cols-4">
@@ -921,12 +929,9 @@ export function AdminProductOrdersPanel() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand)]">
-            BCare
-          </p>
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -973,7 +978,7 @@ export function AdminProductOrdersPanel() {
       {loadState.status === "access-denied" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
-            <p className="text-lg font-bold">Access denied</p>
+            <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
             <p className="mt-2">{loadState.access.reason}</p>
           </div>
         </section>

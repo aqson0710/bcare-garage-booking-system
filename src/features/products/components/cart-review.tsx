@@ -362,12 +362,9 @@ export function CartReview() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 py-6 sm:px-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 pb-6 pt-0 sm:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand)]">
-            BCare
-          </p>
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">

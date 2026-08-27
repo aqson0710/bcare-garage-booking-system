@@ -51,6 +51,26 @@ function MetricCard({
   );
 }
 
+function formatBookingStatus(status: AdminReports["statusCounts"][number]["status"]) {
+  if (status === "pending") {
+    return "รอยืนยัน";
+  }
+
+  if (status === "confirmed") {
+    return "ยืนยันแล้ว";
+  }
+
+  if (status === "cancelled") {
+    return "ยกเลิก";
+  }
+
+  if (status === "completed") {
+    return "เสร็จสิ้น";
+  }
+
+  return status;
+}
+
 function StatusCard({
   count,
   status,
@@ -63,8 +83,8 @@ function StatusCard({
       className="rounded-lg border border-[var(--line)] bg-white p-4 shadow-sm hover:border-[var(--brand)]"
       href={`/admin/bookings?status=${status}`}
     >
-      <p className="text-sm font-semibold capitalize text-[var(--muted)]">
-        {status}
+      <p className="text-sm font-semibold text-[var(--muted)]">
+        {formatBookingStatus(status)}
       </p>
       <p className="mt-2 text-2xl font-bold text-[var(--foreground)]">
         {count}
@@ -177,29 +197,25 @@ export function AdminReportsPanel() {
   }, []);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand)]">
-            BCare
-          </p>
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-[var(--foreground)]">
-              Admin Reports
+              รายงานหลังบ้าน
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-              Review booking volume, estimated revenue, and most active
-              services, customers, and vehicles.
+              ตรวจสอบจำนวนการจอง รายได้ประเมิน บริการยอดนิยม ลูกค้าหลัก และรถที่เข้ารับบริการบ่อย
             </p>
           </div>
           <Link
             className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href="/admin"
           >
-            Admin home
+            หน้าแอดมิน
           </Link>
         </div>
       </header>
@@ -207,7 +223,7 @@ export function AdminReportsPanel() {
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            Loading reports...
+            กำลังโหลดรายงาน...
           </div>
         </section>
       ) : null}
@@ -215,13 +231,13 @@ export function AdminReportsPanel() {
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
-            <p className="font-semibold">Login required</p>
-            <p className="mt-1">Sign in with an admin account.</p>
+            <p className="font-semibold">ต้องเข้าสู่ระบบ</p>
+            <p className="mt-1">กรุณาเข้าสู่ระบบด้วยบัญชีแอดมิน</p>
             <Link
               className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
               href="/auth"
             >
-              Go to account
+              ไปที่บัญชี
             </Link>
           </div>
         </section>
@@ -230,7 +246,7 @@ export function AdminReportsPanel() {
       {loadState.status === "access-denied" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
-            <p className="text-lg font-bold">Access denied</p>
+            <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
             <p className="mt-2">{loadState.access.reason}</p>
           </div>
         </section>
@@ -248,28 +264,28 @@ export function AdminReportsPanel() {
         <section className="space-y-6 py-6">
           <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <MetricCard
-              label="Total bookings"
+              label="การจองทั้งหมด"
               value={loadState.reports.totalBookingCount}
             />
             <MetricCard
-              label="Estimated revenue"
+              label="รายได้ประเมิน"
               value={currencyFormatter.format(loadState.reports.estimatedRevenue)}
             />
             <MetricCard
-              label="Average booking value"
+              label="มูลค่าเฉลี่ยต่อการจอง"
               value={currencyFormatter.format(
                 loadState.reports.averageBookingValue,
               )}
             />
             <MetricCard
-              label="Active customers"
+              label="ลูกค้าที่มีการใช้งาน"
               value={loadState.reports.activeCustomerCount}
             />
           </section>
 
           <section>
             <h2 className="mb-4 text-xl font-bold text-[var(--foreground)]">
-              Booking status
+              สถานะการจอง
             </h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {loadState.reports.statusCounts.map((item) => (
@@ -285,7 +301,7 @@ export function AdminReportsPanel() {
           <section className="grid gap-4 lg:grid-cols-3">
             <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
               <h2 className="text-lg font-bold text-[var(--foreground)]">
-                Top services
+                บริการยอดนิยม
               </h2>
               <div className="mt-4 space-y-3">
                 {loadState.reports.topServices.length > 0 ? (
@@ -295,7 +311,7 @@ export function AdminReportsPanel() {
                       key={`${item.service?.id ?? "missing"}-${index}`}
                     >
                       <p className="text-sm font-semibold text-[var(--foreground)]">
-                        {item.service?.name ?? "Service not found"}
+                        {item.service?.name ?? "ไม่พบบริการ"}
                       </p>
                       <p className="text-sm text-[var(--muted)]">
                         {item.bookingCount}
@@ -303,14 +319,14 @@ export function AdminReportsPanel() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-[var(--muted)]">No data yet.</p>
+                  <p className="text-sm text-[var(--muted)]">ยังไม่มีข้อมูล</p>
                 )}
               </div>
             </article>
 
             <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
               <h2 className="text-lg font-bold text-[var(--foreground)]">
-                Top customers
+                ลูกค้าที่จองบ่อย
               </h2>
               <div className="mt-4 space-y-3">
                 {loadState.reports.topCustomers.length > 0 ? (
@@ -321,7 +337,7 @@ export function AdminReportsPanel() {
                     >
                       <div>
                         <p className="text-sm font-semibold text-[var(--foreground)]">
-                          {item.customer?.full_name ?? "Customer not found"}
+                          {item.customer?.full_name ?? "ไม่พบลูกค้า"}
                         </p>
                         <p className="mt-1 text-xs text-[var(--muted)]">
                           {item.customer?.phone_number ?? "-"}
@@ -333,14 +349,14 @@ export function AdminReportsPanel() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-[var(--muted)]">No data yet.</p>
+                  <p className="text-sm text-[var(--muted)]">ยังไม่มีข้อมูล</p>
                 )}
               </div>
             </article>
 
             <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
               <h2 className="text-lg font-bold text-[var(--foreground)]">
-                Top vehicles
+                รถที่เข้ารับบริการบ่อย
               </h2>
               <div className="mt-4 space-y-3">
                 {loadState.reports.topVehicles.length > 0 ? (
@@ -351,7 +367,7 @@ export function AdminReportsPanel() {
                     >
                       <div>
                         <p className="text-sm font-semibold text-[var(--foreground)]">
-                          {item.vehicle?.license_plate ?? "Vehicle not found"}
+                          {item.vehicle?.license_plate ?? "ไม่พบข้อมูลรถ"}
                         </p>
                         <p className="mt-1 text-xs text-[var(--muted)]">
                           {item.vehicle
@@ -367,7 +383,7 @@ export function AdminReportsPanel() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-[var(--muted)]">No data yet.</p>
+                  <p className="text-sm text-[var(--muted)]">ยังไม่มีข้อมูล</p>
                 )}
               </div>
             </article>
@@ -375,15 +391,15 @@ export function AdminReportsPanel() {
 
           <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <MetricCard
-              label="Total customers"
+              label="ลูกค้าทั้งหมด"
               value={loadState.reports.totalCustomerCount}
             />
             <MetricCard
-              label="Total vehicles"
+              label="รถทั้งหมด"
               value={loadState.reports.totalVehicleCount}
             />
             <MetricCard
-              label="Revenue bookings"
+              label="การจองที่นับรายได้"
               value={
                 loadState.reports.statusCounts.find(
                   (item) => item.status === "confirmed",

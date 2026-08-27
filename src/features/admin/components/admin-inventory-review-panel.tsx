@@ -57,11 +57,11 @@ type ReviewProduct = AdminProduct & {
 };
 
 const stockFilters: { label: string; value: StockFilter }[] = [
-  { label: "all", value: "all" },
-  { label: "out", value: "out" },
-  { label: "low", value: "low" },
-  { label: "healthy", value: "healthy" },
-  { label: "inactive", value: "inactive" },
+  { label: "ทั้งหมด", value: "all" },
+  { label: "หมดสต็อก", value: "out" },
+  { label: "ใกล้หมด", value: "low" },
+  { label: "พร้อมขาย", value: "healthy" },
+  { label: "ปิดใช้งาน", value: "inactive" },
 ];
 
 const lowStockThreshold = 2;
@@ -111,6 +111,38 @@ function getStockStatusStyle(stockStatus: StockFilter) {
   return "bg-emerald-50 text-[var(--brand-strong)]";
 }
 
+function formatStockStatus(stockStatus: StockFilter) {
+  if (stockStatus === "out") {
+    return "หมดสต็อก";
+  }
+
+  if (stockStatus === "low") {
+    return "ใกล้หมด";
+  }
+
+  if (stockStatus === "inactive") {
+    return "ปิดใช้งาน";
+  }
+
+  if (stockStatus === "healthy") {
+    return "พร้อมขาย";
+  }
+
+  return "ทั้งหมด";
+}
+
+function formatMovementType(movementType: AdminInventoryMovement["movement_type"]) {
+  if (movementType === "stock_in") {
+    return "รับเข้า";
+  }
+
+  if (movementType === "stock_out") {
+    return "ตัดออก";
+  }
+
+  return "ปรับยอด";
+}
+
 function buildReviewProducts(
   products: AdminProduct[],
   movements: AdminInventoryMovement[],
@@ -154,7 +186,7 @@ function ReviewProductRow({ product }: { product: ReviewProduct }) {
             stockStatus,
           )}`}
         >
-          {stockStatus}
+          {formatStockStatus(stockStatus)}
         </span>
       </td>
       <td className="px-4 py-3 font-semibold text-[var(--foreground)]">
@@ -167,7 +199,7 @@ function ReviewProductRow({ product }: { product: ReviewProduct }) {
         {product.latestMovement ? (
           <div>
             <div className="font-medium text-[var(--foreground)]">
-              {product.latestMovement.movement_type} /{" "}
+              {formatMovementType(product.latestMovement.movement_type)} /{" "}
               {product.latestMovement.quantity}
             </div>
             <div className="mt-1 text-xs">
@@ -184,13 +216,13 @@ function ReviewProductRow({ product }: { product: ReviewProduct }) {
             className="min-h-9 rounded-md bg-[var(--brand)] px-3 py-2 text-center text-xs font-semibold text-white"
             href="/admin/inventory"
           >
-            Stock in/out
+            รับเข้า/ตัดสต็อก
           </Link>
           <Link
             className="min-h-9 rounded-md border border-[var(--line)] bg-white px-3 py-2 text-center text-xs font-semibold text-[var(--muted)]"
             href="/admin/products"
           >
-            Edit product
+            แก้ไขสินค้า
           </Link>
         </div>
       </td>
@@ -374,22 +406,18 @@ export function AdminInventoryReviewPanel() {
   }, [reviewProducts, searchInput, stockFilter]);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand)]">
-            BCare
-          </p>
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-[var(--foreground)]">
-              Inventory Review
+              ตรวจสอบสต็อกสินค้า
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-              Review out-of-stock, low-stock, and healthy products before
-              recording new stock movements.
+              ตรวจสอบสินค้าหมดสต็อก ใกล้หมด และสินค้าพร้อมขายก่อนบันทึกการเคลื่อนไหวสต็อก
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -397,13 +425,13 @@ export function AdminInventoryReviewPanel() {
               className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
               href="/admin/inventory"
             >
-              Record movement
+              บันทึกสต็อก
             </Link>
             <Link
               className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
               href="/admin/products"
             >
-              Manage products
+              จัดการสินค้า
             </Link>
           </div>
         </div>
@@ -412,7 +440,7 @@ export function AdminInventoryReviewPanel() {
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            Loading inventory review...
+            กำลังโหลดข้อมูลสต็อก...
           </div>
         </section>
       ) : null}
@@ -420,13 +448,13 @@ export function AdminInventoryReviewPanel() {
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
-            <p className="font-semibold">Login required</p>
-            <p className="mt-1">Sign in with an admin account.</p>
+            <p className="font-semibold">ต้องเข้าสู่ระบบก่อน</p>
+            <p className="mt-1">เข้าสู่ระบบด้วยบัญชี admin</p>
             <Link
               className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
               href="/auth"
             >
-              Go to account
+              ไปที่หน้าบัญชี
             </Link>
           </div>
         </section>
@@ -435,7 +463,7 @@ export function AdminInventoryReviewPanel() {
       {loadState.status === "access-denied" ? (
         <section className="grid flex-1 place-items-center py-16">
           <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
-            <p className="text-lg font-bold">Access denied</p>
+            <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
             <p className="mt-2">{loadState.access.reason}</p>
           </div>
         </section>
@@ -454,7 +482,7 @@ export function AdminInventoryReviewPanel() {
           <div className="grid gap-3 md:grid-cols-5">
             <div className="rounded-lg border border-[var(--line)] bg-white p-5">
               <p className="text-sm font-semibold text-[var(--muted)]">
-                Active products
+                สินค้าที่เปิดขาย
               </p>
               <p className="mt-2 text-3xl font-bold text-[var(--foreground)]">
                 {summary.activeCount}
@@ -462,27 +490,27 @@ export function AdminInventoryReviewPanel() {
             </div>
             <div className="rounded-lg border border-[var(--line)] bg-white p-5">
               <p className="text-sm font-semibold text-[var(--muted)]">
-                Total stock
+                จำนวนสต็อกรวม
               </p>
               <p className="mt-2 text-3xl font-bold text-[var(--foreground)]">
                 {summary.totalStock}
               </p>
             </div>
             <div className="rounded-lg border border-red-200 bg-white p-5">
-              <p className="text-sm font-semibold text-red-700">Out</p>
+              <p className="text-sm font-semibold text-red-700">หมดสต็อก</p>
               <p className="mt-2 text-3xl font-bold text-red-700">
                 {summary.outCount}
               </p>
             </div>
             <div className="rounded-lg border border-amber-200 bg-white p-5">
-              <p className="text-sm font-semibold text-amber-800">Low</p>
+              <p className="text-sm font-semibold text-amber-800">ใกล้หมด</p>
               <p className="mt-2 text-3xl font-bold text-amber-800">
                 {summary.lowCount}
               </p>
             </div>
             <div className="rounded-lg border border-emerald-200 bg-white p-5">
               <p className="text-sm font-semibold text-[var(--brand-strong)]">
-                Healthy
+                พร้อมขาย
               </p>
               <p className="mt-2 text-3xl font-bold text-[var(--brand-strong)]">
                 {summary.healthyCount}
@@ -493,11 +521,10 @@ export function AdminInventoryReviewPanel() {
           <div className="mt-5 flex flex-col gap-4 border-b border-[var(--line)] pb-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-sm font-semibold text-[var(--foreground)]">
-                {filteredProducts.length} of {reviewProducts.length} products
+                พบ {filteredProducts.length} จาก {reviewProducts.length} รายการ
               </p>
               <p className="mt-1 text-sm text-[var(--muted)]">
-                Low stock means active product stock is {lowStockThreshold} or
-                lower.
+                สินค้าใกล้หมดหมายถึงสินค้าที่เปิดขายและมีสต็อกไม่เกิน {lowStockThreshold} ชิ้น
               </p>
             </div>
 
@@ -505,7 +532,7 @@ export function AdminInventoryReviewPanel() {
               <input
                 className="min-h-10 flex-1 rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                 onChange={(event) => setSearchInput(event.target.value)}
-                placeholder="Search product, SKU, or category"
+                placeholder="ค้นหาสินค้า SKU หรือหมวดสินค้า"
                 type="search"
                 value={searchInput}
               />
@@ -533,13 +560,13 @@ export function AdminInventoryReviewPanel() {
               <table className="w-full min-w-[1040px] border-collapse text-left text-sm">
                 <thead className="border-b border-[var(--line)] bg-slate-50 text-[var(--foreground)]">
                   <tr>
-                    <th className="px-4 py-3 font-semibold">Product</th>
-                    <th className="px-4 py-3 font-semibold">Category</th>
-                    <th className="px-4 py-3 font-semibold">Stock status</th>
-                    <th className="px-4 py-3 font-semibold">Stock</th>
-                    <th className="px-4 py-3 font-semibold">Sale price</th>
-                    <th className="px-4 py-3 font-semibold">Latest movement</th>
-                    <th className="px-4 py-3 font-semibold">Action</th>
+                    <th className="px-4 py-3 font-semibold">สินค้า</th>
+                    <th className="px-4 py-3 font-semibold">หมวดสินค้า</th>
+                    <th className="px-4 py-3 font-semibold">สถานะสต็อก</th>
+                    <th className="px-4 py-3 font-semibold">สต็อก</th>
+                    <th className="px-4 py-3 font-semibold">ราคาขาย</th>
+                    <th className="px-4 py-3 font-semibold">ความเคลื่อนไหวล่าสุด</th>
+                    <th className="px-4 py-3 font-semibold">คำสั่ง</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -550,7 +577,7 @@ export function AdminInventoryReviewPanel() {
               </table>
             ) : (
               <div className="p-6 text-sm leading-6 text-[var(--muted)]">
-                No products match the current filters.
+                ไม่พบสินค้าที่ตรงกับตัวกรองนี้
               </div>
             )}
           </section>
