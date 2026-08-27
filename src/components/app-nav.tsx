@@ -11,12 +11,14 @@ import { createClient } from "@/lib/supabase/browser";
 type NavLink = {
   href: string;
   label: ReactNode;
+  activeHrefs?: string[];
 };
 
 type NavGroup = {
   label: string;
   links: NavLink[];
   variant?: "primary" | "secondary";
+  showWhenActiveOnly?: boolean;
 };
 
 type ViewerState = {
@@ -30,22 +32,39 @@ const publicGroup: NavGroup = {
   links: [
     { href: "/", label: "บริการ" },
     { href: "/products", label: "สินค้า" },
-    { href: "/cart", label: "ตะกร้า" },
   ],
 };
+
+const customerAccountHrefs = [
+  "/my-product-orders",
+  "/my-bookings",
+  "/my-vehicles",
+  "/profile",
+];
 
 const customerGroup: NavGroup = {
   label: "ลูกค้า",
   links: [
     { href: "/", label: "บริการ" },
     { href: "/products", label: "สินค้า" },
-    { href: "/cart", label: "ตะกร้า" },
-    { href: "/checkout", label: "ชำระเงิน" },
+    {
+      href: "/profile",
+      label: "บัญชีของฉัน",
+      activeHrefs: customerAccountHrefs,
+    },
+  ],
+};
+
+const customerActivityGroup: NavGroup = {
+  label: "บัญชีของฉัน",
+  links: [
     { href: "/my-product-orders", label: "คำสั่งซื้อ" },
     { href: "/my-bookings", label: "การจอง" },
     { href: "/my-vehicles", label: "รถของฉัน" },
     { href: "/profile", label: "บัญชี" },
   ],
+  variant: "secondary",
+  showWhenActiveOnly: true,
 };
 
 const technicianGroup: NavGroup = {
@@ -108,7 +127,7 @@ function getVisibleGroups(viewer: ViewerState): NavGroup[] {
     return [technicianGroup];
   }
 
-  return [customerGroup];
+  return [customerGroup, customerActivityGroup];
 }
 
 function isActiveLink(pathname: string, href: string) {
@@ -117,6 +136,12 @@ function isActiveLink(pathname: string, href: string) {
   }
 
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function isNavLinkActive(pathname: string, link: NavLink) {
+  return [link.href, ...(link.activeHrefs ?? [])].some((href) =>
+    isActiveLink(pathname, href),
+  );
 }
 
 function getNotificationShortcut(viewer: ViewerState) {
@@ -139,6 +164,26 @@ function getNotificationShortcut(viewer: ViewerState) {
   }
 
   return null;
+}
+
+function shouldShowCartShortcut(viewer: ViewerState) {
+  return (
+    !viewer.isLoading &&
+    viewer.role !== "admin" &&
+    viewer.role !== "technician"
+  );
+}
+
+function getProfileShortcut(viewer: ViewerState) {
+  if (!viewer.isSignedIn || viewer.role !== "customer") {
+    return null;
+  }
+
+  return {
+    href: "/profile",
+    label: "บัญชีของฉัน",
+    activeHrefs: customerAccountHrefs,
+  };
 }
 
 function getViewerLabel(viewer: ViewerState) {
@@ -181,6 +226,43 @@ function BellIcon() {
     >
       <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5" />
       <path d="M10 20a2 2 0 0 0 4 0" />
+    </svg>
+  );
+}
+
+function CartIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+    >
+      <path d="M6 6h15l-1.5 8.5a2 2 0 0 1-2 1.5H9a2 2 0 0 1-2-1.6L5 3H2" />
+      <circle cx="9" cy="20" r="1" />
+      <circle cx="18" cy="20" r="1" />
+    </svg>
+  );
+}
+
+function ProfileIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+    >
+      <path d="M20 21a8 8 0 0 0-16 0" />
+      <circle cx="12" cy="7" r="4" />
     </svg>
   );
 }
@@ -258,6 +340,8 @@ export function AppNav() {
 
   const groups = useMemo(() => getVisibleGroups(viewer), [viewer]);
   const notificationShortcut = getNotificationShortcut(viewer);
+  const profileShortcut = getProfileShortcut(viewer);
+  const showCartShortcut = shouldShowCartShortcut(viewer);
   const viewerLabel = getViewerLabel(viewer);
 
   async function handleSignOut() {
@@ -294,6 +378,37 @@ export function AppNav() {
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-2">
+            {profileShortcut ? (
+              <Link
+                aria-label="เปิดบัญชีของฉัน"
+                className={
+                  isNavLinkActive(pathname, profileShortcut)
+                    ? "inline-flex min-h-10 min-w-10 items-center justify-center rounded-full border border-[var(--foreground)]/20 bg-white px-3 text-sm font-semibold text-[var(--foreground)] shadow-[inset_0_-3px_0_var(--brand)]"
+                    : "inline-flex min-h-10 min-w-10 items-center justify-center rounded-full border border-[var(--foreground)]/20 bg-white/55 px-3 text-sm font-semibold text-[var(--foreground)] hover:bg-white/80"
+                }
+                href={profileShortcut.href}
+                title="บัญชีของฉัน"
+              >
+                <ProfileIcon />
+              </Link>
+            ) : null}
+
+            {showCartShortcut ? (
+              <Link
+                aria-label="เปิดตะกร้าสินค้า"
+                className={
+                  isActiveLink(pathname, "/cart") ||
+                  isActiveLink(pathname, "/checkout")
+                    ? "inline-flex min-h-10 min-w-10 items-center justify-center rounded-full border border-[var(--foreground)]/20 bg-white px-3 text-sm font-semibold text-[var(--foreground)] shadow-[inset_0_-3px_0_var(--brand)]"
+                    : "inline-flex min-h-10 min-w-10 items-center justify-center rounded-full border border-[var(--foreground)]/20 bg-white/55 px-3 text-sm font-semibold text-[var(--foreground)] hover:bg-white/80"
+                }
+                href="/cart"
+                title="ตะกร้าสินค้า"
+              >
+                <CartIcon />
+              </Link>
+            ) : null}
+
             {notificationShortcut ? (
               <Link
                 aria-label="เปิดการแจ้งเตือน"
@@ -349,10 +464,41 @@ export function AppNav() {
         <div className="flex flex-col border-b border-[var(--line)] bg-white sm:items-center">
       {groups.map((group) => {
         const hasActiveLink = group.links.some((link) =>
-          isActiveLink(pathname, link.href),
+          isNavLinkActive(pathname, link),
         );
 
         if (group.variant === "secondary") {
+          if (group.showWhenActiveOnly && !hasActiveLink) {
+            return null;
+          }
+
+          if (group.showWhenActiveOnly) {
+            return (
+              <div
+                className="w-full border-t border-[var(--line)] sm:max-w-6xl"
+                key={group.label}
+              >
+                <p className="sr-only">{group.label}</p>
+                <div className="flex justify-center gap-2 overflow-x-auto px-4">
+                  {group.links.map((link) => {
+                    const isActive = isNavLinkActive(pathname, link);
+
+                    return (
+                      <Link
+                        aria-current={isActive ? "page" : undefined}
+                        className={getLinkClassName(isActive)}
+                        href={link.href}
+                        key={link.href}
+                      >
+                        {link.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          }
+
           return (
             <details
               className="group w-full border-t border-[var(--line)] sm:max-w-6xl"
@@ -367,7 +513,7 @@ export function AppNav() {
               </summary>
               <div className="flex gap-2 overflow-x-auto border-t border-[var(--line)] px-4">
                 {group.links.map((link) => {
-                  const isActive = isActiveLink(pathname, link.href);
+                  const isActive = isNavLinkActive(pathname, link);
 
                   return (
                     <Link
@@ -390,7 +536,7 @@ export function AppNav() {
             <p className="sr-only">{group.label}</p>
             <div className="flex gap-2 overflow-x-auto px-4">
               {group.links.map((link) => {
-                const isActive = isActiveLink(pathname, link.href);
+                const isActive = isNavLinkActive(pathname, link);
 
                 return (
                   <Link

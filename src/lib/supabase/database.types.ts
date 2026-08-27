@@ -818,6 +818,7 @@ export type Database = {
           model: string | null;
           year: number | null;
           color: string | null;
+          image_url: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -829,6 +830,7 @@ export type Database = {
           model?: string | null;
           year?: number | null;
           color?: string | null;
+          image_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -840,6 +842,7 @@ export type Database = {
           model?: string | null;
           year?: number | null;
           color?: string | null;
+          image_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };

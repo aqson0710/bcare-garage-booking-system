@@ -1,2 +1,6 @@
-export { getCurrentUserVehicles, updateCurrentUserVehicle } from "./queries";
-export type { Vehicle, VehicleInput } from "./types";
+export {
+  getCurrentUserVehicles,
+  updateCurrentUserVehicle,
+  updateCurrentUserVehicleImage,
+} from "./queries";
+export type { Vehicle, VehicleImageInput, VehicleInput } from "./types";

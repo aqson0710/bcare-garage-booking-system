@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import type { VehicleInput } from "./types";
+import type { VehicleImageInput, VehicleInput } from "./types";
 
 type BCareSupabaseClient = SupabaseClient<Database>;
 
@@ -51,6 +51,21 @@ export async function updateCurrentUserVehicle(
       license_plate: normalizeLicensePlate(input.licensePlate),
       model: normalizeRequiredVehicleText(input.model),
       year: normalizeYear(input.year),
+    })
+    .eq("id", input.id)
+    .eq("customer_id", input.customerId)
+    .select("*")
+    .single();
+}
+
+export async function updateCurrentUserVehicleImage(
+  supabase: BCareSupabaseClient,
+  input: VehicleImageInput,
+) {
+  return supabase
+    .from("vehicles")
+    .update({
+      image_url: input.imageUrl,
     })
     .eq("id", input.id)
     .eq("customer_id", input.customerId)

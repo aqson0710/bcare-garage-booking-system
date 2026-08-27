@@ -693,8 +693,28 @@ function BookingForm({
     });
   }
 
+  const isSubmitDisabled =
+    submitState.status === "submitting" || submitState.status === "success";
+  const submitLabel =
+    submitState.status === "success"
+      ? "บันทึกการจองแล้ว"
+      : submitState.status === "submitting"
+        ? "กำลังบันทึกการจอง..."
+        : "ส่งคำขอจอง";
+
   return (
     <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
+      <button
+        className="min-h-11 w-full rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+        disabled={isSubmitDisabled}
+        type="submit"
+      >
+        {submitLabel}
+      </button>
+      <p className="text-xs leading-5 text-[var(--muted)]">
+        กรอกข้อมูลการจองด้านล่างให้ครบ แล้วกดส่งคำขอจองได้จากปุ่มนี้
+      </p>
+
       <div>
         <label
           className="text-sm font-medium text-[var(--foreground)]"
@@ -871,18 +891,11 @@ function BookingForm({
       </div>
 
       <button
-        className="min-h-11 w-full rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-        disabled={
-          submitState.status === "submitting" ||
-          submitState.status === "success"
-        }
+        className="min-h-11 w-full rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+        disabled={isSubmitDisabled}
         type="submit"
       >
-        {submitState.status === "success"
-          ? "บันทึกการจองแล้ว"
-          : submitState.status === "submitting"
-            ? "กำลังบันทึกการจอง..."
-            : "ส่งคำขอจอง"}
+        {submitLabel}
       </button>
 
       <p className="text-xs leading-5 text-[var(--muted)]">

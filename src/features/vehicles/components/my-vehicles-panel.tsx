@@ -1,11 +1,14 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import {
   getCurrentUserVehicles,
   updateCurrentUserVehicle,
+  updateCurrentUserVehicleImage,
   type Vehicle,
 } from "@/features/vehicles";
 import { createClient } from "@/lib/supabase/browser";
@@ -30,6 +33,28 @@ type VehicleCardState =
   | { status: "saving"; message: null; error: null }
   | { status: "saved"; message: string; error: null }
   | { status: "error"; message: null; error: string };
+
+type UploadState =
+  | { status: "idle"; message: null; error: null }
+  | { status: "uploading"; message: null; error: null }
+  | { status: "uploaded"; message: string; error: null }
+  | { status: "error"; message: null; error: string };
+
+const vehicleImagesBucket = "vehicle-images";
+
+function getFileExtension(file: File) {
+  const extension = file.name.split(".").pop()?.toLowerCase();
+
+  if (extension === "jpg" || extension === "jpeg") {
+    return "jpg";
+  }
+
+  if (extension === "png" || extension === "webp") {
+    return extension;
+  }
+
+  return "jpg";
+}
 
 function getInitialValues(vehicle: Vehicle): VehicleFormValues {
   return {
@@ -74,6 +99,11 @@ function VehicleCard({
     error: null,
     message: null,
     status: "view",
+  });
+  const [uploadState, setUploadState] = useState<UploadState>({
+    error: null,
+    message: null,
+    status: "idle",
   });
 
   function updateValue(field: keyof VehicleFormValues, value: string) {
@@ -146,6 +176,77 @@ function VehicleCard({
     });
   }
 
+  async function handleImageUpload(file: File | null) {
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setUploadState({
+        error: "กรุณาเลือกรูปภาพเท่านั้น",
+        message: null,
+        status: "error",
+      });
+      return;
+    }
+
+    setUploadState({
+      error: null,
+      message: null,
+      status: "uploading",
+    });
+
+    const supabase = createClient();
+    const extension = getFileExtension(file);
+    const uploadPath = `${customerId}/${vehicle.id}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+    const uploadResult = await supabase.storage
+      .from(vehicleImagesBucket)
+      .upload(uploadPath, file, {
+        cacheControl: "3600",
+        contentType: file.type,
+        upsert: false,
+      });
+
+    if (uploadResult.error) {
+      setUploadState({
+        error:
+          uploadResult.error.message.includes("Bucket not found") ||
+          uploadResult.error.message.includes("bucket")
+            ? "ยังไม่มี bucket vehicle-images กรุณารันไฟล์ supabase/vehicle-image-upload.sql ก่อน"
+            : uploadResult.error.message,
+        message: null,
+        status: "error",
+      });
+      return;
+    }
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from(vehicleImagesBucket).getPublicUrl(uploadPath);
+
+    const { data, error } = await updateCurrentUserVehicleImage(supabase, {
+      customerId,
+      id: vehicle.id,
+      imageUrl: publicUrl,
+    });
+
+    if (error) {
+      setUploadState({
+        error: error.message,
+        message: null,
+        status: "error",
+      });
+      return;
+    }
+
+    onVehicleSaved(data);
+    setUploadState({
+      error: null,
+      message: "อัปโหลดและบันทึกรูปรถเรียบร้อยแล้ว",
+      status: "uploaded",
+    });
+  }
+
   const isEditing =
     cardState.status === "edit" ||
     cardState.status === "saving" ||
@@ -154,59 +255,105 @@ function VehicleCard({
   return (
     <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
       <form onSubmit={handleSubmit}>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
           <div>
-            <p className="text-sm font-semibold text-[var(--brand)]">
-              รถของลูกค้า
-            </p>
-            {isEditing ? (
-              <input
-                className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-xl font-bold text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-                onChange={(event) =>
-                  updateValue("licensePlate", event.target.value)
-                }
-                value={values.licensePlate}
+            {vehicle.image_url ? (
+              <img
+                alt={`รูปรถทะเบียน ${vehicle.license_plate}`}
+                className="h-40 w-full rounded-md border border-[var(--line)] bg-slate-50 object-cover"
+                src={vehicle.image_url}
               />
             ) : (
-              <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">
-                {vehicle.license_plate}
-              </h2>
+              <div className="grid h-40 w-full place-items-center rounded-md border border-dashed border-[var(--line)] bg-slate-50 px-4 text-center text-sm leading-6 text-[var(--muted)]">
+                ยังไม่มีรูปรถ
+              </div>
             )}
+
+            <label className="mt-3 inline-flex min-h-10 w-full cursor-pointer items-center justify-center rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--foreground)] hover:border-[var(--brand)]">
+              {uploadState.status === "uploading"
+                ? "กำลังอัปโหลด..."
+                : "อัปโหลดรูปรถ"}
+              <input
+                accept="image/png,image/jpeg,image/webp"
+                className="sr-only"
+                disabled={uploadState.status === "uploading"}
+                onChange={(event) => {
+                  void handleImageUpload(event.target.files?.[0] ?? null);
+                  event.target.value = "";
+                }}
+                type="file"
+              />
+            </label>
+
+            {uploadState.status === "uploaded" ? (
+              <p className="mt-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs leading-5 text-[var(--brand-strong)]">
+                {uploadState.message}
+              </p>
+            ) : null}
+
+            {uploadState.status === "error" ? (
+              <p className="mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs leading-5 text-red-700">
+                {uploadState.error}
+              </p>
+            ) : null}
           </div>
 
-          {isEditing ? (
-            <div className="flex gap-2">
+          <div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-[var(--brand)]">
+                  รถของลูกค้า
+                </p>
+                {isEditing ? (
+                  <input
+                    className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-xl font-bold text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                    onChange={(event) =>
+                      updateValue("licensePlate", event.target.value)
+                    }
+                    value={values.licensePlate}
+                  />
+                ) : (
+                  <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">
+                    {vehicle.license_plate}
+                  </h2>
+                )}
+              </div>
+
+              {isEditing ? (
+                <div className="flex gap-2">
+                  <button
+                    className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                    onClick={cancelEdit}
+                    type="button"
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={cardState.status === "saving"}
+                    type="submit"
+                  >
+                    {cardState.status === "saving"
+                      ? "กำลังบันทึก..."
+                      : "บันทึก"}
+                  </button>
+                </div>
+              ) : (
               <button
                 className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
-                onClick={cancelEdit}
+                onClick={() =>
+                  setCardState({
+                    error: null,
+                    message: null,
+                    status: "edit",
+                  })
+                }
                 type="button"
               >
-                ยกเลิก
+                แก้ไข
               </button>
-              <button
-                className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={cardState.status === "saving"}
-                type="submit"
-              >
-                {cardState.status === "saving" ? "กำลังบันทึก..." : "บันทึก"}
-              </button>
+              )}
             </div>
-          ) : (
-            <button
-              className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
-              onClick={() =>
-                setCardState({
-                  error: null,
-                  message: null,
-                  status: "edit",
-                })
-              }
-              type="button"
-            >
-              แก้ไข
-            </button>
-          )}
-        </div>
 
         <div className="mt-5 grid gap-4 border-t border-[var(--line)] pt-4 sm:grid-cols-2">
           <div>
@@ -290,6 +437,8 @@ function VehicleCard({
             {cardState.error}
           </div>
         ) : null}
+          </div>
+        </div>
       </form>
     </article>
   );

@@ -9,6 +9,7 @@ import {
   type AdminAccessResult,
   type AdminCustomerSummary,
 } from "@/features/admin";
+import type { ProfileRole } from "@/features/auth";
 import { createClient } from "@/lib/supabase/browser";
 
 type LoadState =
@@ -22,28 +23,148 @@ type LoadState =
     }
   | {
       status: "ready";
-      access: AdminAccessResult;
+      access: Extract<AdminAccessResult, { allowed: true }>;
       customers: AdminCustomerSummary[];
       error: null;
     }
   | { status: "error"; access: null; customers: null; error: string };
 
+type RoleFilter = "all" | ProfileRole;
+
+type RoleUpdateState =
+  | { status: "idle"; error: null; message: null }
+  | { status: "saving"; error: null; message: null }
+  | { status: "success"; error: null; message: string }
+  | { status: "error"; error: string; message: null };
+
+const roleOptions: { label: string; value: ProfileRole }[] = [
+  { label: "ลูกค้า", value: "customer" },
+  { label: "ช่าง", value: "technician" },
+  { label: "ผู้ดูแล", value: "admin" },
+];
+
+const roleFilterOptions: { label: string; value: RoleFilter }[] = [
+  { label: "ทุกสิทธิ์", value: "all" },
+  ...roleOptions,
+];
+
 function formatDateTime(value: string) {
   return new Date(value).toLocaleString("th-TH");
 }
 
-function CustomerCard({ customer }: { customer: AdminCustomerSummary }) {
+function getRoleLabel(role: ProfileRole) {
+  return roleOptions.find((option) => option.value === role)?.label ?? role;
+}
+
+async function requestCustomerRoleUpdate(
+  customerId: string,
+  role: ProfileRole,
+) {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const response = await fetch(`/api/admin/customers/${customerId}/role`, {
+    body: JSON.stringify({ role }),
+    headers: {
+      "Content-Type": "application/json",
+      ...(session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {}),
+    },
+    method: "PATCH",
+  });
+  const result = (await response.json().catch(() => null)) as
+    | {
+        data?: { role: ProfileRole; updated_at: string };
+        message?: string;
+        ok?: boolean;
+      }
+    | null;
+
+  if (!response.ok || !result?.ok || !result.data) {
+    return {
+      data: null,
+      error: result?.message ?? "เปลี่ยนสิทธิ์ผู้ใช้ไม่สำเร็จ",
+    };
+  }
+
+  return {
+    data: result.data,
+    error: null,
+  };
+}
+
+function CustomerCard({
+  currentAdminId,
+  customer,
+  onRoleChanged,
+}: {
+  currentAdminId: string;
+  customer: AdminCustomerSummary;
+  onRoleChanged: (customer: AdminCustomerSummary) => void;
+}) {
+  const [roleState, setRoleState] = useState<RoleUpdateState>({
+    error: null,
+    message: null,
+    status: "idle",
+  });
+  const isCurrentAdmin = customer.id === currentAdminId;
+
+  async function handleRoleChange(nextRole: ProfileRole) {
+    if (nextRole === customer.role) {
+      return;
+    }
+
+    setRoleState({
+      error: null,
+      message: null,
+      status: "saving",
+    });
+
+    const { data, error } = await requestCustomerRoleUpdate(
+      customer.id,
+      nextRole,
+    );
+
+    if (error || !data) {
+      setRoleState({
+        error: error ?? "เปลี่ยนสิทธิ์ผู้ใช้ไม่สำเร็จ",
+        message: null,
+        status: "error",
+      });
+      return;
+    }
+
+    onRoleChanged({
+      ...customer,
+      role: data.role,
+      updated_at: data.updated_at,
+    });
+    setRoleState({
+      error: null,
+      message: `เปลี่ยนสิทธิ์เป็น ${getRoleLabel(data.role)} แล้ว`,
+      status: "success",
+    });
+  }
+
   return (
     <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-semibold text-[var(--brand)]">
-              {customer.role}
+              {getRoleLabel(customer.role)}
             </p>
             <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-              {customer.email ?? "No email"}
+              {customer.email ?? "ไม่มีอีเมล"}
             </span>
+            {isCurrentAdmin ? (
+              <span className="rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                บัญชีที่ใช้งานอยู่
+              </span>
+            ) : null}
           </div>
           <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">
             {customer.full_name}
@@ -53,13 +174,44 @@ function CustomerCard({ customer }: { customer: AdminCustomerSummary }) {
           </p>
         </div>
 
-        <Link
-          className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
-          href={`/admin/customers/${customer.id}`}
-        >
-          ดูข้อมูลลูกค้า
-        </Link>
+        <div className="grid gap-2 sm:min-w-48">
+          <label className="text-sm font-medium text-[var(--foreground)]">
+            สิทธิ์ผู้ใช้
+            <select
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm font-semibold text-[var(--foreground)] outline-none focus:border-[var(--brand)] disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-[var(--muted)]"
+              disabled={isCurrentAdmin || roleState.status === "saving"}
+              onChange={(event) =>
+                handleRoleChange(event.target.value as ProfileRole)
+              }
+              value={customer.role}
+            >
+              {roleOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Link
+            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            href={`/admin/customers/${customer.id}`}
+          >
+            ดูข้อมูลผู้ใช้
+          </Link>
+        </div>
       </div>
+
+      {roleState.status === "success" ? (
+        <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-[var(--brand-strong)]">
+          {roleState.message}
+        </div>
+      ) : null}
+
+      {roleState.status === "error" ? (
+        <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {roleState.error}
+        </div>
+      ) : null}
 
       <dl className="mt-5 grid gap-4 border-t border-[var(--line)] pt-4 text-sm sm:grid-cols-4">
         <div>
@@ -109,6 +261,7 @@ export function AdminCustomersPanel() {
     status: "loading",
   });
   const [searchInput, setSearchInput] = useState("");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
 
   useEffect(() => {
     let isMounted = true;
@@ -213,17 +366,40 @@ export function AdminCustomersPanel() {
     const normalizedSearch = searchInput.trim().toLowerCase();
 
     return loadState.customers.filter((customer) => {
-      if (!normalizedSearch) {
-        return true;
+      if (roleFilter !== "all" && customer.role !== roleFilter) {
+        return false;
       }
 
-      return (
-        customer.full_name.toLowerCase().includes(normalizedSearch) ||
-        customer.phone_number.toLowerCase().includes(normalizedSearch) ||
-        (customer.email ?? "").toLowerCase().includes(normalizedSearch)
-      );
+      if (normalizedSearch) {
+        return (
+          customer.full_name.toLowerCase().includes(normalizedSearch) ||
+          customer.phone_number.toLowerCase().includes(normalizedSearch) ||
+          (customer.email ?? "").toLowerCase().includes(normalizedSearch)
+        );
+      }
+
+      return true;
     });
-  }, [loadState, searchInput]);
+  }, [loadState, roleFilter, searchInput]);
+
+  function handleCustomerRoleChanged(nextCustomer: AdminCustomerSummary) {
+    if (loadState.status !== "ready") {
+      return;
+    }
+
+    setLoadState({
+      ...loadState,
+      customers: loadState.customers.map((customer) =>
+        customer.id === nextCustomer.id
+          ? {
+              ...customer,
+              role: nextCustomer.role,
+              updated_at: nextCustomer.updated_at,
+            }
+          : customer,
+      ),
+    });
+  }
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
@@ -234,10 +410,10 @@ export function AdminCustomersPanel() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-[var(--foreground)]">
-              รายชื่อลูกค้า
+              รายชื่อผู้ใช้
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-              ตรวจสอบโปรไฟล์ลูกค้า จำนวนรถ และประวัติการจองบริการ
+              ตรวจสอบโปรไฟล์ผู้ใช้ จำนวนรถ ประวัติการจอง และจัดการสิทธิ์ลูกค้า/ช่าง/ผู้ดูแล
             </p>
           </div>
           <Link
@@ -294,32 +470,58 @@ export function AdminCustomersPanel() {
           <div className="flex flex-col gap-4 border-b border-[var(--line)] pb-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-sm font-semibold text-[var(--foreground)]">
-                {filteredCustomers.length} of {loadState.customers.length}{" "}
-                ลูกค้า
+                {filteredCustomers.length} จาก {loadState.customers.length}{" "}
+                ผู้ใช้
               </p>
               <p className="mt-1 text-sm text-[var(--muted)]">
-                ข้อมูลลูกค้าในหน้านี้เป็นแบบดูอย่างเดียว
+                ใช้ role `technician` สำหรับบัญชีช่างในระบบ
               </p>
             </div>
 
-            <input
-              className="min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)] lg:max-w-md"
-              onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="ค้นหาชื่อลูกค้า เบอร์โทร หรืออีเมล"
-              type="search"
-              value={searchInput}
-            />
+            <div className="grid w-full gap-3 sm:grid-cols-[180px_minmax(0,1fr)] lg:max-w-2xl">
+              <label className="text-sm font-medium text-[var(--foreground)]">
+                กรองสิทธิ์
+                <select
+                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                  onChange={(event) =>
+                    setRoleFilter(event.target.value as RoleFilter)
+                  }
+                  value={roleFilter}
+                >
+                  {roleFilterOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-sm font-medium text-[var(--foreground)]">
+                ค้นหา
+                <input
+                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                  onChange={(event) => setSearchInput(event.target.value)}
+                  placeholder="ค้นหาชื่อ เบอร์โทร หรืออีเมล"
+                  type="search"
+                  value={searchInput}
+                />
+              </label>
+            </div>
           </div>
 
           {filteredCustomers.length > 0 ? (
             <div className="mt-5 space-y-4">
               {filteredCustomers.map((customer) => (
-                <CustomerCard customer={customer} key={customer.id} />
+                <CustomerCard
+                  currentAdminId={loadState.access.profile.id}
+                  customer={customer}
+                  key={customer.id}
+                  onRoleChanged={handleCustomerRoleChanged}
+                />
               ))}
             </div>
           ) : (
             <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
-              ไม่พบลูกค้าที่ตรงกับคำค้นหา
+              ไม่พบผู้ใช้ที่ตรงกับตัวกรอง
             </div>
           )}
         </section>

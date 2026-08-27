@@ -11,3 +11,9 @@ export type VehicleInput = {
   model: string;
   year: string;
 };
+
+export type VehicleImageInput = {
+  customerId: string;
+  id: string;
+  imageUrl: string;
+};
