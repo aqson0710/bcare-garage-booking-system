@@ -321,7 +321,7 @@ export function MyBookingsPanel() {
           </div>
           <Link
             className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
-            href="/"
+            href="/services"
           >
             จองบริการใหม่
           </Link>

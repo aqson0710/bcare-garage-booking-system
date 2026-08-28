@@ -30,7 +30,8 @@ type ViewerState = {
 const publicGroup: NavGroup = {
   label: "สำหรับลูกค้า",
   links: [
-    { href: "/", label: "บริการ" },
+    { href: "/", label: "หน้าแรก" },
+    { href: "/services", label: "บริการ" },
     { href: "/products", label: "สินค้า" },
   ],
 };
@@ -45,7 +46,8 @@ const customerAccountHrefs = [
 const customerGroup: NavGroup = {
   label: "ลูกค้า",
   links: [
-    { href: "/", label: "บริการ" },
+    { href: "/", label: "หน้าแรก" },
+    { href: "/services", label: "บริการ" },
     { href: "/products", label: "สินค้า" },
     {
       href: "/profile",
@@ -79,6 +81,7 @@ const adminGroup: NavGroup = {
   label: "ผู้ดูแลระบบ",
   links: [
     { href: "/admin", label: "แดชบอร์ด" },
+    { href: "/admin/homepage", label: "หน้าแรก" },
     { href: "/admin/bookings", label: "การจอง" },
     { href: "/admin/repair-jobs", label: "งานซ่อม" },
     { href: "/admin/product-orders", label: "ออเดอร์สินค้า" },
@@ -131,7 +134,7 @@ function getVisibleGroups(viewer: ViewerState): NavGroup[] {
 }
 
 function isActiveLink(pathname: string, href: string) {
-  if (href === "/") {
+  if (href === "/" || href === "/admin") {
     return pathname === href;
   }
 

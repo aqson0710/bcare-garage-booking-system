@@ -557,6 +557,114 @@ export type Database = {
         };
         Relationships: [];
       };
+      homepage_footer_settings: {
+        Row: {
+          id: string;
+          setting_key: string;
+          status: ServiceStatus;
+          background_color: string;
+          office_title: string;
+          office_address: string | null;
+          office_phone: string | null;
+          office_fax: string | null;
+          contact_title: string;
+          contact_phone: string | null;
+          contact_email: string | null;
+          services_title: string;
+          services_content: string | null;
+          created_at: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          setting_key?: string;
+          status?: ServiceStatus;
+          background_color?: string;
+          office_title?: string;
+          office_address?: string | null;
+          office_phone?: string | null;
+          office_fax?: string | null;
+          contact_title?: string;
+          contact_phone?: string | null;
+          contact_email?: string | null;
+          services_title?: string;
+          services_content?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          id?: string;
+          setting_key?: string;
+          status?: ServiceStatus;
+          background_color?: string;
+          office_title?: string;
+          office_address?: string | null;
+          office_phone?: string | null;
+          office_fax?: string | null;
+          contact_title?: string;
+          contact_phone?: string | null;
+          contact_email?: string | null;
+          services_title?: string;
+          services_content?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      homepage_slides: {
+        Row: {
+          id: string;
+          title: string;
+          subtitle: string | null;
+          description: string | null;
+          image_url: string;
+          primary_label: string;
+          primary_href: string;
+          secondary_label: string | null;
+          secondary_href: string | null;
+          sort_order: number;
+          status: ServiceStatus;
+          created_at: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          subtitle?: string | null;
+          description?: string | null;
+          image_url: string;
+          primary_label?: string;
+          primary_href?: string;
+          secondary_label?: string | null;
+          secondary_href?: string | null;
+          sort_order?: number;
+          status?: ServiceStatus;
+          created_at?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          subtitle?: string | null;
+          description?: string | null;
+          image_url?: string;
+          primary_label?: string;
+          primary_href?: string;
+          secondary_label?: string | null;
+          secondary_href?: string | null;
+          sort_order?: number;
+          status?: ServiceStatus;
+          created_at?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
       products: {
         Row: {
           id: string;

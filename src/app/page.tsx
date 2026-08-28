@@ -1,5 +1,5 @@
-import { ServicesListing } from "@/features/services/components/services-listing";
+import { HomePanel } from "@/features/home/components/home-panel";
 
 export default function Home() {
-  return <ServicesListing />;
+  return <HomePanel />;
 }
