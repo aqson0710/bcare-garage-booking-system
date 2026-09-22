@@ -1217,6 +1217,11 @@ export type Database = {
           paid_at: string | null;
           verified_at: string | null;
           verified_by: string | null;
+          verification_status: BookingPaymentVerificationStatus;
+          verification_provider: BookingPaymentVerificationProvider | null;
+          provider_reference: string | null;
+          verification_response: Json | null;
+          slip_amount: number | null;
           created_at: string;
           updated_at: string;
         };
