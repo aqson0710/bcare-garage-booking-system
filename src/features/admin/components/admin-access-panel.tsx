@@ -174,7 +174,7 @@ function getStatusStyle(status: AdminBooking["status"]) {
     return "bg-red-50 text-red-700";
   }
 
-  return "bg-slate-100 text-slate-700";
+  return "bg-[var(--surface-muted)] text-[var(--foreground)]";
 }
 
 function getProductOrderStatusStyle(status: AdminProductOrder["status"]) {
@@ -242,7 +242,7 @@ function DashboardCard({
 }) {
   return (
     <Link
-      className="flex min-h-36 flex-col rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm hover:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]"
+      className="flex min-h-36 flex-col rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm hover:border-[var(--brand)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]"
       href={href}
     >
       <p className="text-sm font-semibold text-[var(--muted)]">
@@ -271,7 +271,7 @@ function SignalCard({
 }) {
   const toneClass = {
     danger: "border-red-200 bg-red-50 text-red-800",
-    neutral: "border-[var(--line)] bg-white text-[var(--foreground)]",
+    neutral: "border-[var(--line)] bg-[var(--surface)] text-[var(--foreground)]",
     success: "border-emerald-200 bg-emerald-50 text-[var(--brand-strong)]",
     warning: "border-amber-200 bg-amber-50 text-amber-800",
   }[tone];
@@ -312,7 +312,7 @@ function AlertRow({
         <p className="mt-1 leading-5">{note}</p>
       </div>
       <Link
-        className="min-h-10 rounded-md bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--foreground)]"
+        className="min-h-10 rounded-md bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--foreground)]"
         href={actionHref}
       >
         {actionText}
@@ -332,7 +332,7 @@ function MiniBarChart({
 }) {
   if (points.every((point) => point.value === 0)) {
     return (
-      <div className="rounded-lg border border-dashed border-[var(--line)] bg-slate-50 p-4 text-sm leading-6 text-[var(--muted)]">
+      <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--muted)]">
         {emptyText}
       </div>
     );
@@ -352,7 +352,7 @@ function MiniBarChart({
               className="flex h-full flex-col justify-end gap-2"
               key={point.label}
             >
-              <div className="flex min-h-32 flex-col justify-end rounded-md bg-slate-50 px-1">
+              <div className="flex min-h-32 flex-col justify-end rounded-md bg-[var(--surface-muted)] px-1">
                 <div
                   className="rounded-t-md bg-[var(--brand)]"
                   style={{ height: `${height}%` }}
@@ -391,7 +391,7 @@ function BreakdownList({
 
   if (total === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-[var(--line)] bg-slate-50 p-4 text-sm leading-6 text-[var(--muted)]">
+      <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--muted)]">
         {emptyText}
       </div>
     );
@@ -412,7 +412,7 @@ function BreakdownList({
                 {row.value} / {percent}%
               </p>
             </div>
-            <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--surface-muted)]">
               <div
                 className="h-full rounded-full bg-[var(--brand)]"
                 style={{ width: `${percent}%` }}
@@ -434,7 +434,7 @@ function RankedList({
 }) {
   if (rows.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-[var(--line)] bg-slate-50 p-4 text-sm leading-6 text-[var(--muted)]">
+      <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--muted)]">
         {emptyText}
       </div>
     );
@@ -444,7 +444,7 @@ function RankedList({
     <div className="space-y-3">
       {rows.map((row, index) => (
         <div
-          className="flex items-center justify-between gap-3 rounded-lg border border-[var(--line)] bg-white p-3 text-sm"
+          className="flex items-center justify-between gap-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-3 text-sm"
           key={row.label}
         >
           <div className="min-w-0">
@@ -466,7 +466,7 @@ function RankedList({
 
 function RecentBookingRow({ booking }: { booking: AdminBooking }) {
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-white p-4 shadow-sm">
+    <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -490,7 +490,7 @@ function RecentBookingRow({ booking }: { booking: AdminBooking }) {
           </p>
         </div>
         <Link
-          className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+          className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
           href={`/admin/bookings/${booking.id}`}
         >
           ดูรายละเอียด
@@ -502,7 +502,7 @@ function RecentBookingRow({ booking }: { booking: AdminBooking }) {
 
 function ProductOrderQueueRow({ order }: { order: AdminProductOrder }) {
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-white p-4 shadow-sm">
+    <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -528,7 +528,7 @@ function ProductOrderQueueRow({ order }: { order: AdminProductOrder }) {
           </p>
         </div>
         <Link
-          className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+          className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
           href={`/admin/product-orders/${order.id}`}
         >
           ดูรายละเอียด
@@ -540,7 +540,7 @@ function ProductOrderQueueRow({ order }: { order: AdminProductOrder }) {
 
 function RepairJobQueueRow({ repairJob }: { repairJob: AdminRepairJob }) {
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-white p-4 shadow-sm">
+    <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -563,7 +563,7 @@ function RepairJobQueueRow({ repairJob }: { repairJob: AdminRepairJob }) {
           </p>
         </div>
         <Link
-          className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+          className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
           href="/admin/repair-jobs"
         >
           Open jobs
@@ -576,7 +576,7 @@ function RepairJobQueueRow({ repairJob }: { repairJob: AdminRepairJob }) {
 function LowStockRow({ product }: { product: AdminProduct }) {
   return (
     <Link
-      className="block rounded-lg border border-[var(--line)] bg-white p-4 text-sm shadow-sm hover:border-[var(--brand)]"
+      className="block rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 text-sm shadow-sm hover:border-[var(--brand)]"
       href="/admin/inventory"
     >
       <p className="font-semibold text-[var(--foreground)]">{product.name}</p>
@@ -1156,7 +1156,7 @@ export function AdminAccessPanel() {
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <button
-              className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isLoading}
               onClick={() => setRefreshKey((currentKey) => currentKey + 1)}
               type="button"
@@ -1175,7 +1175,7 @@ export function AdminAccessPanel() {
 
       {isLoading ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดแดชบอร์ด...
           </div>
         </section>
@@ -1198,7 +1198,7 @@ export function AdminAccessPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -1293,7 +1293,7 @@ export function AdminAccessPanel() {
                 />
               </section>
 
-              <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+              <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="text-sm font-semibold text-[var(--brand)]">
@@ -1304,7 +1304,7 @@ export function AdminAccessPanel() {
                     </h2>
                   </div>
                   <Link
-                    className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                    className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
                     href="/admin/reports"
                   >
                     ดูรายงาน
@@ -1357,25 +1357,25 @@ export function AdminAccessPanel() {
 
               <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <Link
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-center text-sm font-semibold text-[var(--foreground)] shadow-sm hover:border-[var(--brand)]"
+                  className="min-h-12 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-center text-sm font-semibold text-[var(--foreground)] shadow-sm hover:border-[var(--brand)]"
                   href="/admin/product-orders"
                 >
                   ออเดอร์สินค้า
                 </Link>
                 <Link
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-center text-sm font-semibold text-[var(--foreground)] shadow-sm hover:border-[var(--brand)]"
+                  className="min-h-12 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-center text-sm font-semibold text-[var(--foreground)] shadow-sm hover:border-[var(--brand)]"
                   href="/admin/repair-jobs"
                 >
                   งานซ่อม
                 </Link>
                 <Link
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-center text-sm font-semibold text-[var(--foreground)] shadow-sm hover:border-[var(--brand)]"
+                  className="min-h-12 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-center text-sm font-semibold text-[var(--foreground)] shadow-sm hover:border-[var(--brand)]"
                   href="/admin/inventory-review"
                 >
                   ตรวจสต๊อก
                 </Link>
                 <Link
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-center text-sm font-semibold text-[var(--foreground)] shadow-sm hover:border-[var(--brand)]"
+                  className="min-h-12 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-center text-sm font-semibold text-[var(--foreground)] shadow-sm hover:border-[var(--brand)]"
                   href="/admin/payment-settings"
                 >
                   ตั้งค่าชำระเงิน
@@ -1383,7 +1383,7 @@ export function AdminAccessPanel() {
               </section>
 
               <section className="grid gap-4 xl:grid-cols-2">
-                <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+                <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
                   <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="text-sm font-semibold text-[var(--brand)]">
@@ -1397,7 +1397,7 @@ export function AdminAccessPanel() {
                       </p>
                     </div>
                     <Link
-                      className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                      className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
                       href="/admin/bookings"
                     >
                       รายการจอง
@@ -1410,7 +1410,7 @@ export function AdminAccessPanel() {
                   />
                 </section>
 
-                <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+                <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
                   <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="text-sm font-semibold text-[var(--brand)]">
@@ -1425,7 +1425,7 @@ export function AdminAccessPanel() {
                       </p>
                     </div>
                     <Link
-                      className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                      className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
                       href="/admin/product-orders?paymentStatus=paid"
                     >
                       ออเดอร์ที่ชำระแล้ว
@@ -1440,7 +1440,7 @@ export function AdminAccessPanel() {
               </section>
 
               <section className="grid gap-4 lg:grid-cols-3">
-                <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+                <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
                   <p className="text-sm font-semibold text-[var(--brand)]">
                     สถานะการจอง
                   </p>
@@ -1455,7 +1455,7 @@ export function AdminAccessPanel() {
                   </div>
                 </section>
 
-                <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+                <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
                   <p className="text-sm font-semibold text-[var(--brand)]">
                     สถานะออเดอร์สินค้า
                   </p>
@@ -1470,7 +1470,7 @@ export function AdminAccessPanel() {
                   </div>
                 </section>
 
-                <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+                <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
                   <p className="text-sm font-semibold text-[var(--brand)]">
                     สถานะชำระเงิน
                   </p>
@@ -1487,7 +1487,7 @@ export function AdminAccessPanel() {
               </section>
 
               <section className="grid gap-4 lg:grid-cols-2">
-                <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+                <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
                   <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="text-sm font-semibold text-[var(--brand)]">
@@ -1498,7 +1498,7 @@ export function AdminAccessPanel() {
                       </h2>
                     </div>
                     <Link
-                      className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                      className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
                       href="/admin/reports"
                     >
                       รายงาน
@@ -1510,7 +1510,7 @@ export function AdminAccessPanel() {
                   />
                 </section>
 
-                <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+                <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
                   <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="text-sm font-semibold text-[var(--brand)]">
@@ -1521,7 +1521,7 @@ export function AdminAccessPanel() {
                       </h2>
                     </div>
                     <Link
-                      className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                      className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
                       href="/admin/products"
                     >
                       สินค้า
@@ -1547,7 +1547,7 @@ export function AdminAccessPanel() {
                         </p>
                       </div>
                       <Link
-                        className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                        className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
                         href="/admin/bookings"
                       >
                         ดูรายการปฏิทิน
@@ -1560,7 +1560,7 @@ export function AdminAccessPanel() {
                         ))}
                       </div>
                     ) : (
-                      <div className="rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
+                      <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
                         วันนี้ยังไม่มีงานจองที่ต้องจัดการ
                       </div>
                     )}
@@ -1577,7 +1577,7 @@ export function AdminAccessPanel() {
                         </p>
                       </div>
                       <Link
-                        className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                        className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
                         href="/admin/bookings?status=pending"
                       >
                         ดูคิว
@@ -1590,7 +1590,7 @@ export function AdminAccessPanel() {
                         ))}
                       </div>
                     ) : (
-                      <div className="rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
+                      <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
                         {counts.pending > 0
                           ? "มีการจองที่รอยืนยันอยู่ในระบบ กดดูคิวเพื่อดูรายการทั้งหมด"
                           : "ไม่มีการจองรอยืนยันตอนนี้"}
@@ -1609,7 +1609,7 @@ export function AdminAccessPanel() {
                         </p>
                       </div>
                       <Link
-                        className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                        className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
                         href="/admin/product-orders"
                       >
                         ดูออเดอร์
@@ -1622,7 +1622,7 @@ export function AdminAccessPanel() {
                         ))}
                       </div>
                     ) : (
-                      <div className="rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
+                      <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
                         ไม่มีออเดอร์สินค้ารอชำระเงินตอนนี้
                       </div>
                     )}
@@ -1639,7 +1639,7 @@ export function AdminAccessPanel() {
                         </p>
                       </div>
                       <Link
-                        className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                        className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
                         href="/admin/bookings"
                       >
                         ดูทั้งหมด
@@ -1652,7 +1652,7 @@ export function AdminAccessPanel() {
                         ))}
                       </div>
                     ) : (
-                      <div className="rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
+                      <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
                         ยังไม่มีรายการจอง
                       </div>
                     )}
@@ -1660,7 +1660,7 @@ export function AdminAccessPanel() {
                 </div>
 
                 <aside className="space-y-4">
-                  <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+                  <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
                     <p className="text-sm font-semibold text-[var(--brand)]">
                       สต๊อกใกล้หมด
                     </p>
@@ -1669,14 +1669,14 @@ export function AdminAccessPanel() {
                         <LowStockRow key={product.id} product={product} />
                       ))}
                       {lowStockProducts.length === 0 ? (
-                        <div className="rounded-lg border border-dashed border-[var(--line)] bg-slate-50 p-4 text-sm leading-6 text-[var(--muted)]">
+                        <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--muted)]">
                           สต๊อกยังไม่มีรายการใกล้หมด
                         </div>
                       ) : null}
                     </div>
                   </section>
 
-                  <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+                  <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
                     <p className="text-sm font-semibold text-[var(--brand)]">
                       งานซ่อม
                     </p>
@@ -1688,14 +1688,14 @@ export function AdminAccessPanel() {
                         />
                       ))}
                       {openRepairJobs.length === 0 ? (
-                        <div className="rounded-lg border border-dashed border-[var(--line)] bg-slate-50 p-4 text-sm leading-6 text-[var(--muted)]">
+                        <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--muted)]">
                           ยังไม่มีงานซ่อมค้างอยู่
                         </div>
                       ) : null}
                     </div>
                   </section>
 
-                  <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+                  <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
                     <p className="text-sm font-semibold text-[var(--brand)]">
                       ลิงก์ลัด
                     </p>
@@ -1707,31 +1707,31 @@ export function AdminAccessPanel() {
                         จัดการการจอง
                       </Link>
                       <Link
-                        className="block min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                        className="block min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
                         href="/admin/product-orders"
                       >
                         ออเดอร์สินค้า
                       </Link>
                       <Link
-                        className="block min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                        className="block min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
                         href="/admin/repair-jobs"
                       >
                         งานซ่อม
                       </Link>
                       <Link
-                        className="block min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                        className="block min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
                         href="/admin/inventory"
                       >
                         คลังสินค้า
                       </Link>
                       <Link
-                        className="block min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                        className="block min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
                         href="/admin/payment-settings"
                       >
                         ตั้งค่าชำระเงิน
                       </Link>
                       <Link
-                        className="block min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                        className="block min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
                         href="/admin/reports"
                       >
                         รายงาน

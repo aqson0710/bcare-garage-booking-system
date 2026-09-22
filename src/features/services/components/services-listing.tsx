@@ -288,12 +288,12 @@ function ServiceCard({
     <article
       className={
         isSelected
-          ? "flex min-h-80 flex-col justify-between overflow-hidden rounded-lg border-2 border-[var(--brand)] bg-white shadow-sm"
-          : "flex min-h-80 flex-col justify-between overflow-hidden rounded-lg border border-[var(--line)] bg-white shadow-sm"
+          ? "flex min-h-80 flex-col justify-between overflow-hidden rounded-lg border-2 border-[var(--brand)] bg-[var(--surface)] shadow-sm"
+          : "flex min-h-80 flex-col justify-between overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm"
       }
     >
       <ServiceImage
-        className="h-40 w-full bg-slate-50 object-cover"
+        className="h-40 w-full bg-[var(--surface-muted)] object-cover"
         imageUrl={service.image_url}
         label={`${service.name} image`}
       />
@@ -511,7 +511,7 @@ function BookingForm({
 
   if (authState.status === "loading") {
     return (
-      <div className="mt-5 rounded-lg border border-[var(--line)] bg-slate-50 p-4 text-sm text-[var(--muted)]">
+      <div className="mt-5 rounded-lg border border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm text-[var(--muted)]">
         กำลังตรวจสอบสถานะเข้าสู่ระบบ...
       </div>
     );
@@ -712,13 +712,13 @@ function BookingForm({
           ชื่อลูกค้า
         </label>
         <input
-          className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-slate-50 px-3 text-sm text-[var(--foreground)] outline-none"
+          className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface-muted)] px-3 text-sm text-[var(--foreground)] outline-none"
           id="customerName"
           readOnly
           value={values.customerName}
         />
         {errors.customerName ? (
-          <p className="mt-1 text-xs text-red-700">{errors.customerName}</p>
+          <p className="mt-1 text-xs text-[var(--danger)]">{errors.customerName}</p>
         ) : null}
       </div>
 
@@ -730,14 +730,14 @@ function BookingForm({
           เบอร์โทร
         </label>
         <input
-          className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-slate-50 px-3 text-sm text-[var(--foreground)] outline-none"
+          className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface-muted)] px-3 text-sm text-[var(--foreground)] outline-none"
           id="phoneNumber"
           inputMode="tel"
           readOnly
           value={values.phoneNumber}
         />
         {errors.phoneNumber ? (
-          <p className="mt-1 text-xs text-red-700">{errors.phoneNumber}</p>
+          <p className="mt-1 text-xs text-[var(--danger)]">{errors.phoneNumber}</p>
         ) : null}
       </div>
 
@@ -749,13 +749,13 @@ function BookingForm({
           ทะเบียนรถ
         </label>
         <input
-          className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+          className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
           id="vehiclePlate"
           onChange={(event) => updateValue("vehiclePlate", event.target.value)}
           value={values.vehiclePlate}
         />
         {errors.vehiclePlate ? (
-          <p className="mt-1 text-xs text-red-700">{errors.vehiclePlate}</p>
+          <p className="mt-1 text-xs text-[var(--danger)]">{errors.vehiclePlate}</p>
         ) : null}
       </div>
 
@@ -768,7 +768,7 @@ function BookingForm({
             วันที่
           </label>
           <input
-            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
             id="preferredDate"
             min={todayInputValue}
             onChange={(event) => {
@@ -782,7 +782,7 @@ function BookingForm({
             value={values.preferredDate}
           />
           {errors.preferredDate ? (
-            <p className="mt-1 text-xs text-red-700">{errors.preferredDate}</p>
+            <p className="mt-1 text-xs text-[var(--danger)]">{errors.preferredDate}</p>
           ) : null}
         </div>
 
@@ -794,7 +794,7 @@ function BookingForm({
             เวลา
           </label>
           <select
-            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
             id="preferredTime"
             disabled={
               !values.preferredDate ||
@@ -833,14 +833,14 @@ function BookingForm({
             </p>
           ) : null}
           {values.preferredDate && availabilityState.status === "error" ? (
-            <p className="mt-1 text-xs text-red-700">
+            <p className="mt-1 text-xs text-[var(--danger)]">
               {availabilityState.error}
             </p>
           ) : null}
           {values.preferredDate &&
           availabilityState.status === "ready" &&
           bookingTimeOptions.length === 0 ? (
-            <p className="mt-1 text-xs text-amber-700">
+            <p className="mt-1 text-xs text-amber-400">
               {availabilityState.operatingStatus &&
               !availabilityState.operatingStatus.isOpen
                 ? getClosedDayMessage(availabilityState.operatingStatus)
@@ -859,7 +859,7 @@ function BookingForm({
             </p>
           ) : null}
           {errors.preferredTime ? (
-            <p className="mt-1 text-xs text-red-700">{errors.preferredTime}</p>
+            <p className="mt-1 text-xs text-[var(--danger)]">{errors.preferredTime}</p>
           ) : null}
         </div>
       </div>
@@ -872,7 +872,7 @@ function BookingForm({
           หมายเหตุ
         </label>
         <textarea
-          className="mt-2 min-h-24 w-full resize-y rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+          className="mt-2 min-h-24 w-full resize-y rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
           id="note"
           onChange={(event) => updateValue("note", event.target.value)}
           value={values.note}
@@ -1090,7 +1090,7 @@ export function ServicesListing() {
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:w-80">
-            <div className="rounded-lg border border-[var(--line)] bg-white p-4">
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
               <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]">
                 หมวดหมู่
               </p>
@@ -1098,7 +1098,7 @@ export function ServicesListing() {
                 {loadState.status === "ready" ? categories.length : "-"}
               </p>
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-white p-4">
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
               <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]">
                 บริการ
               </p>
@@ -1112,7 +1112,7 @@ export function ServicesListing() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดบริการ...
           </div>
         </section>
@@ -1120,7 +1120,7 @@ export function ServicesListing() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -1134,7 +1134,7 @@ export function ServicesListing() {
                 className={
                   selectedCategoryId === "all"
                     ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-                    : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                    : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                 }
                 onClick={() => setSelectedCategoryId("all")}
                 type="button"
@@ -1146,7 +1146,7 @@ export function ServicesListing() {
                   className={
                     selectedCategoryId === category.id
                       ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-                      : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                      : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                   }
                   key={category.id}
                   onClick={() => setSelectedCategoryId(category.id)}
@@ -1192,7 +1192,7 @@ export function ServicesListing() {
                       ))}
                     </div>
                   ) : (
-                    <div className="mt-4 rounded-lg border border-dashed border-[var(--line)] bg-white p-5 text-sm text-[var(--muted)]">
+                    <div className="mt-4 rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-5 text-sm text-[var(--muted)]">
                       ยังไม่มีบริการที่เปิดใช้งานในหมวดหมู่นี้
                     </div>
                   )}
@@ -1201,14 +1201,14 @@ export function ServicesListing() {
             </div>
           </div>
 
-          <aside className="h-fit rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm lg:sticky lg:top-6">
+          <aside className="h-fit rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm lg:sticky lg:top-6">
             <p className="text-sm font-semibold text-[var(--brand)]">
               บริการที่เลือก
             </p>
             {selectedService ? (
               <div className="mt-4">
                 <ServiceImage
-                  className="mb-4 h-40 w-full rounded-md border border-[var(--line)] bg-slate-50 object-cover"
+                  className="mb-4 h-40 w-full rounded-md border border-[var(--line)] bg-[var(--surface-muted)] object-cover"
                   imageUrl={selectedService.image_url}
                   label={`${selectedService.name} image`}
                 />
@@ -1242,7 +1242,7 @@ export function ServicesListing() {
                   service={selectedService}
                 />
                 <button
-                  className="mt-3 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                  className="mt-3 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                   onClick={() => setSelectedServiceId(null)}
                   type="button"
                 >
@@ -1250,7 +1250,7 @@ export function ServicesListing() {
                 </button>
               </div>
             ) : (
-              <div className="mt-4 rounded-lg border border-dashed border-[var(--line)] bg-slate-50 p-4 text-sm leading-6 text-[var(--muted)]">
+              <div className="mt-4 rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--muted)]">
                 เลือกบริการหนึ่งรายการเพื่อเริ่มกรอกคำขอจอง
               </div>
             )}

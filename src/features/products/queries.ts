@@ -16,6 +16,7 @@ import type {
   ProductPayment,
   ProductPaymentSlipInput,
   ProductOrderWithItems,
+  ProductPaymentTransaction,
   ProductWithCategory,
 } from "./types";
 
@@ -577,6 +578,10 @@ export async function createProductOrderFromCart(
       customer_id: customerId,
       delivery_address:
         input.deliveryMethod === "delivery" ? input.deliveryAddress : null,
+      delivery_latitude:
+        input.deliveryMethod === "delivery" ? input.deliveryLatitude : null,
+      delivery_longitude:
+        input.deliveryMethod === "delivery" ? input.deliveryLongitude : null,
       delivery_fee: deliveryFee,
       delivery_method: input.deliveryMethod,
       note: input.note,
@@ -656,6 +661,22 @@ export async function createProductOrderFromCart(
   };
 }
 
+// Lets the signed-in customer cancel their OWN order while it is still
+// "pending" (the same window the RLS policy on product_orders already
+// allows a direct customer update for). Routed through this RPC instead of
+// a plain `.update({ status: "cancelled" })` call so the deducted stock is
+// safely returned to inventory the same way the admin-only cancellation
+// path does - a bare client-side update would leave stock incorrectly
+// deducted. See supabase/product-order-customer-cancellation.sql.
+export async function cancelOwnProductOrder(
+  supabase: BCareSupabaseClient,
+  orderId: string,
+) {
+  return supabase.rpc("cancel_own_product_order_with_inventory_return", {
+    target_order_id: orderId,
+  });
+}
+
 async function attachProductsToOrderItems(
   supabase: BCareSupabaseClient,
   orderItems: ProductOrderItem[],
@@ -727,12 +748,26 @@ function buildProductOrdersWithItems(
   orders: ProductOrder[],
   items: ProductOrderItemWithProduct[],
   payments: ProductPayment[],
+  transactions: ProductPaymentTransaction[],
 ) {
-  return orders.map((order) => ({
-    ...order,
-    items: items.filter((item) => item.product_order_id === order.id),
-    payments: payments.filter((payment) => payment.product_order_id === order.id),
-  })) satisfies ProductOrderWithItems[];
+  return orders.map((order) => {
+    const orderTransactions = transactions.filter(
+      (transaction) => transaction.product_order_id === order.id,
+    );
+    const amountPaid = orderTransactions.reduce(
+      (sum, transaction) => sum + transaction.verified_amount,
+      0,
+    );
+
+    return {
+      ...order,
+      amountPaid,
+      amountRemaining: Math.max(order.total_amount - amountPaid, 0),
+      items: items.filter((item) => item.product_order_id === order.id),
+      payments: payments.filter((payment) => payment.product_order_id === order.id),
+      transactions: orderTransactions,
+    };
+  }) satisfies ProductOrderWithItems[];
 }
 
 async function getProductPaymentsForOrders(
@@ -755,6 +790,29 @@ async function getProductPaymentsForOrders(
   return {
     data: paymentsResult.data ?? null,
     error: paymentsResult.error,
+  };
+}
+
+async function getProductPaymentTransactionsForOrders(
+  supabase: BCareSupabaseClient,
+  orderIds: string[],
+) {
+  if (orderIds.length === 0) {
+    return {
+      data: [] satisfies ProductPaymentTransaction[],
+      error: null,
+    };
+  }
+
+  const transactionsResult = await supabase
+    .from("product_payment_transactions")
+    .select("*")
+    .in("product_order_id", orderIds)
+    .order("verified_at", { ascending: true });
+
+  return {
+    data: transactionsResult.data ?? null,
+    error: transactionsResult.error,
   };
 }
 
@@ -819,11 +877,24 @@ export async function getCustomerProductOrders(
     };
   }
 
+  const transactionsResult = await getProductPaymentTransactionsForOrders(
+    supabase,
+    orderIds,
+  );
+
+  if (transactionsResult.error) {
+    return {
+      data: null,
+      error: transactionsResult.error,
+    };
+  }
+
   return {
     data: buildProductOrdersWithItems(
       orders,
       itemsWithProductsResult.data ?? [],
       paymentsResult.data ?? [],
+      transactionsResult.data ?? [],
     ),
     error: null,
   };
@@ -891,11 +962,31 @@ export async function getCustomerProductOrderById(
     };
   }
 
+  const transactionsResult = await getProductPaymentTransactionsForOrders(supabase, [
+    orderResult.data.id,
+  ]);
+
+  if (transactionsResult.error) {
+    return {
+      data: null,
+      error: transactionsResult.error,
+    };
+  }
+
+  const transactions = transactionsResult.data ?? [];
+  const amountPaid = transactions.reduce(
+    (sum, transaction) => sum + transaction.verified_amount,
+    0,
+  );
+
   return {
     data: {
       ...orderResult.data,
+      amountPaid,
+      amountRemaining: Math.max(orderResult.data.total_amount - amountPaid, 0),
       items: itemsWithProductsResult.data ?? [],
       payments: paymentsResult.data ?? [],
+      transactions,
     } satisfies ProductOrderWithItems,
     error: null,
   };
@@ -959,6 +1050,25 @@ export async function submitProductPaymentSlip(
     return {
       data: null,
       error: new Error("ยอดเงินบนสลิปต้องมากกว่า 0"),
+    };
+  }
+
+  // The amount that gets verified with SlipOK is always taken from the
+  // order's own total (see the verify-slipok route), never from this
+  // client-supplied value. Reject a mismatch here too so a customer who
+  // tries to submit a smaller amount than the order total gets told
+  // immediately, instead of finding out only when verification silently
+  // never covers the full order.
+  const amountDifference = Math.abs(
+    input.amount - orderResult.data.total_amount,
+  );
+
+  if (amountDifference > 0.01) {
+    return {
+      data: null,
+      error: new Error(
+        `ยอดเงินต้องตรงกับยอดที่ต้องชำระของคำสั่งซื้อนี้ (${orderResult.data.total_amount.toFixed(2)} บาท)`,
+      ),
     };
   }
 

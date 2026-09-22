@@ -84,7 +84,7 @@ function getStatusStyle(status: AdminService["status"]) {
     return "bg-emerald-50 text-[var(--brand-strong)]";
   }
 
-  return "bg-slate-100 text-slate-700";
+  return "bg-[var(--surface-muted)] text-[var(--foreground)]";
 }
 
 function formatServiceStatus(status: StatusFilter) {
@@ -202,7 +202,7 @@ function ServiceImagePreview({
   return (
     <img
       alt={label}
-      className="h-24 w-32 rounded-md border border-[var(--line)] bg-slate-50 object-cover"
+      className="h-24 w-32 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] object-cover"
       onError={handleServiceImageError}
       src={imageUrl || serviceImagePlaceholder}
     />
@@ -284,7 +284,7 @@ function AdminServiceRow({
   }
 
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+    <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
       <div className="flex flex-col gap-3 border-b border-[var(--line)] pb-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           <ServiceImagePreview
@@ -326,7 +326,7 @@ function AdminServiceRow({
           <label className="text-sm font-semibold text-[var(--foreground)]">
             หมวดบริการ
             <select
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) => setCategoryId(event.target.value)}
               value={categoryId}
             >
@@ -342,7 +342,7 @@ function AdminServiceRow({
           <label className="text-sm font-semibold text-[var(--foreground)]">
             ราคาเริ่มต้น
             <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               min={0}
               onChange={(event) => setBasePrice(event.target.value)}
               type="number"
@@ -353,7 +353,7 @@ function AdminServiceRow({
           <label className="text-sm font-semibold text-[var(--foreground)]">
             เวลาประมาณ
             <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               min={1}
               onChange={(event) => setDurationMinutes(event.target.value)}
               type="number"
@@ -364,7 +364,7 @@ function AdminServiceRow({
           <label className="text-sm font-semibold text-[var(--foreground)]">
             สถานะ
             <select
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) =>
                 setStatus(event.target.value as AdminService["status"])
               }
@@ -382,7 +382,7 @@ function AdminServiceRow({
           <label className="text-sm font-semibold text-[var(--foreground)]">
             URL รูปบริการ
             <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) => setImageUrl(event.target.value)}
               placeholder="https://... หรืออัปโหลดรูปจากเครื่อง"
               value={imageUrl}
@@ -393,7 +393,7 @@ function AdminServiceRow({
             อัปโหลดรูปบริการ
             <input
               accept="image/png,image/jpeg,image/webp"
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)]"
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               disabled={imageUploadState.status === "uploading"}
               onChange={(event) => {
                 void handleImageUpload(event.target.files?.[0] ?? null);
@@ -688,7 +688,7 @@ export function AdminServicesPanel() {
             </p>
           </div>
           <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href="/admin"
           >
             หน้าแอดมิน
@@ -698,7 +698,7 @@ export function AdminServicesPanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดบริการ...
           </div>
         </section>
@@ -730,7 +730,7 @@ export function AdminServicesPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -751,7 +751,7 @@ export function AdminServicesPanel() {
 
             <div className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-2xl">
               <input
-                className="min-h-10 flex-1 rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                className="min-h-10 flex-1 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="ค้นหาบริการหรือหมวดบริการ"
                 type="search"
@@ -763,7 +763,7 @@ export function AdminServicesPanel() {
                     className={
                       statusFilter === status
                         ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-                        : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                        : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                     }
                     key={status}
                     onClick={() => setStatusFilter(status)}
@@ -789,7 +789,7 @@ export function AdminServicesPanel() {
               ))}
             </div>
           ) : (
-            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
+            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
               ไม่พบบริการที่ตรงกับตัวกรองปัจจุบัน
             </div>
           )}

@@ -4,6 +4,7 @@ import type {
   AuthenticatedBookingInput,
   AuthenticatedBookingResult,
   BookingOperatingStatus,
+  BookingPaymentSlipInput,
   BookingSlotAvailability,
   GuestBookingInput,
   GuestBookingResult,
@@ -153,21 +154,29 @@ async function attachBookingDetails(
     bookings.map((booking) => booking.vehicle_id),
   );
 
-  const [repairJobsResult, servicesResult, vehiclesResult] = await Promise.all([
-    bookingIds.length > 0
-      ? supabase
-          .from("repair_jobs")
-          .select("*")
-          .in("booking_id", bookingIds)
-          .order("created_at", { ascending: false })
-      : Promise.resolve({ data: [], error: null }),
-    serviceIds.length > 0
-      ? supabase.from("services").select("*").in("id", serviceIds)
-      : Promise.resolve({ data: [], error: null }),
-    vehicleIds.length > 0
-      ? supabase.from("vehicles").select("*").in("id", vehicleIds)
-      : Promise.resolve({ data: [], error: null }),
-  ]);
+  const [repairJobsResult, servicesResult, vehiclesResult, paymentsResult] =
+    await Promise.all([
+      bookingIds.length > 0
+        ? supabase
+            .from("repair_jobs")
+            .select("*")
+            .in("booking_id", bookingIds)
+            .order("created_at", { ascending: false })
+        : Promise.resolve({ data: [], error: null }),
+      serviceIds.length > 0
+        ? supabase.from("services").select("*").in("id", serviceIds)
+        : Promise.resolve({ data: [], error: null }),
+      vehicleIds.length > 0
+        ? supabase.from("vehicles").select("*").in("id", vehicleIds)
+        : Promise.resolve({ data: [], error: null }),
+      bookingIds.length > 0
+        ? supabase
+            .from("booking_payments")
+            .select("*")
+            .in("booking_id", bookingIds)
+            .order("created_at", { ascending: false })
+        : Promise.resolve({ data: [], error: null }),
+    ]);
 
   if (repairJobsResult.error) {
     return {
@@ -187,6 +196,13 @@ async function attachBookingDetails(
     return {
       data: null,
       error: vehiclesResult.error,
+    };
+  }
+
+  if (paymentsResult.error) {
+    return {
+      data: null,
+      error: paymentsResult.error,
     };
   }
 
@@ -231,6 +247,19 @@ async function attachBookingDetails(
     (vehiclesResult.data ?? []).map((vehicle) => [vehicle.id, vehicle]),
   );
 
+  // Payments are already ordered newest-first, so the first one seen per
+  // booking is the latest attempt.
+  const latestPaymentByBookingId = new Map<
+    string,
+    NonNullable<MyBooking["latestPayment"]>
+  >();
+
+  for (const payment of paymentsResult.data ?? []) {
+    if (!latestPaymentByBookingId.has(payment.booking_id)) {
+      latestPaymentByBookingId.set(payment.booking_id, payment);
+    }
+  }
+
   return {
     data: bookings.map(
       (booking) =>
@@ -239,6 +268,7 @@ async function attachBookingDetails(
           repairJob: repairJobsByBookingId.get(booking.id) ?? null,
           service: servicesById.get(booking.service_id) ?? null,
           vehicle: vehiclesById.get(booking.vehicle_id) ?? null,
+          latestPayment: latestPaymentByBookingId.get(booking.id) ?? null,
         }) satisfies MyBooking,
     ),
     error: null,
@@ -266,6 +296,7 @@ export async function getCurrentUserBookings(
     supabase,
     (bookingsResult.data ?? []).map((booking) => ({
       ...booking,
+      latestPayment: null,
       repairJob: null,
       service: null,
       vehicle: null,
@@ -302,6 +333,7 @@ export async function getCurrentUserBookingById(
   const detailsResult = await attachBookingDetails(supabase, [
     {
       ...bookingResult.data,
+      latestPayment: null,
       repairJob: null,
       service: null,
       vehicle: null,
@@ -334,6 +366,85 @@ export async function cancelCurrentUserBooking(
     .eq("status", "pending")
     .select("*")
     .maybeSingle();
+}
+
+function getSafePaymentSlipExtension(file: File) {
+  const extension = file.name.split(".").pop()?.toLowerCase();
+
+  if (extension === "png" || extension === "jpg" || extension === "jpeg") {
+    return extension;
+  }
+
+  if (file.type === "image/png") {
+    return "png";
+  }
+
+  return "jpg";
+}
+
+// Uploads the slip image to the shared "payment-slips" bucket (reused from
+// the product-order payment flow, under a bookings/ prefix - see
+// supabase/booking-payment-pickup.sql for the storage policies), then hands
+// the resulting path to the submit_booking_payment_slip RPC, which is the
+// only thing allowed to record it and flip the booking into
+// "pending_review".
+export async function submitBookingPaymentSlip(
+  supabase: BCareSupabaseClient,
+  customerId: string,
+  input: BookingPaymentSlipInput,
+) {
+  if (!input.file.type.startsWith("image/")) {
+    return {
+      data: null,
+      error: new Error("กรุณาแนบไฟล์รูปภาพสลิป"),
+    };
+  }
+
+  const extension = getSafePaymentSlipExtension(input.file);
+  const uploadedPath = `${customerId}/bookings/${input.bookingId}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+  const uploadResult = await supabase.storage
+    .from("payment-slips")
+    .upload(uploadedPath, input.file, {
+      cacheControl: "3600",
+      contentType: input.file.type,
+      upsert: false,
+    });
+
+  if (uploadResult.error) {
+    return {
+      data: null,
+      error: uploadResult.error,
+    };
+  }
+
+  const rpcResult = await supabase.rpc("submit_booking_payment_slip", {
+    slip_payment_method: input.paymentMethod,
+    slip_url: uploadResult.data.path,
+    target_booking_id: input.bookingId,
+  });
+
+  if (rpcResult.error) {
+    await supabase.storage.from("payment-slips").remove([uploadResult.data.path]);
+
+    return {
+      data: null,
+      error: rpcResult.error,
+    };
+  }
+
+  return {
+    data: rpcResult.data,
+    error: null,
+  };
+}
+
+export async function confirmBookingPickup(
+  supabase: BCareSupabaseClient,
+  bookingId: string,
+) {
+  return supabase.rpc("confirm_booking_pickup", {
+    target_booking_id: bookingId,
+  });
 }
 
 export async function createGuestBooking(

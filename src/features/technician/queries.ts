@@ -473,30 +473,60 @@ export async function updateTechnicianWorkOrder(
     };
   }
 
-  const updateInput = buildTechnicianWorkOrderUpdate(input);
-  const repairJobResult = await supabase
-    .from("repair_jobs")
-    .update({
-      completed_at: updateInput.completed_at,
-      diagnosis: updateInput.diagnosis,
-      repair_notes: updateInput.repair_notes,
-      started_at: currentResult.data.started_at ?? updateInput.started_at ?? null,
-      status: updateInput.status,
-    })
-    .eq("id", input.workOrderId)
-    .eq("mechanic_id", input.userId)
-    .select("*")
-    .single();
+  let repairJobData: TechnicianRepairJob;
 
-  if (repairJobResult.error) {
-    return {
-      data: null,
-      error: repairJobResult.error,
-    };
+  if (input.status === "completed") {
+    // Closing a work order also snapshots the service price onto the
+    // linked booking and flips it into "awaiting_payment", which the
+    // technician's own session doesn't otherwise have rights to touch -
+    // done atomically via this security-definer RPC rather than a plain
+    // .update() here. See supabase/booking-payment-pickup.sql.
+    const rpcResult = await supabase.rpc(
+      "complete_repair_job_and_request_payment",
+      {
+        diagnosis_text: input.diagnosis,
+        repair_notes_text: input.repairNotes,
+        target_work_order_id: input.workOrderId,
+      },
+    );
+
+    if (rpcResult.error) {
+      return {
+        data: null,
+        error: rpcResult.error,
+      };
+    }
+
+    repairJobData = rpcResult.data;
+  } else {
+    const updateInput = buildTechnicianWorkOrderUpdate(input);
+    const repairJobResult = await supabase
+      .from("repair_jobs")
+      .update({
+        completed_at: updateInput.completed_at,
+        diagnosis: updateInput.diagnosis,
+        repair_notes: updateInput.repair_notes,
+        started_at:
+          currentResult.data.started_at ?? updateInput.started_at ?? null,
+        status: updateInput.status,
+      })
+      .eq("id", input.workOrderId)
+      .eq("mechanic_id", input.userId)
+      .select("*")
+      .single();
+
+    if (repairJobResult.error) {
+      return {
+        data: null,
+        error: repairJobResult.error,
+      };
+    }
+
+    repairJobData = repairJobResult.data;
   }
 
   const detailsResult = await attachTechnicianWorkOrderDetails(supabase, [
-    repairJobResult.data,
+    repairJobData,
   ]);
 
   if (detailsResult.error) {

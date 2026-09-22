@@ -15,6 +15,18 @@ type GenericTable = {
 
 type ServiceStatus = "active" | "inactive";
 type BookingStatus = "pending" | "confirmed" | "cancelled" | "completed";
+type BookingPaymentStatus =
+  | "not_required"
+  | "awaiting_payment"
+  | "pending_review"
+  | "paid"
+  | "rejected";
+type BookingPaymentVerificationStatus =
+  | "submitted"
+  | "verified"
+  | "rejected"
+  | "failed";
+type BookingPaymentVerificationProvider = "slipok" | "admin_manual";
 type ProfileRole = "customer" | "admin" | "technician";
 type CapacityStatus = "open" | "closed";
 type InventoryMovementType =
@@ -37,9 +49,11 @@ type ProductDeliveryMethod = "pickup" | "delivery";
 type ProductOrderPaymentStatus =
   | "unpaid"
   | "pending"
+  | "partially_paid"
   | "paid"
   | "refunded"
   | "cancelled";
+type ProductPaymentTransactionVerifiedByType = "system_slipok" | "admin_manual";
 type ProductPaymentMethod =
   | "cash"
   | "bank_transfer"
@@ -207,6 +221,9 @@ export type Database = {
           booking_time: string;
           status: BookingStatus;
           note: string | null;
+          payment_status: BookingPaymentStatus;
+          payment_amount: number | null;
+          picked_up_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -219,6 +236,9 @@ export type Database = {
           booking_time: string;
           status?: BookingStatus;
           note?: string | null;
+          payment_status?: BookingPaymentStatus;
+          payment_amount?: number | null;
+          picked_up_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -231,6 +251,75 @@ export type Database = {
           booking_time?: string;
           status?: BookingStatus;
           note?: string | null;
+          payment_status?: BookingPaymentStatus;
+          payment_amount?: number | null;
+          picked_up_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      booking_payments: {
+        Row: {
+          id: string;
+          booking_id: string;
+          customer_id: string;
+          amount: number;
+          payment_method: "bank_transfer" | "promptpay";
+          slip_image_url: string;
+          payment_status: "pending" | "paid" | "rejected";
+          rejected_reason: string | null;
+          submitted_at: string;
+          paid_at: string | null;
+          verified_at: string | null;
+          verified_by: string | null;
+          verification_status: BookingPaymentVerificationStatus;
+          verification_provider: BookingPaymentVerificationProvider | null;
+          provider_reference: string | null;
+          verification_response: Json | null;
+          slip_amount: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          booking_id: string;
+          customer_id: string;
+          amount: number;
+          payment_method?: "bank_transfer" | "promptpay";
+          slip_image_url: string;
+          payment_status?: "pending" | "paid" | "rejected";
+          rejected_reason?: string | null;
+          submitted_at?: string;
+          paid_at?: string | null;
+          verified_at?: string | null;
+          verified_by?: string | null;
+          verification_status?: BookingPaymentVerificationStatus;
+          verification_provider?: BookingPaymentVerificationProvider | null;
+          provider_reference?: string | null;
+          verification_response?: Json | null;
+          slip_amount?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          booking_id?: string;
+          customer_id?: string;
+          amount?: number;
+          payment_method?: "bank_transfer" | "promptpay";
+          slip_image_url?: string;
+          payment_status?: "pending" | "paid" | "rejected";
+          rejected_reason?: string | null;
+          submitted_at?: string;
+          paid_at?: string | null;
+          verified_at?: string | null;
+          verified_by?: string | null;
+          verification_status?: BookingPaymentVerificationStatus;
+          verification_provider?: BookingPaymentVerificationProvider | null;
+          provider_reference?: string | null;
+          verification_response?: Json | null;
+          slip_amount?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -373,6 +462,8 @@ export type Database = {
           status: ProductOrderStatus;
           delivery_method: ProductDeliveryMethod;
           delivery_address: string | null;
+          delivery_latitude: number | null;
+          delivery_longitude: number | null;
           subtotal_amount: number;
           delivery_fee: number;
           total_amount: number;
@@ -388,6 +479,8 @@ export type Database = {
           status?: ProductOrderStatus;
           delivery_method?: ProductDeliveryMethod;
           delivery_address?: string | null;
+          delivery_latitude?: number | null;
+          delivery_longitude?: number | null;
           subtotal_amount?: number;
           delivery_fee?: number;
           total_amount?: number;
@@ -403,6 +496,8 @@ export type Database = {
           status?: ProductOrderStatus;
           delivery_method?: ProductDeliveryMethod;
           delivery_address?: string | null;
+          delivery_latitude?: number | null;
+          delivery_longitude?: number | null;
           subtotal_amount?: number;
           delivery_fee?: number;
           total_amount?: number;
@@ -497,6 +592,42 @@ export type Database = {
           rejected_reason?: string | null;
           created_at?: string;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      product_payment_transactions: {
+        Row: {
+          id: string;
+          product_payment_id: string;
+          product_order_id: string;
+          provider_reference: string;
+          verified_amount: number;
+          verified_by_type: ProductPaymentTransactionVerifiedByType;
+          verified_by_user_id: string | null;
+          verified_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          product_payment_id: string;
+          product_order_id: string;
+          provider_reference: string;
+          verified_amount: number;
+          verified_by_type: ProductPaymentTransactionVerifiedByType;
+          verified_by_user_id?: string | null;
+          verified_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          product_payment_id?: string;
+          product_order_id?: string;
+          provider_reference?: string;
+          verified_amount?: number;
+          verified_by_type?: ProductPaymentTransactionVerifiedByType;
+          verified_by_user_id?: string | null;
+          verified_at?: string;
+          created_at?: string;
         };
         Relationships: [];
       };
@@ -608,6 +739,39 @@ export type Database = {
           contact_email?: string | null;
           services_title?: string;
           services_content?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      homepage_appearance_settings: {
+        Row: {
+          id: string;
+          setting_key: string;
+          background_color: string;
+          background_image_url: string | null;
+          logo_url: string | null;
+          created_at: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          setting_key?: string;
+          background_color?: string;
+          background_image_url?: string | null;
+          logo_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          id?: string;
+          setting_key?: string;
+          background_color?: string;
+          background_image_url?: string | null;
+          logo_url?: string | null;
           created_at?: string;
           updated_at?: string;
           updated_by?: string | null;
@@ -971,6 +1135,12 @@ export type Database = {
         };
         Returns: number;
       };
+      cancel_own_product_order_with_inventory_return: {
+        Args: {
+          target_order_id: string;
+        };
+        Returns: number;
+      };
       get_garage_operating_status: {
         Args: {
           target_date: string;
@@ -1006,6 +1176,111 @@ export type Database = {
           target_time: string;
         };
         Returns: boolean;
+      };
+      complete_repair_job_and_request_payment: {
+        Args: {
+          target_work_order_id: string;
+          diagnosis_text: string | null;
+          repair_notes_text: string | null;
+        };
+        Returns: {
+          id: string;
+          booking_id: string;
+          customer_id: string | null;
+          vehicle_id: string;
+          mechanic_id: string | null;
+          status: RepairJobStatus;
+          diagnosis: string | null;
+          repair_notes: string | null;
+          started_at: string | null;
+          completed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+      };
+      submit_booking_payment_slip: {
+        Args: {
+          target_booking_id: string;
+          slip_url: string;
+          slip_payment_method: string;
+        };
+        Returns: {
+          id: string;
+          booking_id: string;
+          customer_id: string;
+          amount: number;
+          payment_method: "bank_transfer" | "promptpay";
+          slip_image_url: string;
+          payment_status: "pending" | "paid" | "rejected";
+          rejected_reason: string | null;
+          submitted_at: string;
+          paid_at: string | null;
+          verified_at: string | null;
+          verified_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+      };
+      approve_booking_payment: {
+        Args: {
+          target_booking_payment_id: string;
+        };
+        Returns: {
+          id: string;
+          customer_id: string;
+          vehicle_id: string;
+          service_id: string;
+          booking_date: string;
+          booking_time: string;
+          status: BookingStatus;
+          note: string | null;
+          payment_status: BookingPaymentStatus;
+          payment_amount: number | null;
+          picked_up_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+      };
+      reject_booking_payment: {
+        Args: {
+          target_booking_payment_id: string;
+          reason: string;
+        };
+        Returns: {
+          id: string;
+          customer_id: string;
+          vehicle_id: string;
+          service_id: string;
+          booking_date: string;
+          booking_time: string;
+          status: BookingStatus;
+          note: string | null;
+          payment_status: BookingPaymentStatus;
+          payment_amount: number | null;
+          picked_up_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+      };
+      confirm_booking_pickup: {
+        Args: {
+          target_booking_id: string;
+        };
+        Returns: {
+          id: string;
+          customer_id: string;
+          vehicle_id: string;
+          service_id: string;
+          booking_date: string;
+          booking_time: string;
+          status: BookingStatus;
+          note: string | null;
+          payment_status: BookingPaymentStatus;
+          payment_amount: number | null;
+          picked_up_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
       };
     };
     Enums: Record<string, never>;

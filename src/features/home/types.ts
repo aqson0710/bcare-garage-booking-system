@@ -6,6 +6,9 @@ export type HomepageSlide =
 export type HomepageFooterSetting =
   Database["public"]["Tables"]["homepage_footer_settings"]["Row"];
 
+export type HomepageAppearanceSetting =
+  Database["public"]["Tables"]["homepage_appearance_settings"]["Row"];
+
 export type HomepageSlideInput = {
   description: string;
   imageUrl: string;
@@ -32,5 +35,16 @@ export type HomepageFooterSettingInput = {
   servicesContent: string;
   servicesTitle: string;
   status: HomepageFooterSetting["status"];
+  updatedBy: string;
+};
+
+export type HomepageAppearanceSettingInput = {
+  backgroundColor: string;
+  backgroundImageUrl: string;
+  updatedBy: string;
+};
+
+export type HomepageLogoSettingInput = {
+  logoUrl: string;
   updatedBy: string;
 };

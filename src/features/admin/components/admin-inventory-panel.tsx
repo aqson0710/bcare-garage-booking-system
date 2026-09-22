@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { AppNav } from "@/components/app-nav";
@@ -140,19 +141,51 @@ function validateMovementInput(
 
 function MovementForm({
   createState,
+  initialProductId,
   onCreate,
   products,
 }: {
   createState: CreateState;
+  initialProductId?: string;
   onCreate: (input: AdminInventoryMovementCreateInput) => void;
   products: AdminProduct[];
 }) {
-  const [productId, setProductId] = useState(products[0]?.id ?? "");
+  const [productId, setProductId] = useState(() => {
+    if (
+      initialProductId &&
+      products.some((product) => product.id === initialProductId)
+    ) {
+      return initialProductId;
+    }
+
+    return products[0]?.id ?? "";
+  });
   const [movementType, setMovementType] = useState<MovementType>("stock_in");
   const [quantity, setQuantity] = useState("1");
   const [note, setNote] = useState("");
   const selectedProduct = products.find((product) => product.id === productId);
   const isSaving = createState.status === "saving";
+  const isStockIncreasing = stockIncreasingMovements.includes(movementType);
+
+  // Clear the quantity/note fields once a movement is saved successfully -
+  // otherwise the same values stay in the form and an accidental second
+  // click of "บันทึก" would silently log the exact same movement twice.
+  // The selected product is kept as-is since counting several movements
+  // for the same item in a row is the common case.
+  useEffect(() => {
+    if (createState.status === "saved") {
+      setQuantity("1");
+      setNote("");
+    }
+  }, [createState.status]);
+
+  function adjustQuantity(delta: number) {
+    setQuantity((current) => {
+      const currentNumber = Number(current);
+      const safeCurrent = Number.isFinite(currentNumber) ? currentNumber : 0;
+      return String(Math.max(1, safeCurrent + delta));
+    });
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -165,7 +198,7 @@ function MovementForm({
   }
 
   return (
-    <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+    <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
       <div className="border-b border-[var(--line)] pb-4">
         <p className="text-sm font-semibold text-[var(--brand)]">
           บันทึกการเคลื่อนไหวสต๊อก
@@ -176,11 +209,11 @@ function MovementForm({
       </div>
 
       <form className="mt-4 grid gap-3" onSubmit={handleSubmit}>
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_140px] lg:items-end">
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_200px] lg:items-start">
           <label className="text-sm font-semibold text-[var(--foreground)]">
             สินค้า
             <select
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) => setProductId(event.target.value)}
               value={productId}
             >
@@ -195,7 +228,7 @@ function MovementForm({
           <label className="text-sm font-semibold text-[var(--foreground)]">
             ประเภทการปรับสต๊อก
             <select
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) =>
                 setMovementType(event.target.value as MovementType)
               }
@@ -207,24 +240,54 @@ function MovementForm({
                 </option>
               ))}
             </select>
+            <p
+              className={
+                isStockIncreasing
+                  ? "mt-1.5 text-xs font-medium text-emerald-400"
+                  : "mt-1.5 text-xs font-medium text-amber-400"
+              }
+            >
+              {isStockIncreasing
+                ? "▲ รายการนี้จะทำให้สต๊อกเพิ่มขึ้น"
+                : "▼ รายการนี้จะทำให้สต๊อกลดลง"}
+            </p>
           </label>
 
           <label className="text-sm font-semibold text-[var(--foreground)]">
             จำนวน
-            <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              min={1}
-              onChange={(event) => setQuantity(event.target.value)}
-              type="number"
-              value={quantity}
-            />
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                aria-label="ลดจำนวน"
+                className="flex min-h-10 w-10 shrink-0 items-center justify-center rounded-md border border-[var(--line)] bg-[var(--surface)] text-lg font-bold text-[var(--foreground)] hover:border-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={Number(quantity) <= 1}
+                onClick={() => adjustQuantity(-1)}
+                type="button"
+              >
+                −
+              </button>
+              <input
+                className="min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-center text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                min={1}
+                onChange={(event) => setQuantity(event.target.value)}
+                type="number"
+                value={quantity}
+              />
+              <button
+                aria-label="เพิ่มจำนวน"
+                className="flex min-h-10 w-10 shrink-0 items-center justify-center rounded-md border border-[var(--line)] bg-[var(--surface)] text-lg font-bold text-[var(--foreground)] hover:border-[var(--brand)]"
+                onClick={() => adjustQuantity(1)}
+                type="button"
+              >
+                +
+              </button>
+            </div>
           </label>
         </div>
 
         <label className="text-sm font-semibold text-[var(--foreground)]">
           หมายเหตุ
           <textarea
-            className="mt-2 min-h-20 w-full resize-y rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            className="mt-2 min-h-20 w-full resize-y rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
             onChange={(event) => setNote(event.target.value)}
             value={note}
           />
@@ -296,7 +359,7 @@ function MovementRow({ movement }: { movement: AdminInventoryMovement }) {
       </td>
       <td className="px-4 py-3">
         <span
-          className={`rounded-md px-2.5 py-1 text-xs font-semibold ${getMovementStyle(
+          className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${getMovementStyle(
             movement.movement_type,
           )}`}
         >
@@ -306,8 +369,8 @@ function MovementRow({ movement }: { movement: AdminInventoryMovement }) {
       <td
         className={
           delta >= 0
-            ? "px-4 py-3 font-semibold text-[var(--brand-strong)]"
-            : "px-4 py-3 font-semibold text-amber-800"
+            ? "px-4 py-3 font-semibold text-emerald-400"
+            : "px-4 py-3 font-semibold text-amber-400"
         }
       >
         {delta >= 0 ? "+" : ""}
@@ -324,6 +387,8 @@ function MovementRow({ movement }: { movement: AdminInventoryMovement }) {
 }
 
 export function AdminInventoryPanel() {
+  const searchParams = useSearchParams();
+  const productParam = searchParams.get("product") ?? undefined;
   const [loadState, setLoadState] = useState<LoadState>({
     access: null,
     error: null,
@@ -531,7 +596,7 @@ export function AdminInventoryPanel() {
               ตรวจสต๊อก
             </Link>
             <Link
-              className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+              className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
               href="/admin/products"
             >
               จัดการสินค้า
@@ -542,7 +607,7 @@ export function AdminInventoryPanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดคลังสินค้า...
           </div>
         </section>
@@ -574,7 +639,7 @@ export function AdminInventoryPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -584,12 +649,13 @@ export function AdminInventoryPanel() {
         <section className="py-6">
           <MovementForm
             createState={createState}
+            initialProductId={productParam}
             onCreate={handleCreateMovement}
             products={loadState.products}
           />
 
           <div className="mt-5 grid gap-3 md:grid-cols-3">
-            <div className="rounded-lg border border-[var(--line)] bg-white p-5">
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5">
               <p className="text-sm font-semibold text-[var(--muted)]">
                 สินค้าทั้งหมด
               </p>
@@ -597,7 +663,7 @@ export function AdminInventoryPanel() {
                 {loadState.products.length}
               </p>
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-white p-5">
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5">
               <p className="text-sm font-semibold text-[var(--muted)]">
                 สต๊อกรวม
               </p>
@@ -605,17 +671,23 @@ export function AdminInventoryPanel() {
                 {stockSummary.totalStock}
               </p>
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-white p-5">
-              <p className="text-sm font-semibold text-[var(--muted)]">
+            <Link
+              className="rounded-lg border border-amber-200 bg-[var(--surface)] p-5 transition hover:border-amber-400"
+              href="/admin/inventory-review?filter=low"
+            >
+              <p className="text-sm font-semibold text-amber-400">
                 สต๊อกใกล้หมด
               </p>
-              <p className="mt-2 text-3xl font-bold text-[var(--foreground)]">
+              <p className="mt-2 text-3xl font-bold text-amber-400">
                 {stockSummary.lowStockCount}
               </p>
-            </div>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                แตะเพื่อดูรายการ →
+              </p>
+            </Link>
           </div>
 
-          <section className="mt-5 rounded-lg border border-[var(--line)] bg-white shadow-sm">
+          <section className="mt-5 rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">
             <div className="border-b border-[var(--line)] p-5">
               <h2 className="text-xl font-bold text-[var(--foreground)]">
                 ประวัติการเคลื่อนไหวสต๊อกล่าสุด
@@ -628,7 +700,7 @@ export function AdminInventoryPanel() {
             {loadState.movements.length > 0 ? (
               <div className="overflow-auto">
                 <table className="w-full min-w-[980px] border-collapse text-left text-sm">
-                  <thead className="border-b border-[var(--line)] bg-slate-50 text-[var(--foreground)]">
+                  <thead className="border-b border-[var(--line)] bg-[var(--surface-muted)] text-[var(--foreground)]">
                     <tr>
                       <th className="px-4 py-3 font-semibold">วันที่</th>
                       <th className="px-4 py-3 font-semibold">สินค้า</th>

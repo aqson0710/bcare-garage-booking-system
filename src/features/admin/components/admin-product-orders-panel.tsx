@@ -47,21 +47,11 @@ type ActionState =
 const statusFilters: StatusFilter[] = [
   "all",
   "pending",
-  "confirmed",
-  "preparing",
-  "ready_for_pickup",
-  "out_for_delivery",
+  "in_progress",
   "completed",
   "cancelled",
 ];
-const paymentFilters: PaymentFilter[] = [
-  "all",
-  "unpaid",
-  "pending",
-  "paid",
-  "refunded",
-  "cancelled",
-];
+const paymentFilters: PaymentFilter[] = ["all", "unpaid", "pending", "paid"];
 const pageSize = 10;
 const editableStatuses: AdminProductOrderStatusAction[] = [
   "pending",
@@ -82,10 +72,7 @@ const currencyFormatter = new Intl.NumberFormat("th-TH", {
 function parseStatusFilter(status: string | null): StatusFilter {
   if (
     status === "pending" ||
-    status === "confirmed" ||
-    status === "preparing" ||
-    status === "ready_for_pickup" ||
-    status === "out_for_delivery" ||
+    status === "in_progress" ||
     status === "completed" ||
     status === "cancelled"
   ) {
@@ -95,10 +82,31 @@ function parseStatusFilter(status: string | null): StatusFilter {
   return "all";
 }
 
+function formatStatusFilterLabel(status: StatusFilter) {
+  if (status === "all") {
+    return "ทั้งหมด";
+  }
+
+  if (status === "pending") {
+    return "รอรับออเดอร์";
+  }
+
+  if (status === "in_progress") {
+    return "กำลังดำเนินการ";
+  }
+
+  if (status === "completed") {
+    return "สำเร็จ";
+  }
+
+  return "ยกเลิกแล้ว";
+}
+
 function parsePaymentFilter(paymentStatus: string | null): PaymentFilter {
   if (
     paymentStatus === "unpaid" ||
     paymentStatus === "pending" ||
+    paymentStatus === "partially_paid" ||
     paymentStatus === "paid" ||
     paymentStatus === "refunded" ||
     paymentStatus === "cancelled"
@@ -153,7 +161,7 @@ function getPaymentStatusStyle(status: AdminProductOrder["payment_status"]) {
     return "bg-emerald-50 text-[var(--brand-strong)]";
   }
 
-  if (status === "pending") {
+  if (status === "pending" || status === "partially_paid") {
     return "bg-amber-50 text-amber-800";
   }
 
@@ -165,7 +173,7 @@ function getPaymentStatusStyle(status: AdminProductOrder["payment_status"]) {
     return "bg-red-50 text-red-700";
   }
 
-  return "bg-slate-100 text-slate-700";
+  return "bg-[var(--surface-muted)] text-[var(--foreground)]";
 }
 
 function formatOrderStatus(status: AdminProductOrder["status"]) {
@@ -201,6 +209,10 @@ function formatPaymentStatus(status: AdminProductOrder["payment_status"]) {
     return "ชำระแล้ว";
   }
 
+  if (status === "partially_paid") {
+    return "ชำระบางส่วน";
+  }
+
   if (status === "pending") {
     return "รอตรวจชำระเงิน";
   }
@@ -231,7 +243,7 @@ function getVerificationStatusStyle(
     return "bg-red-50 text-red-700";
   }
 
-  return "bg-slate-100 text-slate-700";
+  return "bg-[var(--surface-muted)] text-[var(--foreground)]";
 }
 
 function formatPaymentFilterLabel(paymentStatus: PaymentFilter) {
@@ -247,6 +259,10 @@ function formatPaymentFilterLabel(paymentStatus: PaymentFilter) {
     return "รอตรวจสลิป";
   }
 
+  if (paymentStatus === "partially_paid") {
+    return "ชำระบางส่วน";
+  }
+
   if (paymentStatus === "paid") {
     return "ชำระแล้ว";
   }
@@ -255,7 +271,7 @@ function formatPaymentFilterLabel(paymentStatus: PaymentFilter) {
     return "คืนเงิน";
   }
 
-  return "ยกเลิกชำระเงิน";
+  return "ยกเลิก";
 }
 
 function formatVerificationStatus(
@@ -382,7 +398,7 @@ function AdminPaginationControls({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-[var(--line)] bg-white p-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="flex flex-col gap-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 lg:flex-row lg:items-center lg:justify-between">
       <p className="text-sm text-[var(--muted)]">
         หน้า {result.page} จาก {result.totalPages}
       </p>
@@ -390,7 +406,7 @@ function AdminPaginationControls({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="flex gap-2">
           <button
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-50"
             disabled={result.page <= 1}
             onClick={() => onPageChange(result.page - 1)}
             type="button"
@@ -398,7 +414,7 @@ function AdminPaginationControls({
             ก่อนหน้า
           </button>
           <button
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-50"
             disabled={result.page >= result.totalPages}
             onClick={() => onPageChange(result.page + 1)}
             type="button"
@@ -419,7 +435,7 @@ function AdminPaginationControls({
             ไปหน้า
           </label>
           <input
-            className="min-h-10 w-24 rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            className="min-h-10 w-24 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
             defaultValue={result.page}
             id={inputId}
             inputMode="numeric"
@@ -477,7 +493,7 @@ function AdminProductOrderCard({
   }
 
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+    <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -517,13 +533,13 @@ function AdminProductOrderCard({
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href={`/admin/product-orders/${order.id}`}
           >
             ดูรายละเอียด
           </Link>
           <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href={`/admin/product-orders/${order.id}/receipt`}
           >
             ใบเสร็จ / ใบแจ้งชำระเงิน
@@ -579,7 +595,7 @@ function AdminProductOrderCard({
       </dl>
 
       {order.note ? (
-        <div className="mt-4 rounded-md bg-slate-50 p-3 text-sm leading-6 text-[var(--muted)]">
+        <div className="mt-4 rounded-md bg-[var(--surface-muted)] p-3 text-sm leading-6 text-[var(--muted)]">
           {order.note}
         </div>
       ) : null}
@@ -625,11 +641,11 @@ function AdminProductOrderCard({
 
       <div className="mt-5 flex flex-col gap-3 border-t border-[var(--line)] pt-5 sm:flex-row sm:items-center sm:justify-between">
         {isEditingStatus ? (
-          <div className="flex w-full flex-col gap-3 rounded-md border border-[var(--line)] bg-slate-50 p-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex w-full flex-col gap-3 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] p-3 sm:flex-row sm:items-end sm:justify-between">
             <label className="text-sm font-semibold text-[var(--foreground)]">
               แก้ไขสถานะ
               <select
-                className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)] sm:w-56"
+                className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)] sm:w-56"
                 disabled={isUpdating}
                 onChange={(event) =>
                   setSelectedStatus(
@@ -647,7 +663,7 @@ function AdminProductOrderCard({
             </label>
             <div className="flex flex-wrap gap-2">
               <button
-                className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                 disabled={isUpdating}
                 onClick={cancelStatusEdit}
                 type="button"
@@ -678,7 +694,7 @@ function AdminProductOrderCard({
               </button>
             ))}
             <button
-              className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+              className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
               disabled={isUpdating}
               onClick={() => setIsEditingStatus(true)}
               type="button"
@@ -692,7 +708,7 @@ function AdminProductOrderCard({
               ไม่มีปุ่มลัดสำหรับสถานะนี้
             </p>
             <button
-              className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+              className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
               disabled={isUpdating}
               onClick={() => setIsEditingStatus(true)}
               type="button"
@@ -703,7 +719,7 @@ function AdminProductOrderCard({
         )}
 
         {actionState.status === "error" && actionState.orderId === order.id ? (
-          <p className="text-sm text-red-700">{actionState.error}</p>
+          <p className="text-sm text-[var(--danger)]">{actionState.error}</p>
         ) : null}
       </div>
     </article>
@@ -944,7 +960,7 @@ export function AdminProductOrdersPanel() {
             </p>
           </div>
           <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href="/admin"
           >
             กลับหน้าแอดมิน
@@ -954,7 +970,7 @@ export function AdminProductOrdersPanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดคำสั่งซื้อสินค้า...
           </div>
         </section>
@@ -986,7 +1002,7 @@ export function AdminProductOrdersPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -1005,7 +1021,7 @@ export function AdminProductOrdersPanel() {
                   {loadState.result.totalPages}
                 </p>
                 {paymentFilter === "pending" ? (
-                  <p className="mt-1 text-sm font-semibold text-amber-800">
+                  <p className="mt-1 text-sm font-semibold text-amber-400">
                     กำลังดูคิวรอตรวจสลิป
                   </p>
                 ) : null}
@@ -1016,7 +1032,7 @@ export function AdminProductOrdersPanel() {
                 onSubmit={handleSearchSubmit}
               >
                 <input
-                  className="min-h-10 flex-1 rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                  className="min-h-10 flex-1 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   onChange={(event) => setSearchInput(event.target.value)}
                   placeholder="ค้นหาเลขออเดอร์ ลูกค้า เบอร์โทร สินค้า หมายเหตุ หรือ order ID"
                   type="search"
@@ -1030,7 +1046,7 @@ export function AdminProductOrdersPanel() {
                 </button>
                 {submittedSearch ? (
                   <button
-                    className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                    className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                     onClick={() => {
                       setSearchInput("");
                       updateFilters({
@@ -1046,48 +1062,58 @@ export function AdminProductOrdersPanel() {
               </form>
             </div>
 
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {statusFilters.map((status) => (
-                <button
-                  className={
-                    statusFilter === status
-                      ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-                      : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
-                  }
-                  key={status}
-                  onClick={() =>
-                    updateFilters({
-                      page: 1,
-                      status,
-                    })
-                  }
-                  type="button"
-                >
-                  {status}
-                </button>
-              ))}
+            <div>
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                สถานะออเดอร์
+              </p>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {statusFilters.map((status) => (
+                  <button
+                    className={
+                      statusFilter === status
+                        ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+                        : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
+                    }
+                    key={status}
+                    onClick={() =>
+                      updateFilters({
+                        page: 1,
+                        status,
+                      })
+                    }
+                    type="button"
+                  >
+                    {formatStatusFilterLabel(status)}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {paymentFilters.map((paymentStatus) => (
-                <button
-                  className={
-                    paymentFilter === paymentStatus
-                      ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-                      : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
-                  }
-                  key={paymentStatus}
-                  onClick={() =>
-                    updateFilters({
-                      page: 1,
-                      payment: paymentStatus,
-                    })
-                  }
-                  type="button"
-                >
-                  {formatPaymentFilterLabel(paymentStatus)}
-                </button>
-              ))}
+            <div>
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                การชำระเงิน
+              </p>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {paymentFilters.map((paymentStatus) => (
+                  <button
+                    className={
+                      paymentFilter === paymentStatus
+                        ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+                        : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
+                    }
+                    key={paymentStatus}
+                    onClick={() =>
+                      updateFilters({
+                        page: 1,
+                        payment: paymentStatus,
+                      })
+                    }
+                    type="button"
+                  >
+                    {formatPaymentFilterLabel(paymentStatus)}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -1111,7 +1137,7 @@ export function AdminProductOrdersPanel() {
               ))}
             </div>
           ) : (
-            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
+            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
               ไม่พบคำสั่งซื้อสินค้าที่ตรงกับตัวกรองตอนนี้
             </div>
           )}

@@ -80,6 +80,7 @@ type StatusFilter = "all" | AdminProduct["status"];
 const statusFilters: StatusFilter[] = ["all", "active", "inactive"];
 const productImagesBucket = "product-images";
 const productImagePlaceholder = "/product-placeholder.svg";
+const lowStockThreshold = 2;
 
 const currencyFormatter = new Intl.NumberFormat("th-TH", {
   currency: "THB",
@@ -92,7 +93,7 @@ function getStatusStyle(status: AdminProduct["status"]) {
     return "bg-emerald-50 text-[var(--brand-strong)]";
   }
 
-  return "bg-slate-100 text-slate-700";
+  return "bg-[var(--surface-muted)] text-[var(--foreground)]";
 }
 
 function formatProductStatus(status: StatusFilter) {
@@ -235,17 +236,200 @@ async function uploadProductImage(file: File) {
 function ProductImagePreview({
   imageUrl,
   label,
+  size = "md",
 }: {
   imageUrl: string | null;
   label: string;
+  size?: "sm" | "md";
 }) {
   return (
     <img
       alt={label}
-      className="h-24 w-24 rounded-md border border-[var(--line)] bg-slate-50 object-cover"
+      className={
+        size === "sm"
+          ? "h-12 w-12 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] object-cover"
+          : "h-24 w-24 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] object-cover"
+      }
       onError={handleProductImageError}
       src={imageUrl || productImagePlaceholder}
     />
+  );
+}
+
+function ProductFormFields({
+  categories,
+  costPrice,
+  description,
+  imageUploadState,
+  imageUrl,
+  name,
+  onImageUpload,
+  productCategoryId,
+  setCostPrice,
+  setDescription,
+  setImageUrl,
+  setName,
+  setProductCategoryId,
+  setSku,
+  setStatus,
+  setUnitPrice,
+  sku,
+  status,
+  unitPrice,
+}: {
+  categories: AdminProductCategory[];
+  costPrice: string;
+  description: string;
+  imageUploadState: ProductImageUploadState;
+  imageUrl: string;
+  name: string;
+  onImageUpload: (file: File | null) => void;
+  productCategoryId: string;
+  setCostPrice: (value: string) => void;
+  setDescription: (value: string) => void;
+  setImageUrl: (value: string) => void;
+  setName: (value: string) => void;
+  setProductCategoryId: (value: string) => void;
+  setSku: (value: string) => void;
+  setStatus: (value: AdminProduct["status"]) => void;
+  setUnitPrice: (value: string) => void;
+  sku: string;
+  status: AdminProduct["status"];
+  unitPrice: string;
+}) {
+  return (
+    <>
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_150px_150px_140px] lg:items-end">
+        <label className="text-sm font-semibold text-[var(--foreground)]">
+          ชื่อสินค้า
+          <input
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            onChange={(event) => setName(event.target.value)}
+            value={name}
+          />
+        </label>
+
+        <label className="text-sm font-semibold text-[var(--foreground)]">
+          หมวดสินค้า
+          <select
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            onChange={(event) => setProductCategoryId(event.target.value)}
+            value={productCategoryId}
+          >
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+                {category.status === "inactive" ? " (ปิดใช้งาน)" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="text-sm font-semibold text-[var(--foreground)]">
+          ราคาขาย
+          <input
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            min={0}
+            onChange={(event) => setUnitPrice(event.target.value)}
+            step="0.01"
+            type="number"
+            value={unitPrice}
+          />
+        </label>
+
+        <label className="text-sm font-semibold text-[var(--foreground)]">
+          ต้นทุน
+          <input
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            min={0}
+            onChange={(event) => setCostPrice(event.target.value)}
+            step="0.01"
+            type="number"
+            value={costPrice}
+          />
+        </label>
+
+        <label className="text-sm font-semibold text-[var(--foreground)]">
+          สถานะ
+          <select
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            onChange={(event) =>
+              setStatus(event.target.value as AdminProduct["status"])
+            }
+            value={status}
+          >
+            <option value="active">เปิดใช้งาน</option>
+            <option value="inactive">ปิดใช้งาน</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
+        <label className="text-sm font-semibold text-[var(--foreground)]">
+          SKU
+          <input
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            onChange={(event) => setSku(event.target.value)}
+            value={sku}
+          />
+        </label>
+
+        <label className="text-sm font-semibold text-[var(--foreground)]">
+          รายละเอียด
+          <input
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            onChange={(event) => setDescription(event.target.value)}
+            value={description}
+          />
+        </label>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-[96px_minmax(0,1fr)_220px] lg:items-end">
+        <ProductImagePreview imageUrl={imageUrl} label={`ตัวอย่างรูป ${name}`} />
+
+        <label className="text-sm font-semibold text-[var(--foreground)]">
+          URL รูปสินค้า
+          <input
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            onChange={(event) => setImageUrl(event.target.value)}
+            placeholder="https://... หรืออัปโหลดรูปจากเครื่อง"
+            value={imageUrl}
+          />
+        </label>
+
+        <label className="text-sm font-semibold text-[var(--foreground)]">
+          อัปโหลดรูปสินค้า
+          <input
+            accept="image/png,image/jpeg,image/webp"
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+            disabled={imageUploadState.status === "uploading"}
+            onChange={(event) => {
+              onImageUpload(event.target.files?.[0] ?? null);
+              event.target.value = "";
+            }}
+            type="file"
+          />
+        </label>
+      </div>
+
+      {imageUploadState.status === "uploading" ? (
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-800">
+          กำลังอัปโหลดรูปสินค้า...
+        </div>
+      ) : null}
+
+      {imageUploadState.status === "uploaded" ? (
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm leading-6 text-[var(--brand-strong)]">
+          {imageUploadState.message}
+        </div>
+      ) : null}
+
+      {imageUploadState.status === "error" ? (
+        <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-700">
+          {imageUploadState.error}
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -258,6 +442,7 @@ function AddProductForm({
   createState: CreateState;
   onCreate: (input: AdminProductCreateInput) => void;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -322,146 +507,58 @@ function AddProductForm({
     );
   }
 
+  if (!isOpen) {
+    return (
+      <button
+        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[var(--line)] bg-[var(--surface)] text-sm font-semibold text-[var(--muted)] hover:border-[var(--brand)] hover:text-[var(--foreground)]"
+        onClick={() => setIsOpen(true)}
+        type="button"
+      >
+        + เพิ่มสินค้า
+      </button>
+    );
+  }
+
   return (
-    <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
-      <div className="border-b border-[var(--line)] pb-4">
-        <p className="text-sm font-semibold text-[var(--brand)]">เพิ่มสินค้า</p>
-        <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
-          สินค้าใหม่จะเริ่มต้นที่สต๊อก 0 รายการ การเพิ่มหรือลดสต๊อกให้ทำจากหน้าคลังสินค้า
-        </p>
+    <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
+      <div className="flex items-start justify-between border-b border-[var(--line)] pb-4">
+        <div>
+          <p className="text-sm font-semibold text-[var(--brand)]">เพิ่มสินค้า</p>
+          <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
+            สินค้าใหม่จะเริ่มต้นที่สต๊อก 0 รายการ การเพิ่มหรือลดสต๊อกให้ทำจากหน้าคลังสินค้า
+          </p>
+        </div>
+        <button
+          className="text-sm font-semibold text-[var(--muted)]"
+          onClick={() => setIsOpen(false)}
+          type="button"
+        >
+          ปิด
+        </button>
       </div>
 
       <form className="mt-4 grid gap-3" onSubmit={handleSubmit}>
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_150px_150px_140px] lg:items-end">
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            ชื่อสินค้า
-            <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              onChange={(event) => setName(event.target.value)}
-              value={name}
-            />
-          </label>
-
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            หมวดสินค้า
-            <select
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              onChange={(event) => setProductCategoryId(event.target.value)}
-              value={productCategoryId}
-            >
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                  {category.status === "inactive" ? " (ปิดใช้งาน)" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            ราคาขาย
-            <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              min={0}
-              onChange={(event) => setUnitPrice(event.target.value)}
-              step="0.01"
-              type="number"
-              value={unitPrice}
-            />
-          </label>
-
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            ต้นทุน
-            <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              min={0}
-              onChange={(event) => setCostPrice(event.target.value)}
-              step="0.01"
-              type="number"
-              value={costPrice}
-            />
-          </label>
-
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            สถานะ
-            <select
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              onChange={(event) =>
-                setStatus(event.target.value as AdminProduct["status"])
-              }
-              value={status}
-            >
-              <option value="active">เปิดใช้งาน</option>
-              <option value="inactive">ปิดใช้งาน</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            SKU
-            <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              onChange={(event) => setSku(event.target.value)}
-              value={sku}
-            />
-          </label>
-
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            รายละเอียด
-            <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              onChange={(event) => setDescription(event.target.value)}
-              value={description}
-            />
-          </label>
-        </div>
-
-        <div className="grid gap-3 lg:grid-cols-[96px_minmax(0,1fr)_220px] lg:items-end">
-          <ProductImagePreview imageUrl={imageUrl} label="ตัวอย่างรูปสินค้าใหม่" />
-
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            URL รูปสินค้า
-            <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              onChange={(event) => setImageUrl(event.target.value)}
-              placeholder="https://... หรืออัปโหลดรูปจากเครื่อง"
-              value={imageUrl}
-            />
-          </label>
-
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            อัปโหลดรูปสินค้า
-            <input
-              accept="image/png,image/jpeg,image/webp"
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)]"
-              disabled={imageUploadState.status === "uploading"}
-              onChange={(event) => {
-                void handleImageUpload(event.target.files?.[0] ?? null);
-                event.target.value = "";
-              }}
-              type="file"
-            />
-          </label>
-        </div>
-
-        {imageUploadState.status === "uploading" ? (
-          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-800">
-            กำลังอัปโหลดรูปสินค้า...
-          </div>
-        ) : null}
-
-        {imageUploadState.status === "uploaded" ? (
-          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm leading-6 text-[var(--brand-strong)]">
-            {imageUploadState.message}
-          </div>
-        ) : null}
-
-        {imageUploadState.status === "error" ? (
-          <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-700">
-            {imageUploadState.error}
-          </div>
-        ) : null}
+        <ProductFormFields
+          categories={categories}
+          costPrice={costPrice}
+          description={description}
+          imageUploadState={imageUploadState}
+          imageUrl={imageUrl}
+          name={name}
+          onImageUpload={handleImageUpload}
+          productCategoryId={productCategoryId}
+          setCostPrice={setCostPrice}
+          setDescription={setDescription}
+          setImageUrl={setImageUrl}
+          setName={setName}
+          setProductCategoryId={setProductCategoryId}
+          setSku={setSku}
+          setStatus={setStatus}
+          setUnitPrice={setUnitPrice}
+          sku={sku}
+          status={status}
+          unitPrice={unitPrice}
+        />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <button
@@ -473,11 +570,11 @@ function AddProductForm({
           </button>
 
           {createState.status === "error" ? (
-            <p className="text-sm text-red-700">{createState.error}</p>
+            <p className="text-sm text-[var(--danger)]">{createState.error}</p>
           ) : null}
 
           {createState.status === "created" ? (
-            <p className="text-sm font-semibold text-[var(--brand-strong)]">
+            <p className="text-sm font-semibold text-emerald-400">
               {createState.message}
             </p>
           ) : null}
@@ -490,12 +587,16 @@ function AddProductForm({
 function AdminProductRow({
   actionState,
   categories,
+  isExpanded,
   onSave,
+  onToggle,
   product,
 }: {
   actionState: ActionState;
   categories: AdminProductCategory[];
+  isExpanded: boolean;
   onSave: (product: AdminProduct, input: AdminProductUpdateInput) => void;
+  onToggle: () => void;
   product: AdminProduct;
 }) {
   const [name, setName] = useState(product.name);
@@ -525,6 +626,7 @@ function AdminProductRow({
     Number(unitPrice) !== product.unit_price ||
     Number(costPrice) !== product.cost_price ||
     status !== product.status;
+  const isLowStock = product.stock_quantity <= lowStockThreshold;
 
   async function handleImageUpload(file: File | null) {
     if (!file) {
@@ -574,213 +676,112 @@ function AdminProductRow({
   }
 
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-[var(--line)] pb-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-          <ProductImagePreview
-            imageUrl={product.image_url}
-            label={`รูปสินค้า ${product.name}`}
-          />
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--brand)]">
-                {product.category?.name ?? "ยังไม่มีหมวดสินค้า"}
-              </p>
-              <span
-                className={`rounded-md px-2.5 py-1 text-xs font-semibold ${getStatusStyle(
-                  product.status,
-                )}`}
-              >
-                {formatProductStatus(product.status)}
-              </span>
-            </div>
-            <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">
+    <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">
+      <button
+        className="flex w-full items-center gap-3 p-4 text-left"
+        onClick={onToggle}
+        type="button"
+      >
+        <ProductImagePreview
+          imageUrl={product.image_url}
+          label={`รูปสินค้า ${product.name}`}
+          size="sm"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="truncate text-base font-bold text-[var(--foreground)]">
               {product.name}
             </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-              {product.description ?? "-"}
-            </p>
-            <p className="mt-2 text-xs text-[var(--muted)]">
-              SKU: {product.sku ?? "-"}
-            </p>
+            <span
+              className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold ${getStatusStyle(product.status)}`}
+            >
+              {formatProductStatus(product.status)}
+            </span>
+            {isLowStock ? (
+              <span className="shrink-0 rounded-md bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
+                สต๊อกใกล้หมด
+              </span>
+            ) : null}
           </div>
+          <p className="mt-1 truncate text-xs text-[var(--muted)]">
+            {product.category?.name ?? "ยังไม่มีหมวดสินค้า"} · SKU{" "}
+            {product.sku ?? "-"}
+          </p>
         </div>
-
-        <div className="grid grid-cols-3 gap-3 text-sm lg:min-w-[360px]">
-          <div className="rounded-md bg-slate-50 p-3">
+        <div className="hidden shrink-0 gap-4 text-right text-sm sm:flex">
+          <div>
             <p className="text-xs text-[var(--muted)]">ราคาขาย</p>
-            <p className="mt-1 font-semibold text-[var(--foreground)]">
+            <p className="font-semibold text-[var(--foreground)]">
               {currencyFormatter.format(product.unit_price)}
             </p>
           </div>
-          <div className="rounded-md bg-slate-50 p-3">
-            <p className="text-xs text-[var(--muted)]">ต้นทุน</p>
-            <p className="mt-1 font-semibold text-[var(--foreground)]">
-              {currencyFormatter.format(product.cost_price)}
-            </p>
-          </div>
-          <div className="rounded-md bg-slate-50 p-3">
+          <div>
             <p className="text-xs text-[var(--muted)]">สต๊อก</p>
-            <p className="mt-1 font-semibold text-[var(--foreground)]">
+            <p className="font-semibold text-[var(--foreground)]">
               {product.stock_quantity}
             </p>
           </div>
         </div>
-      </div>
+        <span className="shrink-0 text-sm font-semibold text-[var(--muted)]">
+          {isExpanded ? "ย่อ" : "แก้ไข"}
+        </span>
+      </button>
 
-      <form className="mt-4 grid gap-3" onSubmit={handleSubmit}>
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_150px_150px_140px] lg:items-end">
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            ชื่อสินค้า
-            <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              onChange={(event) => setName(event.target.value)}
-              value={name}
-            />
-          </label>
+      {isExpanded ? (
+        <form
+          className="grid gap-3 border-t border-[var(--line)] p-4"
+          onSubmit={handleSubmit}
+        >
+          <ProductFormFields
+            categories={categories}
+            costPrice={costPrice}
+            description={description}
+            imageUploadState={imageUploadState}
+            imageUrl={imageUrl}
+            name={name}
+            onImageUpload={handleImageUpload}
+            productCategoryId={productCategoryId}
+            setCostPrice={setCostPrice}
+            setDescription={setDescription}
+            setImageUrl={setImageUrl}
+            setName={setName}
+            setProductCategoryId={setProductCategoryId}
+            setSku={setSku}
+            setStatus={setStatus}
+            setUnitPrice={setUnitPrice}
+            sku={sku}
+            status={status}
+            unitPrice={unitPrice}
+          />
 
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            หมวดสินค้า
-            <select
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              onChange={(event) => setProductCategoryId(event.target.value)}
-              value={productCategoryId}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={!hasChanges || isSaving}
+              type="submit"
             >
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                  {category.status === "inactive" ? " (ปิดใช้งาน)" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
+              {isSaving ? "กำลังบันทึก..." : "บันทึกสินค้า"}
+            </button>
 
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            ราคาขาย
-            <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              min={0}
-              onChange={(event) => setUnitPrice(event.target.value)}
-              step="0.01"
-              type="number"
-              value={unitPrice}
-            />
-          </label>
-
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            ต้นทุน
-            <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              min={0}
-              onChange={(event) => setCostPrice(event.target.value)}
-              step="0.01"
-              type="number"
-              value={costPrice}
-            />
-          </label>
-
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            สถานะ
-            <select
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              onChange={(event) =>
-                setStatus(event.target.value as AdminProduct["status"])
-              }
-              value={status}
-            >
-              <option value="active">เปิดใช้งาน</option>
-              <option value="inactive">ปิดใช้งาน</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="grid gap-3 lg:grid-cols-[96px_minmax(0,1fr)_220px] lg:items-end">
-          <ProductImagePreview imageUrl={imageUrl} label={`ตัวอย่างรูป ${name}`} />
-
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            URL รูปสินค้า
-            <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              onChange={(event) => setImageUrl(event.target.value)}
-              placeholder="https://... หรืออัปโหลดรูปจากเครื่อง"
-              value={imageUrl}
-            />
-          </label>
-
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            อัปโหลดรูปสินค้า
-            <input
-              accept="image/png,image/jpeg,image/webp"
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)]"
-              disabled={imageUploadState.status === "uploading"}
-              onChange={(event) => {
-                void handleImageUpload(event.target.files?.[0] ?? null);
-                event.target.value = "";
-              }}
-              type="file"
-            />
-          </label>
-        </div>
-
-        {imageUploadState.status === "uploading" ? (
-          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-800">
-            กำลังอัปโหลดรูปสินค้า...
+            <p className="text-xs text-[var(--muted)]">
+              สต๊อกปัจจุบัน {product.stock_quantity} ชิ้น · ปรับสต๊อกได้ที่หน้าคลังสินค้า
+            </p>
           </div>
-        ) : null}
 
-        {imageUploadState.status === "uploaded" ? (
-          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm leading-6 text-[var(--brand-strong)]">
-            {imageUploadState.message}
-          </div>
-        ) : null}
+          {actionState.status === "error" &&
+          actionState.productId === product.id ? (
+            <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+              {actionState.error}
+            </p>
+          ) : null}
 
-        {imageUploadState.status === "error" ? (
-          <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-700">
-            {imageUploadState.error}
-          </div>
-        ) : null}
-
-        <div className="grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)_160px] lg:items-end">
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            SKU
-            <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              onChange={(event) => setSku(event.target.value)}
-              value={sku}
-            />
-          </label>
-
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            รายละเอียด
-            <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              onChange={(event) => setDescription(event.target.value)}
-              value={description}
-            />
-          </label>
-
-          <button
-            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={!hasChanges || isSaving}
-            type="submit"
-          >
-            {isSaving ? "กำลังบันทึก..." : "บันทึกสินค้า"}
-          </button>
-        </div>
-      </form>
-
-      {actionState.status === "error" &&
-      actionState.productId === product.id ? (
-        <p className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-700">
-          {actionState.error}
-        </p>
-      ) : null}
-
-      {actionState.status === "saved" &&
-      actionState.productId === product.id ? (
-        <p className="mt-3 rounded-md bg-emerald-50 p-3 text-sm font-semibold text-[var(--brand-strong)]">
-          {actionState.message}
-        </p>
+          {actionState.status === "saved" &&
+          actionState.productId === product.id ? (
+            <p className="rounded-md bg-emerald-50 p-3 text-sm font-semibold text-[var(--brand-strong)]">
+              {actionState.message}
+            </p>
+          ) : null}
+        </form>
       ) : null}
     </article>
   );
@@ -796,6 +797,9 @@ export function AdminProductsPanel() {
   });
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchInput, setSearchInput] = useState("");
+  const [expandedProductId, setExpandedProductId] = useState<string | null>(
+    null,
+  );
   const [actionState, setActionState] = useState<ActionState>({
     error: null,
     message: null,
@@ -949,7 +953,9 @@ export function AdminProductsPanel() {
       return [];
     }
 
-    return loadState.products.filter((product) => product.stock_quantity <= 2);
+    return loadState.products.filter(
+      (product) => product.stock_quantity <= lowStockThreshold,
+    );
   }, [loadState]);
 
   async function handleCreateProduct(input: AdminProductCreateInput) {
@@ -1130,19 +1136,19 @@ export function AdminProductsPanel() {
               จัดการคลังสินค้า
             </Link>
             <Link
-              className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+              className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
               href="/admin/inventory-review"
             >
               ตรวจสต๊อก
             </Link>
             <Link
-              className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+              className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
               href="/admin/product-categories"
             >
               หมวดสินค้า
             </Link>
             <Link
-              className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+              className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
               href="/admin"
             >
               หน้าแอดมิน
@@ -1153,7 +1159,7 @@ export function AdminProductsPanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดสินค้า...
           </div>
         </section>
@@ -1185,7 +1191,7 @@ export function AdminProductsPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -1201,7 +1207,7 @@ export function AdminProductsPanel() {
           />
 
           <div className="mt-5 grid gap-3 md:grid-cols-3">
-            <div className="rounded-lg border border-[var(--line)] bg-white p-5">
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5">
               <p className="text-sm font-semibold text-[var(--muted)]">
                 สินค้าทั้งหมด
               </p>
@@ -1209,7 +1215,7 @@ export function AdminProductsPanel() {
                 {loadState.products.length}
               </p>
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-white p-5">
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5">
               <p className="text-sm font-semibold text-[var(--muted)]">
                 สินค้าที่เปิดขาย
               </p>
@@ -1221,7 +1227,7 @@ export function AdminProductsPanel() {
                 }
               </p>
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-white p-5">
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5">
               <p className="text-sm font-semibold text-[var(--muted)]">
                 สต๊อกใกล้หมด
               </p>
@@ -1232,19 +1238,13 @@ export function AdminProductsPanel() {
           </div>
 
           <div className="mt-5 flex flex-col gap-4 border-b border-[var(--line)] pb-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-[var(--foreground)]">
-                {filteredProducts.length} of {loadState.products.length}{" "}
-                รายการ
-              </p>
-              <p className="mt-1 text-sm text-[var(--muted)]">
-                หน้านี้แสดงจำนวนสต๊อกเท่านั้น การปรับสต๊อกให้ทำผ่านหน้าคลังสินค้า
-              </p>
-            </div>
+            <p className="text-sm font-semibold text-[var(--foreground)]">
+              {filteredProducts.length} จาก {loadState.products.length} รายการ
+            </p>
 
             <div className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-2xl">
               <input
-                className="min-h-10 flex-1 rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                className="min-h-10 flex-1 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="ค้นหาสินค้า SKU หรือหมวดสินค้า"
                 type="search"
@@ -1256,7 +1256,7 @@ export function AdminProductsPanel() {
                     className={
                       statusFilter === status
                         ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-                        : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                        : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                     }
                     key={status}
                     onClick={() => setStatusFilter(status)}
@@ -1270,19 +1270,25 @@ export function AdminProductsPanel() {
           </div>
 
           {filteredProducts.length > 0 ? (
-            <div className="mt-5 space-y-4">
+            <div className="mt-5 space-y-3">
               {filteredProducts.map((product) => (
                 <AdminProductRow
                   actionState={actionState}
                   categories={loadState.categories}
+                  isExpanded={expandedProductId === product.id}
                   key={product.id}
                   onSave={handleSaveProduct}
+                  onToggle={() =>
+                    setExpandedProductId((current) =>
+                      current === product.id ? null : product.id,
+                    )
+                  }
                   product={product}
                 />
               ))}
             </div>
           ) : (
-            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
+            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
               ไม่พบสินค้าที่ตรงกับตัวกรองปัจจุบัน
             </div>
           )}

@@ -36,7 +36,7 @@ export function ProductImageThumb({
   return (
     <img
       alt={alt}
-      className={`${sizeClassNames[size]} shrink-0 rounded-md border border-[var(--line)] bg-slate-50 object-cover ${className}`}
+      className={`${sizeClassNames[size]} shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] object-cover ${className}`}
       onError={handleProductImageError}
       src={src || productImagePlaceholder}
     />

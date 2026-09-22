@@ -54,7 +54,7 @@ function getStatusStyle(status: AdminTechnicianSkill["status"]) {
     return "bg-emerald-50 text-[var(--brand-strong)]";
   }
 
-  return "bg-slate-100 text-slate-700";
+  return "bg-[var(--surface-muted)] text-[var(--foreground)]";
 }
 
 function formatSkillStatus(status: StatusFilter) {
@@ -100,7 +100,7 @@ function AddTechnicianSkillForm({
   }
 
   return (
-    <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+    <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
       <div className="border-b border-[var(--line)] pb-4">
         <p className="text-sm font-semibold text-[var(--brand)]">เพิ่มทักษะช่าง</p>
         <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
@@ -113,7 +113,7 @@ function AddTechnicianSkillForm({
           <label className="text-sm font-semibold text-[var(--foreground)]">
             ชื่อทักษะ
             <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) => setName(event.target.value)}
               placeholder="เช่น ระบบเกียร์"
               value={name}
@@ -123,7 +123,7 @@ function AddTechnicianSkillForm({
           <label className="text-sm font-semibold text-[var(--foreground)]">
             สถานะ
             <select
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) =>
                 setStatus(event.target.value as AdminTechnicianSkill["status"])
               }
@@ -138,7 +138,7 @@ function AddTechnicianSkillForm({
         <label className="text-sm font-semibold text-[var(--foreground)]">
           รายละเอียด
           <textarea
-            className="mt-2 min-h-20 w-full resize-y rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            className="mt-2 min-h-20 w-full resize-y rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
             onChange={(event) => setDescription(event.target.value)}
             placeholder="คำอธิบายสั้น ๆ สำหรับ admin และช่าง"
             value={description}
@@ -155,11 +155,11 @@ function AddTechnicianSkillForm({
           </button>
 
           {createState.status === "error" ? (
-            <p className="text-sm text-red-700">{createState.error}</p>
+            <p className="text-sm text-[var(--danger)]">{createState.error}</p>
           ) : null}
 
           {createState.status === "created" ? (
-            <p className="text-sm font-semibold text-[var(--brand-strong)]">
+            <p className="text-sm font-semibold text-emerald-400">
               {createState.message}
             </p>
           ) : null}
@@ -202,7 +202,7 @@ function AdminTechnicianSkillRow({
   }
 
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+    <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
       <div className="flex flex-col gap-3 border-b border-[var(--line)] pb-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <span
@@ -229,7 +229,7 @@ function AdminTechnicianSkillRow({
           <label className="text-sm font-semibold text-[var(--foreground)]">
             ชื่อทักษะ
             <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) => setName(event.target.value)}
               value={name}
             />
@@ -238,7 +238,7 @@ function AdminTechnicianSkillRow({
           <label className="text-sm font-semibold text-[var(--foreground)]">
             สถานะ
             <select
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) =>
                 setStatus(event.target.value as AdminTechnicianSkill["status"])
               }
@@ -253,7 +253,7 @@ function AdminTechnicianSkillRow({
         <label className="text-sm font-semibold text-[var(--foreground)]">
           รายละเอียด
           <textarea
-            className="mt-2 min-h-24 w-full resize-y rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            className="mt-2 min-h-24 w-full resize-y rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
             onChange={(event) => setDescription(event.target.value)}
             value={description}
           />
@@ -270,12 +270,12 @@ function AdminTechnicianSkillRow({
 
           {actionState.status === "error" &&
           actionState.skillId === skill.id ? (
-            <p className="text-sm text-red-700">{actionState.error}</p>
+            <p className="text-sm text-[var(--danger)]">{actionState.error}</p>
           ) : null}
 
           {actionState.status === "saved" &&
           actionState.skillId === skill.id ? (
-            <p className="text-sm font-semibold text-[var(--brand-strong)]">
+            <p className="text-sm font-semibold text-emerald-400">
               {actionState.message}
             </p>
           ) : null}
@@ -570,7 +570,7 @@ export function AdminTechnicianSkillsPanel() {
             </p>
           </div>
           <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href="/admin"
           >
             หน้าหลังบ้าน
@@ -580,7 +580,7 @@ export function AdminTechnicianSkillsPanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดทักษะช่าง...
           </div>
         </section>
@@ -612,7 +612,7 @@ export function AdminTechnicianSkillsPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -638,7 +638,7 @@ export function AdminTechnicianSkillsPanel() {
 
             <div className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-2xl">
               <input
-                className="min-h-10 flex-1 rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                className="min-h-10 flex-1 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="ค้นหาทักษะ"
                 type="search"
@@ -650,7 +650,7 @@ export function AdminTechnicianSkillsPanel() {
                     className={
                       statusFilter === status
                         ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-                        : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                        : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                     }
                     key={status}
                     onClick={() => setStatusFilter(status)}
@@ -675,7 +675,7 @@ export function AdminTechnicianSkillsPanel() {
               ))}
             </div>
           ) : (
-            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
+            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
               ไม่พบทักษะที่ตรงกับตัวกรองนี้
             </div>
           )}

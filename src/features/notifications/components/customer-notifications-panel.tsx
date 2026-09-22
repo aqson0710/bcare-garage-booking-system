@@ -117,7 +117,7 @@ function NotificationCard({
 }) {
   return (
     <article
-      className={`rounded-lg border bg-white p-5 shadow-sm ${
+      className={`rounded-lg border bg-[var(--surface)] p-5 shadow-sm ${
         isRead ? "border-[var(--line)] opacity-75" : "border-[var(--brand)]"
       }`}
     >
@@ -158,7 +158,7 @@ function NotificationCard({
           </Link>
           {!isRead ? (
             <button
-              className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+              className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
               onClick={() => onMarkRead(notification.id)}
               type="button"
             >
@@ -335,7 +335,7 @@ export function CustomerNotificationsPanel() {
           </div>
           {loadState.status === "ready" ? (
             <button
-              className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-50"
+              className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-50"
               disabled={unreadCount === 0}
               onClick={markAllAsRead}
               type="button"
@@ -348,7 +348,7 @@ export function CustomerNotificationsPanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดแจ้งเตือน...
           </div>
         </section>
@@ -373,7 +373,7 @@ export function CustomerNotificationsPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -381,7 +381,7 @@ export function CustomerNotificationsPanel() {
 
       {loadState.status === "ready" ? (
         <section className="py-6">
-          <div className="mb-5 rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+          <div className="mb-5 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
             <p className="text-sm font-semibold text-[var(--foreground)]">
               มีแจ้งเตือนทั้งหมด {loadState.notifications.length} รายการ
             </p>
@@ -394,7 +394,7 @@ export function CustomerNotificationsPanel() {
                   className={
                     activeFilter === filter
                       ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-                      : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                      : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                   }
                   key={filter}
                   onClick={() => setActiveFilter(filter)}
@@ -418,7 +418,7 @@ export function CustomerNotificationsPanel() {
               ))}
             </div>
           ) : (
-            <div className="rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
+            <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
               <p className="font-semibold text-[var(--foreground)]">
                 ไม่มีแจ้งเตือนในตัวกรองนี้
               </p>

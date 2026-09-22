@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase";
+import { settleProductOrderPayment } from "@/features/products";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +85,22 @@ function getNormalizedSlipOkText(response: SlipOkResponse) {
   return getReadableSlipOkMessage(response).toLowerCase();
 }
 
+// Assumes SlipOK only uses non-2xx HTTP status for transport/config problems
+// (bad auth, bad branch route, rate limit, outage), and that ANY 2xx
+// response is SlipOK actually having received and processed the slip -
+// including the edge case where it answers `success: true` but leaves out
+// `data` entirely (seen in practice: a branch that isn't fully configured
+// to return full analysis still logs the slip as "seen" on SlipOK's side).
+// That is why the final fallback below resolves to "verification_failed"
+// rather than "provider_error": a 2xx response must always end in a
+// recorded, customer-visible outcome (see the isVerified branch further
+// down), never the silent early-return reserved for genuine
+// transport/config failures. Getting this wrong is exactly what caused a
+// real bug - a `success: true` + no-`data` reply was falling into the
+// early-return path, leaving the payment stuck on "submitted" with nothing
+// recorded, while SlipOK had already marked that same slip as used. The
+// next manual retry of the identical slip then came back "duplicate",
+// which looked like a fresh submission failing for no reason.
 function getSlipOkFailureKind(
   httpStatus: number,
   response: SlipOkResponse,
@@ -96,6 +113,10 @@ function getSlipOkFailureKind(
 
   if (httpStatus === 408 || httpStatus === 429 || httpStatus >= 500) {
     return "provider_unavailable";
+  }
+
+  if (httpStatus < 200 || httpStatus >= 300) {
+    return "provider_error";
   }
 
   if (
@@ -129,7 +150,13 @@ function getSlipOkFailureKind(
     return "verification_failed";
   }
 
-  return "provider_error";
+  // Reached only on a 2xx response that didn't match any known
+  // duplicate/amount/unreadable keyword and isn't an explicit
+  // `success: false` - e.g. `success: true` with no `data` block at all.
+  // Still a real, SlipOK-acknowledged attempt, so it must be treated as a
+  // content-level result (persisted, customer-visible) and never grouped
+  // with the transport/config failures above.
+  return "verification_failed";
 }
 
 function getAdminSlipOkFailureMessage(
@@ -144,6 +171,10 @@ function getAdminSlipOkFailureMessage(
 
   if (failureKind === "provider_unavailable") {
     return "SlipOK ยังตรวจไม่ได้ชั่วคราว กรุณาลองใหม่อีกครั้งภายหลัง";
+  }
+
+  if (failureKind === "provider_error") {
+    return `SlipOK เรียกใช้งานไม่สำเร็จ กรุณาตรวจสอบการตั้งค่าหรือลองใหม่อีกครั้ง: ${providerMessage}`;
   }
 
   if (failureKind === "duplicate_slip") {
@@ -177,6 +208,10 @@ function getCustomerSlipOkRejectedReason(
 
   if (failureKind === "unreadable_slip") {
     return "ระบบอ่านสลิปนี้ไม่ได้ กรุณาส่งรูปสลิปใหม่ที่ชัดเจน";
+  }
+
+  if (failureKind === "verification_failed") {
+    return `SlipOK ตรวจสอบสลิปนี้ไม่สำเร็จและไม่ส่งผลตรวจกลับมา กรุณาส่งสลิปใหม่อีกครั้ง หรือแจ้งแอดมินให้ตรวจสอบและอนุมัติด้วยตนเอง (ข้อความจาก SlipOK: ${providerMessage})`;
   }
 
   return providerMessage;
@@ -224,9 +259,12 @@ async function getRequestAccessToken(request: Request) {
   };
 }
 
-async function ensureAdminRequest(request: Request) {
+async function ensureAuthorizedRequest(
+  request: Request,
+  paymentId: string,
+  adminSupabase: ReturnType<typeof createAdminClient>,
+) {
   const cookieSupabase = await createClient();
-  const adminSupabase = createAdminClient();
 
   let authSource: "body" | "cookie" | "header" = "cookie";
   let userResult = await cookieSupabase.auth.getUser();
@@ -253,12 +291,55 @@ async function ensureAdminRequest(request: Request) {
           authSource,
           message:
             authSource === "cookie"
-              ? "กรุณาเข้าสู่ระบบด้วยบัญชี admin ก่อนตรวจสลิป"
+              ? "กรุณาเข้าสู่ระบบก่อนตรวจสลิป"
               : "ระบบได้รับ session แล้ว แต่ session หมดอายุหรือใช้ตรวจไม่ได้ กรุณาออกจากระบบแล้วเข้าสู่ระบบใหม่",
           ok: false,
         },
         { status: 401 },
       ),
+      order: null,
+      payment: null,
+      userId: null,
+    };
+  }
+
+  const paymentResult = await adminSupabase
+    .from("product_payments")
+    .select("*")
+    .eq("id", paymentId)
+    .maybeSingle();
+
+  if (paymentResult.error) {
+    return {
+      error: NextResponse.json(
+        {
+          authSource,
+          message: paymentResult.error.message,
+          ok: false,
+        },
+        { status: 500 },
+      ),
+      order: null,
+      payment: null,
+      userId: null,
+    };
+  }
+
+  const payment = paymentResult.data;
+
+  if (!payment) {
+    return {
+      error: NextResponse.json(
+        {
+          authSource,
+          message: "ไม่พบรายการชำระเงินนี้",
+          ok: false,
+        },
+        { status: 404 },
+      ),
+      order: null,
+      payment: null,
+      userId: null,
     };
   }
 
@@ -278,38 +359,99 @@ async function ensureAdminRequest(request: Request) {
         },
         { status: 500 },
       ),
+      order: null,
+      payment: null,
+      userId: null,
     };
   }
 
-  if (profileResult.data?.role !== "admin") {
+  const isAdmin = profileResult.data?.role === "admin";
+
+  // Always load the order, for every caller, admin or customer. Its
+  // total_amount is the single source of truth for how much SlipOK is asked
+  // to confirm below — payment.amount / payment.slip_amount are customer
+  // supplied at slip-upload time and must never be trusted to decide that,
+  // or a customer could self-report a lower amount than they owe and have
+  // it verified as if the order were paid in full.
+  const orderResult = await adminSupabase
+    .from("product_orders")
+    .select("id, customer_id, payment_status, total_amount")
+    .eq("id", payment.product_order_id)
+    .maybeSingle();
+
+  if (orderResult.error) {
     return {
       error: NextResponse.json(
         {
           authSource,
-          message: "บัญชีนี้ไม่มีสิทธิ์ admin สำหรับตรวจสลิป",
+          message: orderResult.error.message,
           ok: false,
         },
-        { status: 403 },
+        { status: 500 },
       ),
+      order: null,
+      payment: null,
+      userId: null,
+    };
+  }
+
+  const order = orderResult.data;
+
+  if (!order) {
+    return {
+      error: NextResponse.json(
+        {
+          authSource,
+          message: "ไม่พบคำสั่งซื้อของรายการชำระเงินนี้",
+          ok: false,
+        },
+        { status: 404 },
+      ),
+      order: null,
+      payment: null,
+      userId: null,
+    };
+  }
+
+  const isOwner = order.customer_id === user.id;
+
+  if (!isAdmin && !isOwner) {
+    // Reuse the same "not found" response as the missing-payment case above
+    // so a non-owner probing a paymentId can't distinguish "doesn't exist"
+    // from "exists but isn't yours".
+    return {
+      error: NextResponse.json(
+        {
+          authSource,
+          message: "ไม่พบรายการชำระเงินนี้",
+          ok: false,
+        },
+        { status: 404 },
+      ),
+      order: null,
+      payment: null,
+      userId: null,
     };
   }
 
   return {
     authSource,
     error: null,
+    order,
+    payment,
     userId: user.id,
   };
 }
 
+// Best-effort per-payment cooldown so a customer (who can now call this
+// endpoint directly, not just an admin) can't spam the paid SlipOK API by
+// re-posting the same paymentId in a tight loop. In-memory only: it resets
+// on redeploy and isn't shared across multiple server instances, which is
+// an accepted tradeoff for this app's current single-instance scale.
+const SLIPOK_CALL_COOLDOWN_MS = 15_000;
+const recentSlipOkCallAttempts = new Map<string, number>();
+
 export async function POST(request: Request, context: RouteContext) {
-  const adminCheck = await ensureAdminRequest(request);
-
-  if (adminCheck.error) {
-    return adminCheck.error;
-  }
-
-  const adminUserId = adminCheck.userId;
-
   const { paymentId } = await context.params;
 
   if (!paymentId) {
@@ -321,6 +463,37 @@ export async function POST(request: Request, context: RouteContext) {
       { status: 400 },
     );
   }
+
+  const adminSupabase = createAdminClient();
+  const authCheck = await ensureAuthorizedRequest(
+    request,
+    paymentId,
+    adminSupabase,
+  );
+
+  if (authCheck.error) {
+    return authCheck.error;
+  }
+
+  const adminUserId = authCheck.userId;
+  const order = authCheck.order;
+  const payment = authCheck.payment;
+
+  const lastAttemptAt = recentSlipOkCallAttempts.get(payment.id);
+  const attemptedAt = Date.now();
+
+  if (lastAttemptAt && attemptedAt - lastAttemptAt < SLIPOK_CALL_COOLDOWN_MS) {
+    return NextResponse.json(
+      {
+        message: "เพิ่งตรวจสลิปนี้ไปเมื่อสักครู่ กรุณารอสักครู่แล้วลองใหม่",
+        ok: false,
+        payment,
+      },
+      { status: 429 },
+    );
+  }
+
+  recentSlipOkCallAttempts.set(payment.id, attemptedAt);
 
   let slipOkConfig: ReturnType<typeof getSlipOkConfig>;
 
@@ -334,35 +507,6 @@ export async function POST(request: Request, context: RouteContext) {
         ok: false,
       },
       { status: 500 },
-    );
-  }
-
-  const adminSupabase = createAdminClient();
-  const paymentResult = await adminSupabase
-    .from("product_payments")
-    .select("*")
-    .eq("id", paymentId)
-    .maybeSingle();
-
-  if (paymentResult.error) {
-    return NextResponse.json(
-      {
-        message: paymentResult.error.message,
-        ok: false,
-      },
-      { status: 500 },
-    );
-  }
-
-  const payment = paymentResult.data;
-
-  if (!payment) {
-    return NextResponse.json(
-      {
-        message: "ไม่พบรายการชำระเงินนี้",
-        ok: false,
-      },
-      { status: 404 },
     );
   }
 
@@ -401,7 +545,11 @@ export async function POST(request: Request, context: RouteContext) {
     );
   }
 
-  const amountToVerify = payment.slip_amount ?? payment.amount;
+  // Authoritative amount: always the order's own total, never anything the
+  // customer supplied on the slip-upload form. See the comment in
+  // ensureAuthorizedRequest for why payment.amount / payment.slip_amount
+  // must not be used here.
+  const amountToVerify = order.total_amount;
   const formData = new FormData();
   formData.append("files", slipResult.data, "payment-slip.jpg");
   formData.append("amount", String(amountToVerify));
@@ -457,7 +605,8 @@ export async function POST(request: Request, context: RouteContext) {
 
   if (
     failureKind === "provider_unavailable" ||
-    failureKind === "unauthorized_provider"
+    failureKind === "unauthorized_provider" ||
+    failureKind === "provider_error"
   ) {
     return NextResponse.json(
       {
@@ -526,17 +675,57 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    const orderUpdateResult = await adminSupabase
-      .from("product_orders")
-      .update({ payment_status: "paid" })
-      .eq("id", payment.product_order_id)
+    // Record this as a verified transaction on the ledger rather than
+    // writing product_orders.payment_status directly. provider_reference is
+    // unique across the whole table, so the same real bank slip can never
+    // be recorded as a successful payment twice, on this order or any
+    // other. A missing transRef (SlipOK didn't return one) falls back to a
+    // reference scoped to this one payment attempt, so it still satisfies
+    // the not-null/unique constraints without ever colliding with — or
+    // catching — anything else.
+    const transactionResult = await adminSupabase
+      .from("product_payment_transactions")
+      .insert({
+        product_order_id: order.id,
+        product_payment_id: payment.id,
+        provider_reference:
+          slipOkResponse.data?.transRef ?? `no-transref:${payment.id}`,
+        verified_amount: amountToVerify,
+        verified_by_type: "system_slipok",
+        verified_by_user_id: adminUserId,
+        verified_at: now,
+      })
       .select("*")
       .single();
 
-    if (orderUpdateResult.error) {
+    if (transactionResult.error) {
+      // Postgres unique_violation: this exact SlipOK transaction reference
+      // was already recorded as a verified payment elsewhere.
+      const isDuplicateReference = transactionResult.error.code === "23505";
+
       return NextResponse.json(
         {
-          message: orderUpdateResult.error.message,
+          failureKind: (isDuplicateReference
+            ? "duplicate_slip"
+            : "provider_error") satisfies SlipOkFailureKind,
+          message: isDuplicateReference
+            ? "สลิปนี้เคยถูกใช้ยืนยันการชำระเงินสำเร็จไปแล้วในรายการอื่น"
+            : transactionResult.error.message,
+          ok: false,
+        },
+        { status: isDuplicateReference ? 409 : 500 },
+      );
+    }
+
+    const settlementResult = await settleProductOrderPayment(
+      adminSupabase,
+      order.id,
+    );
+
+    if (settlementResult.error || !settlementResult.data) {
+      return NextResponse.json(
+        {
+          message: settlementResult.error?.message ?? "ตั้งยอดชำระเงินไม่สำเร็จ",
           ok: false,
         },
         { status: 500 },
@@ -544,10 +733,11 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     return NextResponse.json({
-      message: "SlipOK ตรวจสลิปผ่านและอัปเดตเป็นชำระเงินแล้ว",
+      message: "SlipOK ตรวจสลิปผ่านและอัปเดตยอดชำระเงินแล้ว",
       ok: true,
-      order: orderUpdateResult.data,
+      order: settlementResult.data.order,
       payment: paymentUpdateResult.data,
+      paymentStatus: settlementResult.data.paymentStatus,
       slipOkStatus: slipOkHttpResponse.status,
     });
   }
@@ -586,37 +776,20 @@ export async function POST(request: Request, context: RouteContext) {
     );
   }
 
-  const paidPaymentsResult = await adminSupabase
-    .from("product_payments")
-    .select("id")
-    .eq("product_order_id", payment.product_order_id)
-    .eq("payment_status", "paid")
-    .limit(1);
+  // Re-settle from the ledger rather than re-deriving from product_payments
+  // rows directly: if this order already has a verified transaction from an
+  // earlier attempt, settlement correctly keeps it paid/partially_paid; if
+  // it has none, it correctly falls back to unpaid. Same single function
+  // the success branch above uses.
+  const settlementResult = await settleProductOrderPayment(
+    adminSupabase,
+    payment.product_order_id,
+  );
 
-  if (paidPaymentsResult.error) {
+  if (settlementResult.error || !settlementResult.data) {
     return NextResponse.json(
       {
-        message: paidPaymentsResult.error.message,
-        ok: false,
-      },
-      { status: 500 },
-    );
-  }
-
-  const nextOrderPaymentStatus =
-    (paidPaymentsResult.data?.length ?? 0) > 0 ? "paid" : "unpaid";
-
-  const orderUpdateResult = await adminSupabase
-    .from("product_orders")
-    .update({ payment_status: nextOrderPaymentStatus })
-    .eq("id", payment.product_order_id)
-    .select("*")
-    .single();
-
-  if (orderUpdateResult.error) {
-    return NextResponse.json(
-      {
-        message: orderUpdateResult.error.message,
+        message: settlementResult.error?.message ?? "ตั้งยอดชำระเงินไม่สำเร็จ",
         ok: false,
       },
       { status: 500 },
@@ -628,8 +801,9 @@ export async function POST(request: Request, context: RouteContext) {
       failureKind,
       message: rejectedReason,
       ok: false,
-      order: orderUpdateResult.data,
+      order: settlementResult.data.order,
       payment: paymentUpdateResult.data,
+      paymentStatus: settlementResult.data.paymentStatus,
       slipOkStatus: slipOkHttpResponse.status,
     },
     { status: 422 },

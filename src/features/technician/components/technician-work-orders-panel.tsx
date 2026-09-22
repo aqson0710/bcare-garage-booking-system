@@ -95,7 +95,7 @@ function TechnicianWorkOrderRow({
   workOrder: TechnicianWorkOrder;
 }) {
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+    <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -116,7 +116,7 @@ function TechnicianWorkOrderRow({
         </div>
 
         <Link
-          className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+          className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
           href={`/technician/work-orders/${workOrder.id}`}
         >
           เปิดงานซ่อม
@@ -161,13 +161,13 @@ function TechnicianWorkOrderRow({
       </dl>
 
       <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
-        <div className="rounded-md bg-slate-50 p-3">
+        <div className="rounded-md bg-[var(--surface-muted)] p-3">
           <p className="font-semibold text-[var(--foreground)]">ผลวิเคราะห์อาการ</p>
           <p className="mt-2 leading-6 text-[var(--muted)]">
             {workOrder.diagnosis || "-"}
           </p>
         </div>
-        <div className="rounded-md bg-slate-50 p-3">
+        <div className="rounded-md bg-[var(--surface-muted)] p-3">
           <p className="font-semibold text-[var(--foreground)]">บันทึกงานซ่อม</p>
           <p className="mt-2 leading-6 text-[var(--muted)]">
             {workOrder.repair_notes || "-"}
@@ -324,7 +324,7 @@ export function TechnicianWorkOrdersPanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดงานซ่อมของช่าง...
           </div>
         </section>
@@ -347,7 +347,7 @@ export function TechnicianWorkOrdersPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -369,7 +369,7 @@ export function TechnicianWorkOrdersPanel() {
               className={`rounded-lg border p-4 text-left shadow-sm ${
                 statusFilter === "all"
                   ? "border-[var(--brand)] bg-emerald-50"
-                  : "border-[var(--line)] bg-white"
+                  : "border-[var(--line)] bg-[var(--surface)]"
               }`}
               onClick={() => setStatusFilter("all")}
               type="button"
@@ -386,7 +386,7 @@ export function TechnicianWorkOrdersPanel() {
                 className={`rounded-lg border p-4 text-left shadow-sm ${
                   statusFilter === status
                     ? "border-[var(--brand)] bg-emerald-50"
-                    : "border-[var(--line)] bg-white"
+                    : "border-[var(--line)] bg-[var(--surface)]"
                 }`}
                 key={status}
                 onClick={() => setStatusFilter(status)}
@@ -402,7 +402,7 @@ export function TechnicianWorkOrdersPanel() {
             ))}
           </div>
 
-          <div className="mt-5 flex flex-col gap-3 rounded-lg border border-[var(--line)] bg-white p-4 text-sm shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-5 flex flex-col gap-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 text-sm shadow-sm sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-semibold text-[var(--foreground)]">
                 แสดง {filteredWorkOrders.length} จาก{" "}
@@ -413,7 +413,7 @@ export function TechnicianWorkOrdersPanel() {
               </p>
             </div>
             <button
-              className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-60"
               disabled={statusFilter === "all"}
               onClick={() => setStatusFilter("all")}
               type="button"
@@ -432,11 +432,11 @@ export function TechnicianWorkOrdersPanel() {
               ))}
             </div>
           ) : loadState.result.workOrders.length > 0 ? (
-            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
+            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
               ไม่พบงานซ่อมที่ตรงกับตัวกรองนี้
             </div>
           ) : (
-            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
+            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
               ยังไม่มีงานซ่อมที่มอบหมายให้คุณ
             </div>
           )}

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCurrentProfile } from "@/features/auth";
+import { settleProductOrderPayment } from "@/features/products";
 import type { Database } from "@/lib/supabase/database.types";
 import type {
   AdminAccessResult,
@@ -775,6 +776,10 @@ async function attachAdminBookingDetails(
         ({
           ...booking,
           customer: customersById.get(booking.customer_id) ?? null,
+          // The list view doesn't need payment history per row - only
+          // getAdminBookingById (the detail page) fetches the real payments
+          // array, to avoid an extra query per row on a paginated list.
+          payments: [],
           service: servicesById.get(booking.service_id) ?? null,
           vehicle: vehiclesById.get(booking.vehicle_id) ?? null,
         }) satisfies AdminBooking,
@@ -1006,23 +1011,29 @@ export async function getAdminBookingById(
     };
   }
 
-  const [customerResult, serviceResult, vehicleResult] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", bookingResult.data.customer_id)
-      .maybeSingle(),
-    supabase
-      .from("services")
-      .select("*")
-      .eq("id", bookingResult.data.service_id)
-      .maybeSingle(),
-    supabase
-      .from("vehicles")
-      .select("*")
-      .eq("id", bookingResult.data.vehicle_id)
-      .maybeSingle(),
-  ]);
+  const [customerResult, serviceResult, vehicleResult, paymentsResult] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", bookingResult.data.customer_id)
+        .maybeSingle(),
+      supabase
+        .from("services")
+        .select("*")
+        .eq("id", bookingResult.data.service_id)
+        .maybeSingle(),
+      supabase
+        .from("vehicles")
+        .select("*")
+        .eq("id", bookingResult.data.vehicle_id)
+        .maybeSingle(),
+      supabase
+        .from("booking_payments")
+        .select("*")
+        .eq("booking_id", bookingId)
+        .order("created_at", { ascending: false }),
+    ]);
 
   if (customerResult.error) {
     return {
@@ -1045,10 +1056,18 @@ export async function getAdminBookingById(
     };
   }
 
+  if (paymentsResult.error) {
+    return {
+      data: null,
+      error: paymentsResult.error,
+    };
+  }
+
   return {
     data: {
       ...bookingResult.data,
       customer: customerResult.data,
+      payments: paymentsResult.data ?? [],
       service: serviceResult.data,
       vehicle: vehicleResult.data,
     } satisfies AdminBooking,
@@ -1411,6 +1430,26 @@ export async function updateAdminBookingStatus(
     .single();
 }
 
+export async function approveAdminBookingPayment(
+  supabase: BCareSupabaseClient,
+  bookingPaymentId: string,
+) {
+  return supabase.rpc("approve_booking_payment", {
+    target_booking_payment_id: bookingPaymentId,
+  });
+}
+
+export async function rejectAdminBookingPayment(
+  supabase: BCareSupabaseClient,
+  bookingPaymentId: string,
+  reason: string,
+) {
+  return supabase.rpc("reject_booking_payment", {
+    reason,
+    target_booking_payment_id: bookingPaymentId,
+  });
+}
+
 export async function getAdminProductOrdersPage(
   supabase: BCareSupabaseClient,
   params: AdminProductOrderListParams,
@@ -1426,8 +1465,25 @@ export async function getAdminProductOrdersPage(
     .select("*", { count: "exact" })
     .order("created_at", { ascending: false });
 
-  if (params.status !== "all") {
+  // A cancelled order (and its payment, which cancelling now sets in lockstep
+  // - see updateAdminProductOrderStatus) is noise on the default admin view.
+  // It stays reachable, just not mixed into the main queue: explicitly
+  // filtering by the "cancelled" status tab or the "cancelled" payment tab
+  // still shows it, only the unfiltered "all/all" view hides it.
+  const isViewingCancelled =
+    params.status === "cancelled" || params.paymentStatus === "cancelled";
+
+  if (params.status === "in_progress") {
+    query = query.in("status", [
+      "confirmed",
+      "preparing",
+      "ready_for_pickup",
+      "out_for_delivery",
+    ]);
+  } else if (params.status !== "all") {
     query = query.eq("status", params.status);
+  } else if (!isViewingCancelled) {
+    query = query.neq("status", "cancelled");
   }
 
   if (params.paymentStatus !== "all") {
@@ -1564,10 +1620,30 @@ export async function updateAdminProductOrderStatus(
       };
     }
 
+    // "ยกเลิก" is one action that cancels both the order and its payment
+    // together - the admin never has to cancel the order, then separately
+    // go mark the payment as cancelled/refunded. Any payment row still
+    // "pending" (awaiting review) is cancelled along with it, so it can't be
+    // left dangling in the payment-review queue for an order that no longer
+    // exists in practice.
+    const paymentCancelResult = await supabase
+      .from("product_payments")
+      .update({ payment_status: "cancelled" })
+      .eq("product_order_id", orderId)
+      .eq("payment_status", "pending");
+
+    if (paymentCancelResult.error) {
+      return {
+        data: null,
+        error: paymentCancelResult.error,
+      };
+    }
+
     return supabase
       .from("product_orders")
-      .select("*")
+      .update({ payment_status: "cancelled" })
       .eq("id", orderId)
+      .select("*")
       .single();
   }
 
@@ -1579,9 +1655,17 @@ export async function updateAdminProductOrderStatus(
     .single();
 }
 
+// Approving here means "an admin looked at the slip themselves and confirms
+// it's good", bypassing SlipOK entirely — so, same as the SlipOK route, this
+// records a verified transaction on the ledger and lets
+// settleProductOrderPayment derive product_orders.payment_status from the
+// sum of everything verified so far, instead of writing "paid" directly off
+// this one payment row. That's what stops an admin from being able to mark
+// an order fully paid by approving a slip for less than the order total.
 export async function approveAdminProductPayment(
   supabase: BCareSupabaseClient,
   paymentId: string,
+  adminUserId: string | null,
 ) {
   const now = new Date().toISOString();
 
@@ -1593,6 +1677,7 @@ export async function approveAdminProductPayment(
       rejected_reason: null,
       verification_status: "verified",
       verified_at: now,
+      verified_by: adminUserId,
     })
     .eq("id", paymentId)
     .select("*")
@@ -1605,24 +1690,54 @@ export async function approveAdminProductPayment(
     };
   }
 
-  const orderResult = await supabase
-    .from("product_orders")
-    .update({ payment_status: "paid" })
-    .eq("id", paymentResult.data.product_order_id)
+  const payment = paymentResult.data;
+  const verifiedAmount = payment.slip_amount ?? payment.amount;
+
+  // provider_reference is unique across the whole ledger table. A manual
+  // admin approval has no provider transaction id, so it's scoped to this
+  // one payment attempt — that still satisfies the not-null/unique
+  // constraints without ever colliding with a real SlipOK transRef or
+  // another admin approval.
+  const transactionResult = await supabase
+    .from("product_payment_transactions")
+    .insert({
+      product_order_id: payment.product_order_id,
+      product_payment_id: payment.id,
+      provider_reference: `admin-manual:${payment.id}`,
+      verified_amount: verifiedAmount,
+      verified_by_type: "admin_manual",
+      verified_by_user_id: adminUserId,
+      verified_at: now,
+    })
     .select("*")
     .single();
 
-  if (orderResult.error) {
+  if (transactionResult.error) {
     return {
       data: null,
-      error: orderResult.error,
+      error:
+        transactionResult.error.code === "23505"
+          ? new Error("สลิปนี้เคยถูกอนุมัติไปแล้ว")
+          : transactionResult.error,
+    };
+  }
+
+  const settlementResult = await settleProductOrderPayment(
+    supabase,
+    payment.product_order_id,
+  );
+
+  if (settlementResult.error || !settlementResult.data) {
+    return {
+      data: null,
+      error: settlementResult.error ?? new Error("ตั้งยอดชำระเงินไม่สำเร็จ"),
     };
   }
 
   return {
     data: {
-      order: orderResult.data,
-      payment: paymentResult.data,
+      order: settlementResult.data.order,
+      payment,
     },
     error: null,
   };
@@ -1653,40 +1768,26 @@ export async function rejectAdminProductPayment(
     };
   }
 
-  const paidPaymentsResult = await supabase
-    .from("product_payments")
-    .select("id")
-    .eq("product_order_id", paymentResult.data.product_order_id)
-    .eq("payment_status", "paid")
-    .limit(1);
+  // A rejected payment attempt never had a ledger transaction row (only a
+  // verified one does), so there's nothing to remove here — just recompute
+  // the order's status from whatever is still on the ledger. This also
+  // correctly settles an order back to "unpaid"/"partially_paid" rather
+  // than the old logic's binary paid/unpaid off a single other payment row.
+  const settlementResult = await settleProductOrderPayment(
+    supabase,
+    paymentResult.data.product_order_id,
+  );
 
-  if (paidPaymentsResult.error) {
+  if (settlementResult.error || !settlementResult.data) {
     return {
       data: null,
-      error: paidPaymentsResult.error,
-    };
-  }
-
-  const nextOrderPaymentStatus =
-    (paidPaymentsResult.data?.length ?? 0) > 0 ? "paid" : "unpaid";
-
-  const orderResult = await supabase
-    .from("product_orders")
-    .update({ payment_status: nextOrderPaymentStatus })
-    .eq("id", paymentResult.data.product_order_id)
-    .select("*")
-    .single();
-
-  if (orderResult.error) {
-    return {
-      data: null,
-      error: orderResult.error,
+      error: settlementResult.error ?? new Error("ตั้งยอดชำระเงินไม่สำเร็จ"),
     };
   }
 
   return {
     data: {
-      order: orderResult.data,
+      order: settlementResult.data.order,
       payment: paymentResult.data,
     },
     error: null,
@@ -2040,6 +2141,32 @@ export async function createAdminGarageCapacity(
     })
     .select("*")
     .single();
+}
+
+export async function createAdminGarageCapacityBulk(
+  supabase: BCareSupabaseClient,
+  inputs: AdminGarageCapacityInput[],
+) {
+  return supabase
+    .from("garage_capacity")
+    .upsert(
+      inputs.map((input) => ({
+        booking_date: input.booking_date,
+        booking_time: input.booking_time,
+        max_bookings: input.max_bookings,
+        note: input.note,
+        status: input.status,
+      })),
+      { onConflict: "booking_date,booking_time" },
+    )
+    .select("*");
+}
+
+export async function deleteAdminGarageCapacity(
+  supabase: BCareSupabaseClient,
+  capacityId: string,
+) {
+  return supabase.from("garage_capacity").delete().eq("id", capacityId);
 }
 
 export async function updateAdminGarageCapacity(

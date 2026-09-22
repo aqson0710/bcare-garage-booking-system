@@ -181,7 +181,7 @@ function TextInput({
     <label className="text-sm font-semibold text-[var(--foreground)]">
       {label}
       <input
-        className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+        className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         value={value}
@@ -192,7 +192,7 @@ function TextInput({
 
 function PaymentPreview({ formState }: { formState: PaymentSettingsFormState }) {
   return (
-    <aside className="h-fit rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm lg:sticky lg:top-6">
+    <aside className="h-fit rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm lg:sticky lg:top-6">
       <p className="text-sm font-semibold text-[var(--brand)]">
         ตัวอย่างหน้าลูกค้า
       </p>
@@ -207,13 +207,13 @@ function PaymentPreview({ formState }: { formState: PaymentSettingsFormState }) 
       ) : null}
 
       {formState.promptpay_enabled ? (
-        <div className="mt-4 rounded-md border border-[var(--line)] bg-slate-50 p-4">
+        <div className="mt-4 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] p-4">
           <p className="font-semibold text-[var(--foreground)]">
             PromptPay / QR
           </p>
           <img
             alt="Payment QR preview"
-            className="mt-3 h-40 w-40 rounded-md border border-[var(--line)] bg-white p-2"
+            className="mt-3 h-40 w-40 rounded-md border border-[var(--line)] bg-[var(--surface)] p-2"
             onError={handleQrImageError}
             src={formState.promptpay_qr_image_url || "/mock-promptpay-qr.svg"}
           />
@@ -235,7 +235,7 @@ function PaymentPreview({ formState }: { formState: PaymentSettingsFormState }) 
       ) : null}
 
       {formState.bank_transfer_enabled ? (
-        <div className="mt-4 rounded-md border border-[var(--line)] bg-slate-50 p-4">
+        <div className="mt-4 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] p-4">
           <p className="font-semibold text-[var(--foreground)]">
             โอนเข้าบัญชีธนาคาร
           </p>
@@ -274,7 +274,7 @@ function PaymentPreview({ formState }: { formState: PaymentSettingsFormState }) 
         </div>
       ) : null}
 
-      <div className="mt-4 rounded-md bg-slate-50 p-3 text-xs leading-5 text-[var(--muted)]">
+      <div className="mt-4 rounded-md bg-[var(--surface-muted)] p-3 text-xs leading-5 text-[var(--muted)]">
         ถ้า QR URL โหลดไม่ได้ preview จะใช้รูปสำรองชั่วคราว แต่ควรแก้ URL หรืออัปโหลดรูปใหม่ก่อนใช้งานจริง
       </div>
     </aside>
@@ -564,7 +564,7 @@ export function AdminPaymentSettingsPanel() {
             </p>
           </div>
           <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href="/admin"
           >
             กลับหน้า admin
@@ -574,7 +574,7 @@ export function AdminPaymentSettingsPanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดการตั้งค่าชำระเงิน...
           </div>
         </section>
@@ -606,7 +606,7 @@ export function AdminPaymentSettingsPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm leading-6 text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm leading-6 text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -615,7 +615,7 @@ export function AdminPaymentSettingsPanel() {
       {loadState.status === "ready" ? (
         <section className="grid gap-6 py-6 lg:grid-cols-[minmax(0,1fr)_340px]">
           <form
-            className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm"
+            className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm"
             onSubmit={handleSubmit}
           >
             <div className="border-b border-[var(--line)] pb-4">
@@ -631,7 +631,7 @@ export function AdminPaymentSettingsPanel() {
               <label className="text-sm font-semibold text-[var(--foreground)]">
                 สถานะ
                 <select
-                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   onChange={(event) =>
                     patchFormState({
                       status: event.target.value as AdminPaymentSetting["status"],
@@ -644,7 +644,7 @@ export function AdminPaymentSettingsPanel() {
                 </select>
               </label>
 
-              <section className="rounded-lg border border-[var(--line)] bg-slate-50 p-4">
+              <section className="rounded-lg border border-[var(--line)] bg-[var(--surface-muted)] p-4">
                 <label className="flex min-h-10 items-center gap-3 text-sm font-semibold text-[var(--foreground)]">
                   <input
                     checked={formState.promptpay_enabled}
@@ -684,7 +684,7 @@ export function AdminPaymentSettingsPanel() {
                     อัปโหลดรูป QR Code
                     <input
                       accept="image/png,image/jpeg,image/webp"
-                      className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)]"
+                      className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
                       disabled={uploadState.status === "uploading"}
                       onChange={(event) => {
                         void handleQrUpload(event.target.files?.[0] ?? null);
@@ -714,7 +714,7 @@ export function AdminPaymentSettingsPanel() {
                 </div>
               </section>
 
-              <section className="rounded-lg border border-[var(--line)] bg-slate-50 p-4">
+              <section className="rounded-lg border border-[var(--line)] bg-[var(--surface-muted)] p-4">
                 <label className="flex min-h-10 items-center gap-3 text-sm font-semibold text-[var(--foreground)]">
                   <input
                     checked={formState.bank_transfer_enabled}
@@ -759,7 +759,7 @@ export function AdminPaymentSettingsPanel() {
               <label className="text-sm font-semibold text-[var(--foreground)]">
                 ข้อความแนะนำการชำระเงิน
                 <textarea
-                  className="mt-2 min-h-24 w-full resize-y rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                  className="mt-2 min-h-24 w-full resize-y rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   onChange={(event) =>
                     patchFormState({
                       payment_instructions: event.target.value,

@@ -237,7 +237,7 @@ export function TechnicianProfilePanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดโปรไฟล์ช่าง...
           </div>
         </section>
@@ -260,7 +260,7 @@ export function TechnicianProfilePanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -280,7 +280,7 @@ export function TechnicianProfilePanel() {
           className="grid gap-6 py-6 lg:grid-cols-[minmax(0,1fr)_320px]"
           onSubmit={handleSubmit}
         >
-          <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+          <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
             <p className="text-sm font-semibold text-[var(--brand)]">
               ข้อมูลช่าง
             </p>
@@ -289,7 +289,7 @@ export function TechnicianProfilePanel() {
               <label className="text-sm font-medium text-[var(--foreground)]">
                 ชื่อ-นามสกุล
                 <input
-                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   onChange={(event) => setFullName(event.target.value)}
                   value={fullName}
                 />
@@ -297,7 +297,7 @@ export function TechnicianProfilePanel() {
               <label className="text-sm font-medium text-[var(--foreground)]">
                 เบอร์โทรศัพท์
                 <input
-                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   inputMode="tel"
                   onChange={(event) => setPhoneNumber(event.target.value)}
                   value={phoneNumber}
@@ -306,7 +306,7 @@ export function TechnicianProfilePanel() {
               <label className="text-sm font-medium text-[var(--foreground)] sm:col-span-2">
                 ความเชี่ยวชาญโดยย่อ
                 <input
-                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   onChange={(event) =>
                     setTechnicianSpecialty(event.target.value)
                   }
@@ -316,7 +316,7 @@ export function TechnicianProfilePanel() {
               </label>
             </div>
 
-            <div className="mt-5 rounded-md bg-slate-50 p-3 text-sm leading-6 text-[var(--muted)]">
+            <div className="mt-5 rounded-md bg-[var(--surface-muted)] p-3 text-sm leading-6 text-[var(--muted)]">
               <p>
                 อีเมล:{" "}
                 <span className="font-semibold text-[var(--foreground)]">
@@ -339,7 +339,7 @@ export function TechnicianProfilePanel() {
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {loadState.profile.skills.map((skill) => (
                     <label
-                      className="flex min-h-12 items-start gap-3 rounded-md border border-[var(--line)] bg-white p-3 text-sm text-[var(--foreground)]"
+                      className="flex min-h-12 items-start gap-3 rounded-md border border-[var(--line)] bg-[var(--surface)] p-3 text-sm text-[var(--foreground)]"
                       key={skill.id}
                     >
                       <input
@@ -387,7 +387,7 @@ export function TechnicianProfilePanel() {
             ) : null}
           </section>
 
-          <aside className="h-fit rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+          <aside className="h-fit rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
             <p className="text-sm font-semibold text-[var(--brand)]">
               ทักษะที่เลือก
             </p>

@@ -13,10 +13,14 @@ export type AdminAccessResult =
   | { allowed: true; profile: Profile }
   | { allowed: false; profile: Profile | null; reason: string };
 
+export type AdminBookingPayment =
+  Database["public"]["Tables"]["booking_payments"]["Row"];
+
 export type AdminBooking = Booking & {
   customer: Profile | null;
   service: Service | null;
   vehicle: Vehicle | null;
+  payments: AdminBookingPayment[];
 };
 
 export type RepairJob =
@@ -244,9 +248,18 @@ export type AdminTechnicianSkillCreateInput =
 
 export type AdminBookingListStatusFilter = "all" | AdminBooking["status"];
 
+// A simplified, admin-facing grouping of AdminProductOrder["status"] for the
+// order list filter tabs only - "in_progress" collapses
+// confirmed/preparing/ready_for_pickup/out_for_delivery into one tab, since
+// admins filter by "is this done yet", not by the exact fulfillment step.
+// The order's own `status` column still stores the full granular value; only
+// the filter UI and this query param are simplified.
 export type AdminProductOrderListStatusFilter =
   | "all"
-  | AdminProductOrder["status"];
+  | "pending"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
 
 export type AdminProductOrderListPaymentFilter =
   | "all"

@@ -13,6 +13,7 @@ import {
   type CheckoutDeliveryMethod,
   type CheckoutResult,
 } from "@/features/products";
+import { DeliveryLocationPicker } from "./delivery-location-picker";
 import { ProductImageThumb } from "./product-image-thumb";
 
 type AuthState =
@@ -48,6 +49,23 @@ const currencyFormatter = new Intl.NumberFormat("th-TH", {
 
 const deliveryFee = 60;
 
+const deliveryOptions: {
+  value: CheckoutDeliveryMethod;
+  label: string;
+  hint: string;
+}[] = [
+  {
+    hint: "ไม่มีค่าใช้จ่ายเพิ่มเติม",
+    label: "รับที่อู่ BigO-RepairCar",
+    value: "pickup",
+  },
+  {
+    hint: `เพิ่ม ${currencyFormatter.format(deliveryFee)} ต่อคำสั่งซื้อ`,
+    label: "จัดส่งถึงบ้าน",
+    value: "delivery",
+  },
+];
+
 export function CheckoutPanel() {
   const router = useRouter();
   const [authState, setAuthState] = useState<AuthState>({
@@ -63,6 +81,12 @@ export function CheckoutPanel() {
   const [deliveryMethod, setDeliveryMethod] =
     useState<CheckoutDeliveryMethod>("pickup");
   const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [deliveryLatitude, setDeliveryLatitude] = useState<number | null>(
+    null,
+  );
+  const [deliveryLongitude, setDeliveryLongitude] = useState<number | null>(
+    null,
+  );
   const [note, setNote] = useState("");
   const [checkoutState, setCheckoutState] = useState<CheckoutState>({
     error: null,
@@ -85,28 +109,16 @@ export function CheckoutPanel() {
       }
 
       if (error) {
-        setAuthState({
-          error: error.message,
-          status: "error",
-          user: null,
-        });
+        setAuthState({ error: error.message, status: "error", user: null });
         return;
       }
 
       if (!session?.user) {
-        setAuthState({
-          error: null,
-          status: "signed-out",
-          user: null,
-        });
+        setAuthState({ error: null, status: "signed-out", user: null });
         return;
       }
 
-      setAuthState({
-        error: null,
-        status: "ready",
-        user: session.user,
-      });
+      setAuthState({ error: null, status: "ready", user: session.user });
     }
 
     loadAuthState();
@@ -128,11 +140,7 @@ export function CheckoutPanel() {
 
     async function loadCart() {
       if (authState.status !== "ready") {
-        setCartState({
-          details: emptyCartDetails,
-          error: null,
-          status: "idle",
-        });
+        setCartState({ details: emptyCartDetails, error: null, status: "idle" });
         return;
       }
 
@@ -158,11 +166,7 @@ export function CheckoutPanel() {
         return;
       }
 
-      setCartState({
-        details: data ?? emptyCartDetails,
-        error: null,
-        status: "ready",
-      });
+      setCartState({ details: data ?? emptyCartDetails, error: null, status: "ready" });
     }
 
     loadCart();
@@ -190,11 +194,7 @@ export function CheckoutPanel() {
       return;
     }
 
-    setCheckoutState({
-      error: null,
-      result: null,
-      status: "submitting",
-    });
+    setCheckoutState({ error: null, result: null, status: "submitting" });
 
     const supabase = createClient();
     const { data, error } = await createProductOrderFromCart(
@@ -204,17 +204,16 @@ export function CheckoutPanel() {
         deliveryAddress:
           deliveryMethod === "delivery" ? deliveryAddress.trim() : null,
         deliveryFee: resolvedDeliveryFee,
+        deliveryLatitude: deliveryMethod === "delivery" ? deliveryLatitude : null,
+        deliveryLongitude:
+          deliveryMethod === "delivery" ? deliveryLongitude : null,
         deliveryMethod,
         note: note.trim() || null,
       },
     );
 
     if (error) {
-      setCheckoutState({
-        error: error.message,
-        result: null,
-        status: "error",
-      });
+      setCheckoutState({ error: error.message, result: null, status: "error" });
       return;
     }
 
@@ -227,27 +226,19 @@ export function CheckoutPanel() {
       return;
     }
 
-    setCheckoutState({
-      error: null,
-      result: data,
-      status: "success",
-    });
-    setCartState({
-      details: emptyCartDetails,
-      error: null,
-      status: "ready",
-    });
+    setCheckoutState({ error: null, result: data, status: "success" });
+    setCartState({ details: emptyCartDetails, error: null, status: "ready" });
     router.push(`/my-product-orders/${data.order.id}#payment`);
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 pb-6 pt-0 sm:px-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-5 pb-6 pt-0 sm:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
         <h1 className="text-3xl font-bold leading-tight text-[var(--foreground)]">
-          ยืนยันคำสั่งซื้อสินค้า
+          ยืนยันคำสั่งซื้อ
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
           เลือกวิธีรับสินค้า ตรวจยอดรวม แล้วสร้างคำสั่งซื้อจากตะกร้าปัจจุบัน
@@ -256,7 +247,7 @@ export function CheckoutPanel() {
 
       {authState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังตรวจสอบบัญชี...
           </div>
         </section>
@@ -267,7 +258,7 @@ export function CheckoutPanel() {
           <div className="max-w-xl rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
             <p className="font-semibold">ต้องเข้าสู่ระบบก่อน checkout</p>
             <Link
-              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
               href="/auth"
             >
               ไปที่หน้าบัญชี
@@ -278,7 +269,7 @@ export function CheckoutPanel() {
 
       {authState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {authState.error}
           </div>
         </section>
@@ -287,11 +278,11 @@ export function CheckoutPanel() {
       {authState.status === "ready" ? (
         <section className="grid gap-6 py-6 lg:grid-cols-[minmax(0,1fr)_340px]">
           <form
-            className="space-y-5 rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm"
+            className="space-y-6 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm"
             onSubmit={handleSubmit}
           >
             {cartState.status === "loading" ? (
-              <div className="rounded-lg border border-[var(--line)] bg-slate-50 p-4 text-sm text-[var(--muted)]">
+              <div className="rounded-lg border border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm text-[var(--muted)]">
                 กำลังโหลดตะกร้า...
               </div>
             ) : null}
@@ -305,7 +296,7 @@ export function CheckoutPanel() {
             {cartState.status === "ready" &&
             cartState.details.items.length === 0 &&
             checkoutState.status !== "success" ? (
-              <div className="rounded-lg border border-dashed border-[var(--line)] bg-slate-50 p-4 text-sm leading-6 text-[var(--muted)]">
+              <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--muted)]">
                 <p className="font-semibold text-[var(--foreground)]">
                   ตะกร้าว่างอยู่
                 </p>
@@ -318,52 +309,78 @@ export function CheckoutPanel() {
               </div>
             ) : null}
 
-            <fieldset className="grid gap-3">
-              <legend className="text-sm font-semibold text-[var(--foreground)]">
-                วิธีรับสินค้า
+            <fieldset className="space-y-3">
+              <legend className="text-xs font-semibold uppercase tracking-wide text-[var(--brand)]">
+                1. วิธีรับสินค้า
               </legend>
-              <label className="flex min-h-12 items-center gap-3 rounded-lg border border-[var(--line)] bg-white px-4 text-sm text-[var(--foreground)]">
-                <input
-                  checked={deliveryMethod === "pickup"}
-                  name="deliveryMethod"
-                  onChange={() => setDeliveryMethod("pickup")}
-                  type="radio"
-                />
-                รับที่อู่ BigO-RepairCar
-              </label>
-              <label className="flex min-h-12 items-center gap-3 rounded-lg border border-[var(--line)] bg-white px-4 text-sm text-[var(--foreground)]">
-                <input
-                  checked={deliveryMethod === "delivery"}
-                  name="deliveryMethod"
-                  onChange={() => setDeliveryMethod("delivery")}
-                  type="radio"
-                />
-                จัดส่งถึงบ้าน +{currencyFormatter.format(deliveryFee)}
-              </label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {deliveryOptions.map((option) => {
+                  const isSelected = deliveryMethod === option.value;
+                  return (
+                    <label
+                      className={
+                        isSelected
+                          ? "flex min-h-16 cursor-pointer items-center gap-3 rounded-lg border-2 border-[var(--brand)] bg-[var(--accent-soft)] px-4 py-3"
+                          : "flex min-h-16 cursor-pointer items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 py-3"
+                      }
+                      key={option.value}
+                    >
+                      <input
+                        checked={isSelected}
+                        className="h-4 w-4"
+                        name="deliveryMethod"
+                        onChange={() => setDeliveryMethod(option.value)}
+                        type="radio"
+                      />
+                      <span>
+                        <span className="block text-sm font-semibold text-[var(--foreground)]">
+                          {option.label}
+                        </span>
+                        <span className="mt-0.5 block text-xs text-[var(--muted)]">
+                          {option.hint}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
             </fieldset>
 
             {deliveryMethod === "delivery" ? (
-              <label className="grid gap-2 text-sm font-medium text-[var(--foreground)]">
-                ที่อยู่จัดส่ง
-                <textarea
-                  className="min-h-28 rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-                  onChange={(event) => setDeliveryAddress(event.target.value)}
-                  placeholder="ชื่อผู้รับ เบอร์โทร และที่อยู่จัดส่ง"
-                  required
-                  value={deliveryAddress}
+              <div className="space-y-4">
+                <label className="grid gap-2 text-sm font-medium text-[var(--foreground)]">
+                  ที่อยู่จัดส่ง
+                  <textarea
+                    className="min-h-28 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                    onChange={(event) => setDeliveryAddress(event.target.value)}
+                    placeholder="ชื่อผู้รับ เบอร์โทร และที่อยู่จัดส่ง"
+                    required
+                    value={deliveryAddress}
+                  />
+                </label>
+
+                <DeliveryLocationPicker
+                  latitude={deliveryLatitude}
+                  longitude={deliveryLongitude}
+                  onChange={(nextLatitude, nextLongitude) => {
+                    setDeliveryLatitude(nextLatitude);
+                    setDeliveryLongitude(nextLongitude);
+                  }}
                 />
-              </label>
+              </div>
             ) : null}
 
-            <label className="grid gap-2 text-sm font-medium text-[var(--foreground)]">
-              หมายเหตุ
+            <fieldset className="space-y-3">
+              <legend className="text-xs font-semibold uppercase tracking-wide text-[var(--brand)]">
+                2. หมายเหตุ (ถ้ามี)
+              </legend>
               <textarea
-                className="min-h-24 rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                className="min-h-24 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                 onChange={(event) => setNote(event.target.value)}
                 placeholder="เช่น ขอให้โทรก่อนจัดส่ง"
                 value={note}
               />
-            </label>
+            </fieldset>
 
             {checkoutState.status === "error" ? (
               <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">
@@ -385,13 +402,9 @@ export function CheckoutPanel() {
                 </p>
                 <p className="mt-1">
                   ยอดรวม:{" "}
-                  {currencyFormatter.format(
-                    checkoutState.result.order.total_amount,
-                  )}
+                  {currencyFormatter.format(checkoutState.result.order.total_amount)}
                 </p>
-                <p className="mt-1">
-                  ระบบตัดสต๊อกและบันทึก inventory movement แล้ว
-                </p>
+                <p className="mt-1">ระบบตัดสต๊อกและบันทึก inventory movement แล้ว</p>
                 <p className="mt-1">กำลังพาไปหน้าชำระเงิน...</p>
               </div>
             ) : null}
@@ -409,31 +422,27 @@ export function CheckoutPanel() {
             </button>
           </form>
 
-          <aside className="h-fit rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm lg:sticky lg:top-6">
-            <p className="text-sm font-semibold text-[var(--brand)]">
-              สรุปคำสั่งซื้อ
-            </p>
-            <div className="mt-4 space-y-3">
+          <aside className="h-fit rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm lg:sticky lg:top-6">
+            <p className="text-sm font-semibold text-[var(--brand)]">สรุปคำสั่งซื้อ</p>
+            <div className="mt-4 max-h-64 space-y-3 overflow-y-auto pr-1">
               {cartState.details.items.map((item) => (
                 <div
-                  className="border-b border-[var(--line)] pb-3 text-sm"
+                  className="flex gap-3 border-b border-[var(--line)] pb-3 text-sm"
                   key={item.id}
                 >
-                  <div className="flex gap-3">
-                    <ProductImageThumb
-                      alt={`รูปสินค้า ${item.product?.name ?? "สินค้า"}`}
-                      size="sm"
-                      src={item.product?.image_url}
-                    />
-                    <div>
-                      <p className="font-semibold text-[var(--foreground)]">
-                        {item.product?.name ?? "สินค้า"}
-                      </p>
-                      <p className="mt-1 text-[var(--muted)]">
-                        {item.quantity} x{" "}
-                        {currencyFormatter.format(item.product?.unit_price ?? 0)}
-                      </p>
-                    </div>
+                  <ProductImageThumb
+                    alt={`รูปสินค้า ${item.product?.name ?? "สินค้า"}`}
+                    size="sm"
+                    src={item.product?.image_url}
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-[var(--foreground)]">
+                      {item.product?.name ?? "สินค้า"}
+                    </p>
+                    <p className="mt-1 text-[var(--muted)]">
+                      {item.quantity} x{" "}
+                      {currencyFormatter.format(item.product?.unit_price ?? 0)}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -459,7 +468,7 @@ export function CheckoutPanel() {
               </div>
             </dl>
             <Link
-              className="mt-5 flex min-h-10 items-center justify-center rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+              className="mt-5 flex min-h-10 items-center justify-center rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
               href="/cart"
             >
               กลับไปแก้ตะกร้า

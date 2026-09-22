@@ -44,7 +44,7 @@ function getStatusStyle(status: MyBooking["status"]) {
     return "bg-red-50 text-red-700";
   }
 
-  return "bg-slate-100 text-slate-700";
+  return "bg-[var(--surface-muted)] text-[var(--foreground)]";
 }
 
 function formatBookingStatus(status: MyBooking["status"]) {
@@ -111,13 +111,53 @@ function formatRepairJobStatus(status: NonNullable<MyBooking["repairJob"]>["stat
   return status;
 }
 
+function getBookingPaymentStatusStyle(status: MyBooking["payment_status"]) {
+  if (status === "paid") {
+    return "bg-emerald-50 text-[var(--brand-strong)]";
+  }
+
+  if (status === "pending_review") {
+    return "bg-amber-50 text-amber-800";
+  }
+
+  if (status === "rejected") {
+    return "bg-red-50 text-red-700";
+  }
+
+  if (status === "awaiting_payment") {
+    return "bg-amber-50 text-amber-800";
+  }
+
+  return "bg-[var(--surface-muted)] text-[var(--foreground)]";
+}
+
+function formatBookingPaymentStatus(status: MyBooking["payment_status"]) {
+  if (status === "awaiting_payment") {
+    return "รอชำระเงิน";
+  }
+
+  if (status === "pending_review") {
+    return "ส่งสลิปแล้ว รอตรวจ";
+  }
+
+  if (status === "paid") {
+    return "ชำระเงินแล้ว";
+  }
+
+  if (status === "rejected") {
+    return "สลิปไม่ผ่าน กรุณาส่งใหม่";
+  }
+
+  return "ยังไม่ต้องชำระเงิน";
+}
+
 function formatTime(time: string) {
   return time.slice(0, 5);
 }
 
 function BookingCard({ booking }: { booking: MyBooking }) {
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+    <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-[var(--brand)]">
@@ -170,12 +210,12 @@ function BookingCard({ booking }: { booking: MyBooking }) {
       </dl>
 
       {booking.note ? (
-        <div className="mt-4 rounded-md bg-slate-50 p-3 text-sm leading-6 text-[var(--muted)]">
+        <div className="mt-4 rounded-md bg-[var(--surface-muted)] p-3 text-sm leading-6 text-[var(--muted)]">
           {booking.note}
         </div>
       ) : null}
 
-      <section className="mt-4 rounded-md border border-[var(--line)] bg-slate-50 p-3 text-sm">
+      <section className="mt-4 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] p-3 text-sm">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="font-semibold text-[var(--foreground)]">
             ความคืบหน้างานซ่อม
@@ -189,7 +229,7 @@ function BookingCard({ booking }: { booking: MyBooking }) {
               {formatRepairJobStatus(booking.repairJob.status)}
             </span>
           ) : (
-            <span className="w-fit rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+            <span className="w-fit rounded-md bg-[var(--surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--foreground)]">
               ยังไม่ได้สร้างงานซ่อม
             </span>
           )}
@@ -198,6 +238,35 @@ function BookingCard({ booking }: { booking: MyBooking }) {
           ช่างผู้รับผิดชอบ: {booking.repairJob?.mechanic?.full_name ?? "-"}
         </p>
       </section>
+
+      {booking.payment_status !== "not_required" ? (
+        <section className="mt-4 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] p-3 text-sm">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="font-semibold text-[var(--foreground)]">
+              การชำระเงิน
+              {booking.payment_amount != null
+                ? ` · ${currencyFormatter.format(booking.payment_amount)}`
+                : ""}
+            </p>
+            <span
+              className={`w-fit rounded-md px-2.5 py-1 text-xs font-semibold ${getBookingPaymentStatusStyle(
+                booking.payment_status,
+              )}`}
+            >
+              {formatBookingPaymentStatus(booking.payment_status)}
+            </span>
+          </div>
+          {booking.payment_status === "awaiting_payment" ||
+          booking.payment_status === "rejected" ? (
+            <Link
+              className="mt-2 inline-block text-xs font-semibold text-[var(--brand)]"
+              href={`/my-bookings/${booking.id}#payment`}
+            >
+              ไปชำระเงิน
+            </Link>
+          ) : null}
+        </section>
+      ) : null}
 
       <p className="mt-4 break-all text-xs text-[var(--muted)]">
         รหัสการจอง: {booking.id}
@@ -210,7 +279,7 @@ function BookingCard({ booking }: { booking: MyBooking }) {
           ดูรายละเอียด
         </Link>
         <Link
-          className="inline-flex min-h-10 items-center rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+          className="inline-flex min-h-10 items-center rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
           href={`/my-bookings/${booking.id}/receipt`}
         >
           เอกสารการจอง
@@ -330,7 +399,7 @@ export function MyBookingsPanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดรายการจอง...
           </div>
         </section>
@@ -353,7 +422,7 @@ export function MyBookingsPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -368,7 +437,7 @@ export function MyBookingsPanel() {
               ))}
             </div>
           ) : (
-            <div className="rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
+            <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
               ยังไม่มีรายการจอง เริ่มจากเลือกบริการที่ต้องการจองก่อน
             </div>
           )}

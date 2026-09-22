@@ -54,7 +54,7 @@ function getStatusStyle(status: AdminServiceCategory["status"]) {
     return "bg-emerald-50 text-[var(--brand-strong)]";
   }
 
-  return "bg-slate-100 text-slate-700";
+  return "bg-[var(--surface-muted)] text-[var(--foreground)]";
 }
 
 function formatCategoryStatus(status: StatusFilter) {
@@ -100,7 +100,7 @@ function AddServiceCategoryForm({
   }
 
   return (
-    <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+    <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
       <div className="border-b border-[var(--line)] pb-4">
         <p className="text-sm font-semibold text-[var(--brand)]">
           เพิ่มหมวดบริการ
@@ -115,7 +115,7 @@ function AddServiceCategoryForm({
           <label className="text-sm font-semibold text-[var(--foreground)]">
             ชื่อหมวดบริการ
             <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) => setName(event.target.value)}
               placeholder="Example: ระบบแอร์"
               value={name}
@@ -125,7 +125,7 @@ function AddServiceCategoryForm({
           <label className="text-sm font-semibold text-[var(--foreground)]">
             สถานะ
             <select
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) =>
                 setStatus(event.target.value as AdminServiceCategory["status"])
               }
@@ -140,7 +140,7 @@ function AddServiceCategoryForm({
         <label className="text-sm font-semibold text-[var(--foreground)]">
           รายละเอียด
           <textarea
-            className="mt-2 min-h-20 w-full resize-y rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            className="mt-2 min-h-20 w-full resize-y rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
             onChange={(event) => setDescription(event.target.value)}
             placeholder="Short description shown on the customer booking page"
             value={description}
@@ -157,11 +157,11 @@ function AddServiceCategoryForm({
           </button>
 
           {createState.status === "error" ? (
-            <p className="text-sm text-red-700">{createState.error}</p>
+            <p className="text-sm text-[var(--danger)]">{createState.error}</p>
           ) : null}
 
           {createState.status === "created" ? (
-            <p className="text-sm font-semibold text-[var(--brand-strong)]">
+            <p className="text-sm font-semibold text-emerald-400">
               {createState.message}
             </p>
           ) : null}
@@ -204,7 +204,7 @@ function AdminServiceCategoryRow({
   }
 
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+    <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
       <div className="flex flex-col gap-3 border-b border-[var(--line)] pb-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -233,7 +233,7 @@ function AdminServiceCategoryRow({
           <label className="text-sm font-semibold text-[var(--foreground)]">
             ชื่อหมวดบริการ
             <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) => setName(event.target.value)}
               value={name}
             />
@@ -242,7 +242,7 @@ function AdminServiceCategoryRow({
           <label className="text-sm font-semibold text-[var(--foreground)]">
             สถานะ
             <select
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) =>
                 setStatus(event.target.value as AdminServiceCategory["status"])
               }
@@ -257,7 +257,7 @@ function AdminServiceCategoryRow({
         <label className="text-sm font-semibold text-[var(--foreground)]">
           รายละเอียด
           <textarea
-            className="mt-2 min-h-24 w-full resize-y rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            className="mt-2 min-h-24 w-full resize-y rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
             onChange={(event) => setDescription(event.target.value)}
             value={description}
           />
@@ -274,12 +274,12 @@ function AdminServiceCategoryRow({
 
           {actionState.status === "error" &&
           actionState.categoryId === category.id ? (
-            <p className="text-sm text-red-700">{actionState.error}</p>
+            <p className="text-sm text-[var(--danger)]">{actionState.error}</p>
           ) : null}
 
           {actionState.status === "saved" &&
           actionState.categoryId === category.id ? (
-            <p className="text-sm font-semibold text-[var(--brand-strong)]">
+            <p className="text-sm font-semibold text-emerald-400">
               {actionState.message}
             </p>
           ) : null}
@@ -558,7 +558,7 @@ export function AdminServiceCategoriesPanel() {
             </p>
           </div>
           <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href="/admin"
           >
             หน้าแอดมิน
@@ -568,7 +568,7 @@ export function AdminServiceCategoriesPanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดหมวดบริการ...
           </div>
         </section>
@@ -600,7 +600,7 @@ export function AdminServiceCategoriesPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -627,7 +627,7 @@ export function AdminServiceCategoriesPanel() {
 
             <div className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-2xl">
               <input
-                className="min-h-10 flex-1 rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                className="min-h-10 flex-1 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="ค้นหาหมวดบริการ"
                 type="search"
@@ -639,7 +639,7 @@ export function AdminServiceCategoriesPanel() {
                     className={
                       statusFilter === status
                         ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-                        : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                        : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                     }
                     key={status}
                     onClick={() => setStatusFilter(status)}
@@ -664,7 +664,7 @@ export function AdminServiceCategoriesPanel() {
               ))}
             </div>
           ) : (
-            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
+            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
               ไม่พบหมวดบริการที่ตรงกับตัวกรองปัจจุบัน
             </div>
           )}

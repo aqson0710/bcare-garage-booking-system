@@ -143,7 +143,7 @@ function OperatingDayRow({
 
   return (
     <form
-      className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm"
+      className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm"
       onSubmit={handleSubmit}
     >
       <div className="grid gap-4 lg:grid-cols-[150px_110px_140px_140px_minmax(0,1fr)_110px] lg:items-end">
@@ -169,7 +169,7 @@ function OperatingDayRow({
         <label className="text-sm font-semibold text-[var(--foreground)]">
           เวลาเปิด
           <input
-            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)] disabled:bg-slate-100"
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)] disabled:bg-[var(--surface-muted)]"
             disabled={!isOpen}
             onChange={(event) => setOpenTime(event.target.value)}
             type="time"
@@ -180,7 +180,7 @@ function OperatingDayRow({
         <label className="text-sm font-semibold text-[var(--foreground)]">
           เวลาปิด
           <input
-            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)] disabled:bg-slate-100"
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)] disabled:bg-[var(--surface-muted)]"
             disabled={!isOpen}
             onChange={(event) => setCloseTime(event.target.value)}
             type="time"
@@ -191,7 +191,7 @@ function OperatingDayRow({
         <label className="text-sm font-semibold text-[var(--foreground)]">
           หมายเหตุ
           <input
-            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
             onChange={(event) => setNote(event.target.value)}
             placeholder="เช่น ปิดประจำสัปดาห์"
             value={note}
@@ -209,12 +209,12 @@ function OperatingDayRow({
 
       {actionState.status === "error" &&
       actionState.weekday === operatingDay.weekday ? (
-        <p className="mt-3 text-sm text-red-700">{actionState.error}</p>
+        <p className="mt-3 text-sm text-[var(--danger)]">{actionState.error}</p>
       ) : null}
 
       {actionState.status === "saved" &&
       actionState.weekday === operatingDay.weekday ? (
-        <p className="mt-3 text-sm font-semibold text-[var(--brand-strong)]">
+        <p className="mt-3 text-sm font-semibold text-emerald-400">
           {actionState.message}
         </p>
       ) : null}
@@ -243,14 +243,14 @@ function AddClosedDateForm({
 
   return (
     <form
-      className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm"
+      className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm"
       onSubmit={handleSubmit}
     >
       <div className="grid gap-4 lg:grid-cols-[180px_minmax(0,1fr)_120px] lg:items-end">
         <label className="text-sm font-semibold text-[var(--foreground)]">
           วันที่ปิดพิเศษ
           <input
-            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
             onChange={(event) => setClosedDate(event.target.value)}
             required
             type="date"
@@ -261,7 +261,7 @@ function AddClosedDateForm({
         <label className="text-sm font-semibold text-[var(--foreground)]">
           เหตุผล
           <input
-            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
             onChange={(event) => setReason(event.target.value)}
             placeholder="เช่น วันหยุดนักขัตฤกษ์"
             value={reason}
@@ -278,11 +278,11 @@ function AddClosedDateForm({
       </div>
 
       {createState.status === "error" ? (
-        <p className="mt-3 text-sm text-red-700">{createState.error}</p>
+        <p className="mt-3 text-sm text-[var(--danger)]">{createState.error}</p>
       ) : null}
 
       {createState.status === "created" ? (
-        <p className="mt-3 text-sm font-semibold text-[var(--brand-strong)]">
+        <p className="mt-3 text-sm font-semibold text-emerald-400">
           {createState.message}
         </p>
       ) : null}
@@ -304,7 +304,7 @@ function ClosedDateRow({
     actionState.closedDate === closedDate.closed_date;
 
   return (
-    <article className="flex flex-col gap-3 rounded-lg border border-[var(--line)] bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+    <article className="flex flex-col gap-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
       <div>
         <p className="font-bold text-[var(--foreground)]">
           {closedDate.closed_date}
@@ -316,7 +316,7 @@ function ClosedDateRow({
 
       <div className="flex flex-col gap-2 sm:items-end">
         <button
-          className="min-h-10 rounded-md border border-red-200 bg-white px-4 text-sm font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="min-h-10 rounded-md border border-red-200 bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--danger)] disabled:cursor-not-allowed disabled:opacity-60"
           disabled={isDeleting}
           onClick={() => onDelete(closedDate)}
           type="button"
@@ -326,7 +326,7 @@ function ClosedDateRow({
 
         {actionState.status === "error" &&
         actionState.closedDate === closedDate.closed_date ? (
-          <p className="text-sm text-red-700">{actionState.error}</p>
+          <p className="text-sm text-[var(--danger)]">{actionState.error}</p>
         ) : null}
       </div>
     </article>
@@ -614,13 +614,13 @@ export function AdminOperatingDaysPanel() {
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Link
-              className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+              className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
               href="/admin/schedule"
             >
               ดูตารางคิว
             </Link>
             <Link
-              className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+              className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
               href="/admin/capacity"
             >
               จัดการคิวรับงาน
@@ -631,7 +631,7 @@ export function AdminOperatingDaysPanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดวันเปิดร้าน...
           </div>
         </section>
@@ -663,7 +663,7 @@ export function AdminOperatingDaysPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm leading-6 text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm leading-6 text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -729,7 +729,7 @@ export function AdminOperatingDaysPanel() {
                 ))}
               </div>
             ) : (
-              <div className="mt-4 rounded-lg border border-dashed border-[var(--line)] bg-white p-5 text-sm text-[var(--muted)]">
+              <div className="mt-4 rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-5 text-sm text-[var(--muted)]">
                 ยังไม่มีวันหยุดพิเศษ
               </div>
             )}

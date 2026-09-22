@@ -42,7 +42,7 @@ function MetricCard({
   value: number | string;
 }) {
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+    <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
       <p className="text-sm font-semibold text-[var(--muted)]">{label}</p>
       <p className="mt-2 text-3xl font-bold text-[var(--foreground)]">
         {value}
@@ -80,7 +80,7 @@ function StatusCard({
 }) {
   return (
     <Link
-      className="rounded-lg border border-[var(--line)] bg-white p-4 shadow-sm hover:border-[var(--brand)]"
+      className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 shadow-sm hover:border-[var(--brand)]"
       href={`/admin/bookings?status=${status}`}
     >
       <p className="text-sm font-semibold text-[var(--muted)]">
@@ -212,7 +212,7 @@ export function AdminReportsPanel() {
             </p>
           </div>
           <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href="/admin"
           >
             หน้าแอดมิน
@@ -222,7 +222,7 @@ export function AdminReportsPanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดรายงาน...
           </div>
         </section>
@@ -254,7 +254,7 @@ export function AdminReportsPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -299,7 +299,7 @@ export function AdminReportsPanel() {
           </section>
 
           <section className="grid gap-4 lg:grid-cols-3">
-            <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+            <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
               <h2 className="text-lg font-bold text-[var(--foreground)]">
                 บริการยอดนิยม
               </h2>
@@ -324,7 +324,7 @@ export function AdminReportsPanel() {
               </div>
             </article>
 
-            <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+            <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
               <h2 className="text-lg font-bold text-[var(--foreground)]">
                 ลูกค้าที่จองบ่อย
               </h2>
@@ -354,7 +354,7 @@ export function AdminReportsPanel() {
               </div>
             </article>
 
-            <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+            <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
               <h2 className="text-lg font-bold text-[var(--foreground)]">
                 รถที่เข้ารับบริการบ่อย
               </h2>

@@ -135,7 +135,7 @@ function getPaymentStatusStyle(status: AdminProductOrder["payment_status"]) {
     return "bg-emerald-50 text-[var(--brand-strong)]";
   }
 
-  if (status === "pending") {
+  if (status === "pending" || status === "partially_paid") {
     return "bg-amber-50 text-amber-800";
   }
 
@@ -147,7 +147,7 @@ function getPaymentStatusStyle(status: AdminProductOrder["payment_status"]) {
     return "bg-red-50 text-red-700";
   }
 
-  return "bg-slate-100 text-slate-700";
+  return "bg-[var(--surface-muted)] text-[var(--foreground)]";
 }
 
 function getVerificationStatusStyle(
@@ -165,7 +165,7 @@ function getVerificationStatusStyle(
     return "bg-red-50 text-red-700";
   }
 
-  return "bg-slate-100 text-slate-700";
+  return "bg-[var(--surface-muted)] text-[var(--foreground)]";
 }
 
 function formatOrderStatus(status: AdminProductOrder["status"]) {
@@ -203,6 +203,10 @@ function formatPaymentStatus(
 ) {
   if (status === "paid") {
     return "ชำระแล้ว";
+  }
+
+  if (status === "partially_paid") {
+    return "ชำระบางส่วน";
   }
 
   if (status === "pending") {
@@ -366,9 +370,11 @@ function DetailItem({
 }
 
 function PaymentProofReview({
+  adminUserId,
   onPaymentAction,
   order,
 }: {
+  adminUserId: string | null;
   onPaymentAction: (
     payment: AdminProductOrder["payments"][number],
     orderPaymentStatus: AdminProductOrder["payment_status"],
@@ -543,6 +549,7 @@ function PaymentProofReview({
     const { data, error } = await approveAdminProductPayment(
       supabase,
       paymentId,
+      adminUserId,
     );
 
     if (error) {
@@ -615,7 +622,7 @@ function PaymentProofReview({
   }
 
   return (
-    <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+    <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-[var(--brand)]">
@@ -625,7 +632,7 @@ function PaymentProofReview({
             ตรวจหลักฐาน แล้วอนุมัติหรือปฏิเสธการชำระเงินจากหน้านี้
           </p>
         </div>
-        <span className="w-fit rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+        <span className="w-fit rounded-md bg-[var(--surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--foreground)]">
           {order.payments.length} รายการ
         </span>
       </div>
@@ -664,7 +671,7 @@ function PaymentProofReview({
 
             return (
               <div
-                className="rounded-md border border-[var(--line)] bg-slate-50 p-4 text-sm"
+                className="rounded-md border border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm"
                 key={payment.id}
               >
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -719,7 +726,7 @@ function PaymentProofReview({
               </dl>
 
               {payment.slip_image_url ? (
-                <div className="mt-4 rounded-md bg-white p-3 text-xs leading-5 text-[var(--muted)]">
+                <div className="mt-4 rounded-md bg-[var(--surface)] p-3 text-xs leading-5 text-[var(--muted)]">
                   <p className="break-all">
                     ที่เก็บไฟล์: {payment.slip_image_url}
                   </p>
@@ -739,12 +746,12 @@ function PaymentProofReview({
                   )}
                 </div>
               ) : (
-                <p className="mt-4 rounded-md bg-white p-3 text-xs text-[var(--muted)]">
+                <p className="mt-4 rounded-md bg-[var(--surface)] p-3 text-xs text-[var(--muted)]">
                   ยังไม่มีรูปสลิปในรายการนี้
                 </p>
               )}
 
-                <div className="mt-4 rounded-md border border-[var(--line)] bg-white p-3">
+                <div className="mt-4 rounded-md border border-[var(--line)] bg-[var(--surface)] p-3">
                   <div className="flex flex-wrap gap-2">
                     <button
                       className="min-h-10 rounded-md border border-cyan-200 bg-cyan-50 px-4 text-sm font-semibold text-cyan-800 disabled:cursor-not-allowed disabled:opacity-60"
@@ -786,7 +793,7 @@ function PaymentProofReview({
                       <label className="block text-sm font-semibold text-[var(--foreground)]">
                         เหตุผลที่ปฏิเสธ
                         <textarea
-                          className="mt-2 min-h-24 w-full rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                          className="mt-2 min-h-24 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                           disabled={isUpdatingPayment}
                           onChange={(event) =>
                             setRejectReason(event.target.value)
@@ -797,7 +804,7 @@ function PaymentProofReview({
                       </label>
                       <div className="flex flex-wrap gap-2">
                         <button
-                          className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                          className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                           disabled={isUpdatingPayment}
                           onClick={() => {
                             setRejectingPaymentId(null);
@@ -824,7 +831,7 @@ function PaymentProofReview({
           })}
         </div>
       ) : (
-        <div className="mt-4 rounded-md bg-slate-50 p-4 text-sm leading-6 text-[var(--muted)]">
+        <div className="mt-4 rounded-md bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--muted)]">
           ยังไม่มีหลักฐานการชำระเงินสำหรับคำสั่งซื้อนี้
         </div>
       )}
@@ -846,7 +853,7 @@ function StockReturnSummary({ order }: { order: AdminProductOrder }) {
     hasSaleMovements && returnedItemCount >= soldItemCount;
 
   return (
-    <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+    <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
       <p className="text-sm font-semibold text-[var(--brand)]">
         การคืนสต็อก
       </p>
@@ -871,7 +878,7 @@ function StockReturnSummary({ order }: { order: AdminProductOrder }) {
           </p>
         </div>
       ) : (
-        <div className="mt-4 rounded-md bg-slate-50 p-3 text-sm leading-6 text-[var(--muted)]">
+        <div className="mt-4 rounded-md bg-[var(--surface-muted)] p-3 text-sm leading-6 text-[var(--muted)]">
           ออเดอร์ยังไม่ถูกยกเลิก จึงยังไม่มีการคืน stock
         </div>
       )}
@@ -880,7 +887,7 @@ function StockReturnSummary({ order }: { order: AdminProductOrder }) {
         <div className="mt-4 space-y-3">
           {order.returnMovements.map((movement) => (
             <div
-              className="rounded-md border border-[var(--line)] bg-slate-50 p-3 text-sm"
+              className="rounded-md border border-[var(--line)] bg-[var(--surface-muted)] p-3 text-sm"
               key={movement.id}
             >
               <div className="flex gap-3">
@@ -1165,7 +1172,7 @@ export function AdminProductOrderDetailPanel({
             </p>
           </div>
           <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href="/admin/product-orders"
           >
             กลับไปออเดอร์สินค้า
@@ -1175,7 +1182,7 @@ export function AdminProductOrderDetailPanel({
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดรายละเอียดคำสั่งซื้อ...
           </div>
         </section>
@@ -1207,7 +1214,7 @@ export function AdminProductOrderDetailPanel({
 
       {loadState.status === "not-found" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-[var(--line)] bg-white p-5 text-sm leading-6 text-[var(--muted)] shadow-sm">
+          <div className="max-w-lg rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 text-sm leading-6 text-[var(--muted)] shadow-sm">
             <p className="font-semibold text-[var(--foreground)]">
               ไม่พบคำสั่งซื้อสินค้า
             </p>
@@ -1224,7 +1231,7 @@ export function AdminProductOrderDetailPanel({
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -1232,7 +1239,7 @@ export function AdminProductOrderDetailPanel({
 
       {loadState.status === "ready" ? (
         <section className="grid gap-6 py-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+          <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
             <div className="flex flex-col gap-3 border-b border-[var(--line)] pb-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="text-sm font-semibold text-[var(--brand)]">
@@ -1264,7 +1271,7 @@ export function AdminProductOrderDetailPanel({
               {loadState.order.items.length > 0 ? (
                 loadState.order.items.map((item) => (
                   <div
-                    className="grid gap-3 rounded-lg border border-[var(--line)] bg-slate-50 p-4 sm:grid-cols-[minmax(0,1fr)_110px_140px]"
+                    className="grid gap-3 rounded-lg border border-[var(--line)] bg-[var(--surface-muted)] p-4 sm:grid-cols-[minmax(0,1fr)_110px_140px]"
                     key={item.id}
                   >
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
@@ -1303,14 +1310,14 @@ export function AdminProductOrderDetailPanel({
                   </div>
                 ))
               ) : (
-                <div className="rounded-lg border border-dashed border-[var(--line)] bg-slate-50 p-4 text-sm text-[var(--muted)]">
+                <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm text-[var(--muted)]">
                   ไม่พบรายการสินค้าในคำสั่งซื้อนี้
                 </div>
               )}
             </div>
 
             {loadState.order.note ? (
-              <div className="mt-5 rounded-md bg-slate-50 p-4 text-sm leading-6 text-[var(--muted)]">
+              <div className="mt-5 rounded-md bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--muted)]">
                 <p className="font-semibold text-[var(--foreground)]">หมายเหตุ</p>
                 <p className="mt-2">{loadState.order.note}</p>
               </div>
@@ -1322,7 +1329,7 @@ export function AdminProductOrderDetailPanel({
           </article>
 
           <aside className="h-fit space-y-4">
-            <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+            <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
               <p className="text-sm font-semibold text-[var(--brand)]">
                 ลูกค้า
               </p>
@@ -1342,17 +1349,17 @@ export function AdminProductOrderDetailPanel({
               </dl>
             </section>
 
-            <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+            <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
               <p className="text-sm font-semibold text-[var(--brand)]">
                 จัดการสถานะ
               </p>
 
               {isEditingStatus ? (
-                <div className="mt-4 rounded-md border border-[var(--line)] bg-slate-50 p-3">
+                <div className="mt-4 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] p-3">
                   <label className="text-sm font-semibold text-[var(--foreground)]">
                     แก้ไขสถานะ
                     <select
-                      className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                      className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                       disabled={isUpdating}
                       onChange={(event) =>
                         setSelectedStatus(
@@ -1370,7 +1377,7 @@ export function AdminProductOrderDetailPanel({
                   </label>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
-                      className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                      className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                       disabled={isUpdating}
                       onClick={cancelEditStatus}
                       type="button"
@@ -1407,7 +1414,7 @@ export function AdminProductOrderDetailPanel({
                     </p>
                   )}
                   <button
-                    className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                    className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                     disabled={isUpdating}
                     onClick={() => setIsEditingStatus(true)}
                     type="button"
@@ -1432,11 +1439,12 @@ export function AdminProductOrderDetailPanel({
             <StockReturnSummary order={loadState.order} />
 
             <PaymentProofReview
+              adminUserId={loadState.access.profile?.id ?? null}
               onPaymentAction={handlePaymentAction}
               order={loadState.order}
             />
 
-            <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+            <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
               <p className="text-sm font-semibold text-[var(--brand)]">
                 สรุปคำสั่งซื้อ
               </p>
@@ -1471,7 +1479,7 @@ export function AdminProductOrderDetailPanel({
               </div>
             </dl>
               <Link
-                className="mt-5 flex min-h-10 items-center justify-center rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                className="mt-5 flex min-h-10 items-center justify-center rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                 href={`/admin/product-orders/${loadState.order.id}/receipt`}
               >
                 เปิดใบเสร็จ / ใบแจ้งชำระเงิน
@@ -1479,13 +1487,24 @@ export function AdminProductOrderDetailPanel({
             </section>
 
             {loadState.order.delivery_method === "delivery" ? (
-              <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+              <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
                 <p className="text-sm font-semibold text-[var(--brand)]">
                   ที่อยู่จัดส่ง
                 </p>
                 <p className="mt-3 whitespace-pre-line text-sm leading-6 text-[var(--muted)]">
                   {loadState.order.delivery_address ?? "-"}
                 </p>
+                {loadState.order.delivery_latitude != null &&
+                loadState.order.delivery_longitude != null ? (
+                  <a
+                    className="mt-3 inline-flex min-h-9 items-center rounded-md border border-[var(--line)] bg-[var(--surface-muted)] px-3 text-xs font-semibold text-[var(--brand-strong)] hover:border-[var(--brand)]"
+                    href={`https://www.google.com/maps?q=${loadState.order.delivery_latitude},${loadState.order.delivery_longitude}`}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    เปิดตำแหน่งที่ลูกค้าปักหมุดใน Google Maps
+                  </a>
+                ) : null}
               </section>
             ) : null}
           </aside>

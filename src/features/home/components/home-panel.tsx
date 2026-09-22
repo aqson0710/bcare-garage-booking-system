@@ -8,6 +8,8 @@ import { AppNav } from "@/components/app-nav";
 import {
   getActiveHomepageFooterSetting,
   getActiveHomepageSlides,
+  getHomepageAppearanceSetting,
+  type HomepageAppearanceSetting,
   type HomepageFooterSetting,
   type HomepageSlide,
 } from "@/features/home";
@@ -39,6 +41,7 @@ type HomeState =
     };
 
 type HomeData = {
+  appearanceSetting: HomepageAppearanceSetting | null;
   footerSetting: HomepageFooterSetting | null;
   products: ProductWithCategory[];
   serviceCategories: ServiceCategoryWithServices[];
@@ -46,6 +49,7 @@ type HomeData = {
 };
 
 const emptyHomeData: HomeData = {
+  appearanceSetting: null,
   footerSetting: null,
   products: [],
   serviceCategories: [],
@@ -60,20 +64,6 @@ const currencyFormatter = new Intl.NumberFormat("th-TH", {
 
 const productPlaceholder = "/product-placeholder.svg";
 const servicePlaceholder = "/service-placeholder.svg";
-
-const defaultFooterSetting = {
-  background_color: "#C81010",
-  contact_email: "Email : bcare.service@example.com",
-  contact_phone: "02-538-8111 หรือศูนย์บริการใกล้บ้าน",
-  contact_title: "สอบถามข้อมูล",
-  office_address: "99/9 ถนนพระราม 9\nแขวงสวนหลวง เขตสวนหลวง\nกรุงเทพฯ 10250",
-  office_fax: "โทรสาร. 02-933-1241",
-  office_phone: "โทร. 02-538-8111",
-  office_title: "สำนักงานใหญ่",
-  services_content:
-    "งานบริการ\nจำหน่ายอะไหล่รถยนต์\nผลิตภัณฑ์ดูแลรถยนต์\nบริการจัดส่งสินค้า\n\nกรุงเทพมหานครและปริมณฑล",
-  services_title: "สินค้าและบริการ",
-};
 
 function getServicePreview(categories: ServiceCategoryWithServices[]) {
   return categories.flatMap((category) =>
@@ -95,7 +85,7 @@ function HomeQuickLink({
 }) {
   return (
     <Link
-      className="rounded-lg border border-[var(--line)] bg-white p-4 transition hover:border-[var(--brand)]"
+      className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 transition hover:border-[var(--brand)]"
       href={href}
     >
       <span className="text-sm font-bold text-[var(--foreground)]">{label}</span>
@@ -118,7 +108,13 @@ function HomepageFooter({
 }: {
   setting: HomepageFooterSetting | null;
 }) {
-  const footer = setting ?? defaultFooterSetting;
+  // No active footer setting (never configured, or admin turned it off) -
+  // hide the footer entirely instead of falling back to placeholder content.
+  if (!setting) {
+    return null;
+  }
+
+  const footer = setting;
   const officeAddressLines = splitDisplayLines(footer.office_address);
   const serviceLines = splitDisplayLines(footer.services_content);
 
@@ -292,13 +288,19 @@ export function HomePanel() {
         status: "loading",
       });
 
-      const [servicesResult, productsResult, slidesResult, footerResult] =
-        await Promise.all([
-          getServicesWithCategories(supabase),
-          getStorefrontProducts(supabase),
-          getActiveHomepageSlides(supabase),
-          getActiveHomepageFooterSetting(supabase),
-        ]);
+      const [
+        servicesResult,
+        productsResult,
+        slidesResult,
+        footerResult,
+        appearanceResult,
+      ] = await Promise.all([
+        getServicesWithCategories(supabase),
+        getStorefrontProducts(supabase),
+        getActiveHomepageSlides(supabase),
+        getActiveHomepageFooterSetting(supabase),
+        getHomepageAppearanceSetting(supabase),
+      ]);
 
       if (!isMounted) {
         return;
@@ -306,6 +308,7 @@ export function HomePanel() {
 
       const data: HomeData = {
         ...emptyHomeData,
+        appearanceSetting: appearanceResult.data ?? null,
         footerSetting: footerResult.data ?? null,
         products: productsResult.data?.products.slice(0, 4) ?? [],
         serviceCategories: servicesResult.data ?? [],
@@ -319,6 +322,11 @@ export function HomePanel() {
         (footerResult.error?.message.includes("homepage_footer_settings")
           ? null
           : footerResult.error?.message) ||
+        (appearanceResult.error?.message.includes(
+          "homepage_appearance_settings",
+        )
+          ? null
+          : appearanceResult.error?.message) ||
         null;
 
       if (loadError) {
@@ -358,7 +366,29 @@ export function HomePanel() {
   );
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-10 pt-0">
+    <div
+      className="relative min-h-screen w-full overflow-hidden"
+      style={
+        data.appearanceSetting?.background_color
+          ? { backgroundColor: data.appearanceSetting.background_color }
+          : undefined
+      }
+    >
+      {data.appearanceSetting?.background_image_url ? (
+        <>
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{
+              backgroundImage: `url(${data.appearanceSetting.background_image_url})`,
+            }}
+          />
+          {/* Dark scrim so page text stays readable no matter what the
+              admin's chosen photo looks like. */}
+          <div aria-hidden="true" className="absolute inset-0 bg-black/55" />
+        </>
+      ) : null}
+      <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-col px-6 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
@@ -370,7 +400,7 @@ export function HomePanel() {
       </section>
 
       {homeState.status === "loading" ? (
-        <div className="rounded-lg border border-[var(--line)] bg-white p-4 text-sm text-[var(--muted)]">
+        <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 text-sm text-[var(--muted)]">
           กำลังโหลดข้อมูลหน้าแรก...
         </div>
       ) : null}
@@ -421,13 +451,13 @@ export function HomePanel() {
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             {servicePreview.map(({ category, service }) => (
               <Link
-                className="overflow-hidden rounded-lg border border-[var(--line)] bg-white transition hover:border-[var(--brand)]"
+                className="overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--surface)] transition hover:border-[var(--brand)]"
                 href="/services"
                 key={service.id}
               >
                 <img
                   alt={`รูปบริการ ${service.name}`}
-                  className="h-36 w-full border-b border-[var(--line)] bg-slate-50 object-cover"
+                  className="h-36 w-full border-b border-[var(--line)] bg-[var(--surface-muted)] object-cover"
                   src={service.image_url || servicePlaceholder}
                 />
                 <div className="p-4">
@@ -445,7 +475,7 @@ export function HomePanel() {
             ))}
           </div>
         ) : (
-          <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-white p-5 text-sm text-[var(--muted)]">
+          <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-5 text-sm text-[var(--muted)]">
             ยังไม่มีบริการที่เปิดใช้งาน
           </div>
         )}
@@ -473,13 +503,13 @@ export function HomePanel() {
           <div className="mt-5 grid gap-4 md:grid-cols-4">
             {data.products.map((product) => (
               <Link
-                className="overflow-hidden rounded-lg border border-[var(--line)] bg-white transition hover:border-[var(--brand)]"
+                className="overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--surface)] transition hover:border-[var(--brand)]"
                 href="/products"
                 key={product.id}
               >
                 <img
                   alt={`รูปสินค้า ${product.name}`}
-                  className="h-36 w-full border-b border-[var(--line)] bg-slate-50 object-cover"
+                  className="h-36 w-full border-b border-[var(--line)] bg-[var(--surface-muted)] object-cover"
                   src={product.image_url || productPlaceholder}
                 />
                 <div className="p-4">
@@ -497,13 +527,14 @@ export function HomePanel() {
             ))}
           </div>
         ) : (
-          <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-white p-5 text-sm text-[var(--muted)]">
+          <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-5 text-sm text-[var(--muted)]">
             ยังไม่มีสินค้าที่เปิดขาย
           </div>
         )}
       </section>
 
       <HomepageFooter setting={data.footerSetting} />
-    </main>
+      </main>
+    </div>
   );
 }

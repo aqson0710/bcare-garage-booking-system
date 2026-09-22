@@ -46,19 +46,22 @@ function formatDateLabel(date: string) {
 }
 
 function getSlotStyle(slot: AdminScheduleSlot) {
+  // Solid tile colors (not pale chips) so every cell stays legible at a
+  // glance regardless of theme - status is carried by a strong background
+  // + white text rather than a light tint that can wash out.
   if (slot.status === "closed" || slot.maxBookings <= 0) {
-    return "border-slate-200 bg-slate-100 text-slate-700";
+    return "border-[var(--line)] bg-[var(--surface-muted)] text-[var(--muted)]";
   }
 
   if (slot.availableBookingCount === 0) {
-    return "border-red-200 bg-red-50 text-red-800";
+    return "border-red-700 bg-red-800 text-white";
   }
 
   if (!slot.hasCapacityRule) {
-    return "border-amber-200 bg-amber-50 text-amber-800";
+    return "border-amber-700 bg-amber-800 text-white";
   }
 
-  return "border-emerald-200 bg-emerald-50 text-[var(--brand-strong)]";
+  return "border-[var(--brand-strong)] bg-[var(--brand-strong)] text-white";
 }
 
 function getSlotStatusLabel(slot: AdminScheduleSlot) {
@@ -94,7 +97,10 @@ function getMetricTotals(overview: AdminScheduleOverview) {
 function ScheduleCell({ slot }: { slot: AdminScheduleSlot }) {
   return (
     <td className="min-w-32 border border-[var(--line)] p-2 align-top">
-      <div className={`rounded-md border p-2 text-xs ${getSlotStyle(slot)}`}>
+      <Link
+        className={`block rounded-md border p-2 text-xs transition hover:brightness-95 ${getSlotStyle(slot)}`}
+        href={`/admin/capacity?date=${slot.bookingDate}&time=${slot.bookingTime}`}
+      >
         <div className="flex items-center justify-between gap-2">
           <span className="font-bold">{getSlotStatusLabel(slot)}</span>
           <span>{slot.activeBookingCount}/{slot.maxBookings}</span>
@@ -103,9 +109,9 @@ function ScheduleCell({ slot }: { slot: AdminScheduleSlot }) {
           เหลือ {slot.availableBookingCount} คิว
         </p>
         {!slot.hasCapacityRule ? (
-          <p className="mt-1 text-[11px]">ค่าเริ่มต้น</p>
+          <p className="mt-1 text-[11px]">ยังไม่ได้ตั้งค่า</p>
         ) : null}
-      </div>
+      </Link>
     </td>
   );
 }
@@ -247,14 +253,14 @@ export function AdminScheduleOverviewPanel() {
             <label className="text-sm font-semibold text-[var(--foreground)]">
               วันที่เริ่มต้น
               <input
-                className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)] sm:w-44"
+                className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)] sm:w-44"
                 onChange={(event) => setStartDate(event.target.value)}
                 type="date"
                 value={startDate}
               />
             </label>
             <button
-              className="min-h-10 self-end rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+              className="min-h-10 self-end rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
               onClick={() => setReloadKey((currentKey) => currentKey + 1)}
               type="button"
             >
@@ -272,7 +278,7 @@ export function AdminScheduleOverviewPanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดตารางคิว...
           </div>
         </section>
@@ -304,7 +310,7 @@ export function AdminScheduleOverviewPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm leading-6 text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm leading-6 text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -313,25 +319,25 @@ export function AdminScheduleOverviewPanel() {
       {loadState.status === "ready" && metricTotals ? (
         <section className="py-6">
           <div className="grid gap-3 md:grid-cols-4">
-            <div className="rounded-lg border border-[var(--line)] bg-white p-4">
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
               <p className="text-xs text-[var(--muted)]">รับได้รวม</p>
               <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
                 {metricTotals.maxBookings}
               </p>
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-white p-4">
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
               <p className="text-xs text-[var(--muted)]">จองแล้ว</p>
               <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
                 {metricTotals.activeBookingCount}
               </p>
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-white p-4">
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
               <p className="text-xs text-[var(--muted)]">คิวว่าง</p>
               <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
                 {metricTotals.availableBookingCount}
               </p>
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-white p-4">
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
               <p className="text-xs text-[var(--muted)]">ช่วงเวลาปิดรับ</p>
               <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
                 {metricTotals.closedSlotCount}
@@ -339,11 +345,11 @@ export function AdminScheduleOverviewPanel() {
             </div>
           </div>
 
-          <div className="mt-5 overflow-x-auto rounded-lg border border-[var(--line)] bg-white">
+          <div className="mt-5 overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--surface)]">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="bg-slate-50 text-left text-[var(--muted)]">
-                  <th className="sticky left-0 z-10 min-w-24 border border-[var(--line)] bg-slate-50 p-3">
+                <tr className="bg-[var(--surface-muted)] text-left text-[var(--muted)]">
+                  <th className="sticky left-0 z-10 min-w-24 border border-[var(--line)] bg-[var(--surface-muted)] p-3">
                     เวลา
                   </th>
                   {loadState.overview.days.map((day) => (
@@ -364,7 +370,7 @@ export function AdminScheduleOverviewPanel() {
               <tbody>
                 {loadState.overview.timeSlots.map((timeSlot, timeIndex) => (
                   <tr key={timeSlot}>
-                    <th className="sticky left-0 z-10 border border-[var(--line)] bg-white p-3 text-left font-bold text-[var(--foreground)]">
+                    <th className="sticky left-0 z-10 border border-[var(--line)] bg-[var(--surface)] p-3 text-left font-bold text-[var(--foreground)]">
                       {timeSlot}
                     </th>
                     {loadState.overview.days.map((day) => (
@@ -379,9 +385,32 @@ export function AdminScheduleOverviewPanel() {
             </table>
           </div>
 
-          <p className="mt-4 text-xs leading-5 text-[var(--muted)]">
-            ช่องที่ขึ้นค่าเริ่มต้นคือช่วงเวลาที่ยังไม่ได้ตั้งค่าในหน้า
-            จัดการคิวรับงาน ระบบจะถือว่าเปิดรับ 1 คิวตามกติกา MVP
+          <div className="mt-4 flex flex-wrap items-center gap-4 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-xs text-[var(--foreground)]">
+            <span className="font-semibold text-[var(--muted)]">
+              ความหมายของสี:
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-3 w-3 rounded-sm border border-[var(--brand-strong)] bg-[var(--brand-strong)]" />
+              ว่าง รับจองได้
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-3 w-3 rounded-sm border border-red-700 bg-red-800" />
+              เต็ม
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-3 w-3 rounded-sm border border-[var(--line)] bg-[var(--surface-muted)]" />
+              ปิดรับ
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-3 w-3 rounded-sm border border-amber-700 bg-amber-800" />
+              ยังไม่ได้ตั้งค่า
+            </span>
+          </div>
+
+          <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
+            คลิกที่ช่องในตารางเพื่อไปตั้งค่าวันและเวลานั้นในหน้า
+            จัดการคิวรับงาน ช่องที่ขึ้น &quot;ยังไม่ได้ตั้งค่า&quot;
+            คือช่วงเวลาที่ยังไม่มีใครกำหนดไว้ ระบบจะเปิดรับ 1 คิวให้โดยอัตโนมัติ
           </p>
         </section>
       ) : null}

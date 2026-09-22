@@ -1,18 +1,29 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens - dark "black / green / gray" palette used by every page
+ * (admin and customer): a near-black page background, dark charcoal
+ * card surfaces one step lighter than the page, a green brand/accent
+ * color for primary actions and links, and gray text tones for body
+ * copy and secondary/muted text. Printed documents (receipts) are kept
+ * on their own light, black-on-white styling in the @media print block
+ * below and in the receipt/document components themselves, since a
+ * printed page should stay light regardless of the on-screen theme.
+ */
 :root {
-  color-scheme: light;
-  --background: #f5f5f3;
-  --foreground: #242424;
-  --muted: #666666;
-  --line: #d8d8d3;
-  --surface: #ffffff;
-  --brand: #f5c518;
-  --brand-strong: #242424;
-  --accent: #f5c518;
-  --accent-soft: #fff6cf;
-  --success: #0f766e;
-  --danger: #b91c1c;
+  color-scheme: dark;
+  --background: #0a0d0b;
+  --foreground: #eef1ee;
+  --muted: #93a39a;
+  --line: #2a332d;
+  --surface: #141815;
+  --surface-muted: #1f2521;
+  --brand: #16a34a;
+  --brand-strong: #26664a;
+  --accent: #16a34a;
+  --accent-soft: #123321;
+  --success: #22c55e;
+  --danger: #f87171;
 }
 
 * {
@@ -29,7 +40,7 @@ body {
   margin: 0;
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-prompt), Arial, Helvetica, sans-serif;
 }
 
 a {
@@ -42,10 +53,6 @@ input,
 textarea,
 select {
   font: inherit;
-}
-
-[class*="bg-[var(--brand)]"][class*="text-white"] {
-  color: var(--foreground);
 }
 
 [class*="hover:border-[var(--brand)]"]:hover {

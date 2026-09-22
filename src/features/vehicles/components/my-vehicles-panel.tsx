@@ -253,23 +253,23 @@ function VehicleCard({
     cardState.status === "error";
 
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+    <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
       <form onSubmit={handleSubmit}>
         <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
           <div>
             {vehicle.image_url ? (
               <img
                 alt={`รูปรถทะเบียน ${vehicle.license_plate}`}
-                className="h-40 w-full rounded-md border border-[var(--line)] bg-slate-50 object-cover"
+                className="h-40 w-full rounded-md border border-[var(--line)] bg-[var(--surface-muted)] object-cover"
                 src={vehicle.image_url}
               />
             ) : (
-              <div className="grid h-40 w-full place-items-center rounded-md border border-dashed border-[var(--line)] bg-slate-50 px-4 text-center text-sm leading-6 text-[var(--muted)]">
+              <div className="grid h-40 w-full place-items-center rounded-md border border-dashed border-[var(--line)] bg-[var(--surface-muted)] px-4 text-center text-sm leading-6 text-[var(--muted)]">
                 ยังไม่มีรูปรถ
               </div>
             )}
 
-            <label className="mt-3 inline-flex min-h-10 w-full cursor-pointer items-center justify-center rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--foreground)] hover:border-[var(--brand)]">
+            <label className="mt-3 inline-flex min-h-10 w-full cursor-pointer items-center justify-center rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--foreground)] hover:border-[var(--brand)]">
               {uploadState.status === "uploading"
                 ? "กำลังอัปโหลด..."
                 : "อัปโหลดรูปรถ"}
@@ -306,7 +306,7 @@ function VehicleCard({
                 </p>
                 {isEditing ? (
                   <input
-                    className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-xl font-bold text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                    className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-xl font-bold text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                     onChange={(event) =>
                       updateValue("licensePlate", event.target.value)
                     }
@@ -322,7 +322,7 @@ function VehicleCard({
               {isEditing ? (
                 <div className="flex gap-2">
                   <button
-                    className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                    className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                     onClick={cancelEdit}
                     type="button"
                   >
@@ -340,7 +340,7 @@ function VehicleCard({
                 </div>
               ) : (
               <button
-                className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                 onClick={() =>
                   setCardState({
                     error: null,
@@ -361,7 +361,7 @@ function VehicleCard({
               ยี่ห้อรถ
               {isEditing ? (
                 <input
-                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   onChange={(event) => updateValue("brand", event.target.value)}
                   value={values.brand}
                 />
@@ -378,7 +378,7 @@ function VehicleCard({
               รุ่นรถ
               {isEditing ? (
                 <input
-                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   onChange={(event) => updateValue("model", event.target.value)}
                   value={values.model}
                 />
@@ -395,7 +395,7 @@ function VehicleCard({
               ปีรถ
               {isEditing ? (
                 <input
-                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   inputMode="numeric"
                   onChange={(event) => updateValue("year", event.target.value)}
                   value={values.year}
@@ -413,7 +413,7 @@ function VehicleCard({
               สีรถ
               {isEditing ? (
                 <input
-                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   onChange={(event) => updateValue("color", event.target.value)}
                   value={values.color}
                 />
@@ -573,7 +573,7 @@ export function MyVehiclesPanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดข้อมูลรถ...
           </div>
         </section>
@@ -596,7 +596,7 @@ export function MyVehiclesPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -616,7 +616,7 @@ export function MyVehiclesPanel() {
               ))}
             </div>
           ) : (
-            <div className="rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
+            <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
               ยังไม่มีข้อมูลรถ เริ่มจองบริการก่อน แล้วข้อมูลรถจะมาแสดงที่นี่
             </div>
           )}

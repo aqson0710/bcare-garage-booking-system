@@ -275,7 +275,7 @@ function buildAdminBookingNotification(
   if (booking.status === "pending") {
     return {
       createdAt: booking.created_at,
-      href: `/admin/bookings/${booking.id}`,
+      href: `/admin/bookings?bookingId=${booking.id}`,
       id: `admin-booking-pending-${booking.id}-${booking.updated_at}`,
       message: `${booking.customer?.full_name ?? "ลูกค้า"} จอง ${
         booking.service?.name ?? "บริการ"
@@ -289,7 +289,7 @@ function buildAdminBookingNotification(
   if (booking.status === "confirmed") {
     return {
       createdAt: booking.updated_at,
-      href: `/admin/bookings/${booking.id}`,
+      href: `/admin/bookings?bookingId=${booking.id}`,
       id: `admin-booking-confirmed-${booking.id}-${booking.updated_at}`,
       message: `${booking.service?.name ?? "บริการ"} ยืนยันแล้ว ตรวจว่าต้องสร้างใบงานซ่อมหรือไม่`,
       source: "booking",

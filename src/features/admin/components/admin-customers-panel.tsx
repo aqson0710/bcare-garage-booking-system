@@ -150,14 +150,14 @@ function CustomerCard({
   }
 
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+    <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-semibold text-[var(--brand)]">
               {getRoleLabel(customer.role)}
             </p>
-            <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+            <span className="rounded-md bg-[var(--surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--foreground)]">
               {customer.email ?? "ไม่มีอีเมล"}
             </span>
             {isCurrentAdmin ? (
@@ -178,7 +178,7 @@ function CustomerCard({
           <label className="text-sm font-medium text-[var(--foreground)]">
             สิทธิ์ผู้ใช้
             <select
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm font-semibold text-[var(--foreground)] outline-none focus:border-[var(--brand)] disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-[var(--muted)]"
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm font-semibold text-[var(--foreground)] outline-none focus:border-[var(--brand)] disabled:cursor-not-allowed disabled:bg-[var(--surface-muted)] disabled:text-[var(--muted)]"
               disabled={isCurrentAdmin || roleState.status === "saving"}
               onChange={(event) =>
                 handleRoleChange(event.target.value as ProfileRole)
@@ -193,7 +193,7 @@ function CustomerCard({
             </select>
           </label>
           <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href={`/admin/customers/${customer.id}`}
           >
             ดูข้อมูลผู้ใช้
@@ -417,7 +417,7 @@ export function AdminCustomersPanel() {
             </p>
           </div>
           <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href="/admin"
           >
             หน้าแอดมิน
@@ -427,7 +427,7 @@ export function AdminCustomersPanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดรายชื่อลูกค้า...
           </div>
         </section>
@@ -459,7 +459,7 @@ export function AdminCustomersPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -482,7 +482,7 @@ export function AdminCustomersPanel() {
               <label className="text-sm font-medium text-[var(--foreground)]">
                 กรองสิทธิ์
                 <select
-                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   onChange={(event) =>
                     setRoleFilter(event.target.value as RoleFilter)
                   }
@@ -498,7 +498,7 @@ export function AdminCustomersPanel() {
               <label className="text-sm font-medium text-[var(--foreground)]">
                 ค้นหา
                 <input
-                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   onChange={(event) => setSearchInput(event.target.value)}
                   placeholder="ค้นหาชื่อ เบอร์โทร หรืออีเมล"
                   type="search"
@@ -520,7 +520,7 @@ export function AdminCustomersPanel() {
               ))}
             </div>
           ) : (
-            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
+            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
               ไม่พบผู้ใช้ที่ตรงกับตัวกรอง
             </div>
           )}

@@ -5,6 +5,8 @@ export type Vehicle = Database["public"]["Tables"]["vehicles"]["Row"];
 export type Booking = Database["public"]["Tables"]["bookings"]["Row"];
 export type Service = Database["public"]["Tables"]["services"]["Row"];
 export type RepairJob = Database["public"]["Tables"]["repair_jobs"]["Row"];
+export type BookingPayment =
+  Database["public"]["Tables"]["booking_payments"]["Row"];
 
 export type GuestBookingInput = {
   customerName: string;
@@ -65,4 +67,11 @@ export type MyBooking = Booking & {
   repairJob: MyBookingRepairJob | null;
   service: Service | null;
   vehicle: Vehicle | null;
+  latestPayment: BookingPayment | null;
+};
+
+export type BookingPaymentSlipInput = {
+  bookingId: string;
+  file: File;
+  paymentMethod: Extract<BookingPayment["payment_method"], "bank_transfer" | "promptpay">;
 };

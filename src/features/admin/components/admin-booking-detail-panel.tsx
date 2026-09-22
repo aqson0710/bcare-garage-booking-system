@@ -5,13 +5,16 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import {
+  approveAdminBookingPayment,
   checkAdminAccess,
   createAdminRepairJobFromBooking,
   getAdminBookingById,
   getAdminRepairJobByBookingId,
+  rejectAdminBookingPayment,
   updateAdminBookingStatus,
   type AdminAccessResult,
   type AdminBooking,
+  type AdminBookingPayment,
   type AdminBookingStatusAction,
   type AdminRepairJob,
 } from "@/features/admin";
@@ -52,6 +55,12 @@ type WorkOrderActionState =
   | { status: "idle"; error: null }
   | { status: "creating"; error: null }
   | { status: "error"; error: string };
+
+type PaymentActionState =
+  | { status: "idle"; error: null; message: null; paymentId: null }
+  | { status: "updating"; error: null; message: null; paymentId: string }
+  | { status: "success"; error: null; message: string; paymentId: string }
+  | { status: "error"; error: string; message: null; paymentId: string };
 
 const editableStatuses: AdminBooking["status"][] = [
   "pending",
@@ -112,7 +121,55 @@ function getStatusStyle(status: AdminBooking["status"]) {
     return "bg-red-50 text-red-700";
   }
 
-  return "bg-slate-100 text-slate-700";
+  return "bg-[var(--surface-muted)] text-[var(--foreground)]";
+}
+
+function formatBookingPaymentStatus(status: AdminBooking["payment_status"]) {
+  if (status === "not_required") {
+    return "ยังไม่ต้องชำระเงิน";
+  }
+
+  if (status === "awaiting_payment") {
+    return "รอลูกค้าชำระเงิน";
+  }
+
+  if (status === "pending_review") {
+    return "ส่งสลิปแล้ว รอตรวจ";
+  }
+
+  if (status === "paid") {
+    return "ชำระเงินแล้ว";
+  }
+
+  return "สลิปไม่ผ่าน";
+}
+
+function getBookingPaymentStatusStyle(status: AdminBooking["payment_status"]) {
+  if (status === "paid") {
+    return "bg-emerald-50 text-[var(--brand-strong)]";
+  }
+
+  if (status === "pending_review") {
+    return "bg-amber-50 text-amber-800";
+  }
+
+  if (status === "rejected") {
+    return "bg-red-50 text-red-700";
+  }
+
+  if (status === "awaiting_payment") {
+    return "bg-cyan-50 text-cyan-800";
+  }
+
+  return "bg-[var(--surface-muted)] text-[var(--foreground)]";
+}
+
+function formatDateTime(value: string | null) {
+  if (!value) {
+    return "-";
+  }
+
+  return new Date(value).toLocaleString("th-TH");
 }
 
 function getQuickActions(
@@ -186,6 +243,21 @@ export function AdminBookingDetailPanel({ bookingId }: { bookingId: string }) {
       error: null,
       status: "idle",
     });
+  const [signedSlipUrls, setSignedSlipUrls] = useState<Record<string, string>>(
+    {},
+  );
+  const [signedUrlError, setSignedUrlError] = useState<string | null>(null);
+  const [paymentActionState, setPaymentActionState] =
+    useState<PaymentActionState>({
+      error: null,
+      message: null,
+      paymentId: null,
+      status: "idle",
+    });
+  const [rejectingPaymentId, setRejectingPaymentId] = useState<string | null>(
+    null,
+  );
+  const [rejectReason, setRejectReason] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -320,6 +392,51 @@ export function AdminBookingDetailPanel({ bookingId }: { bookingId: string }) {
     };
   }, [bookingId]);
 
+  useEffect(() => {
+    let isMounted = true;
+    const payments =
+      loadState.status === "ready" ? loadState.booking.payments : [];
+    const paymentsWithSlip = payments.filter(
+      (payment) => payment.slip_image_url,
+    );
+
+    if (paymentsWithSlip.length === 0) {
+      return;
+    }
+
+    async function loadSignedSlipUrls() {
+      const supabase = createClient();
+      const nextUrls: Record<string, string> = {};
+
+      for (const payment of paymentsWithSlip) {
+        const { data, error } = await supabase.storage
+          .from("payment-slips")
+          .createSignedUrl(payment.slip_image_url, 60 * 30);
+
+        if (error) {
+          if (isMounted) {
+            setSignedUrlError(error.message);
+          }
+          continue;
+        }
+
+        if (data?.signedUrl) {
+          nextUrls[payment.id] = data.signedUrl;
+        }
+      }
+
+      if (isMounted) {
+        setSignedSlipUrls(nextUrls);
+      }
+    }
+
+    loadSignedSlipUrls();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [loadState]);
+
   async function handleStatusChange(nextStatus: AdminBookingStatusAction) {
     if (loadState.status !== "ready") {
       return;
@@ -409,6 +526,125 @@ export function AdminBookingDetailPanel({ bookingId }: { bookingId: string }) {
     });
   }
 
+  async function handleApprovePayment(paymentId: string) {
+    if (!window.confirm("อนุมัติสลิปนี้เป็นชำระเงินแล้วหรือไม่?")) {
+      return;
+    }
+
+    setPaymentActionState({
+      error: null,
+      message: null,
+      paymentId,
+      status: "updating",
+    });
+
+    const supabase = createClient();
+    const { data, error } = await approveAdminBookingPayment(
+      supabase,
+      paymentId,
+    );
+
+    if (error || !data) {
+      setPaymentActionState({
+        error: error?.message ?? "อนุมัติการชำระเงินไม่สำเร็จ",
+        message: null,
+        paymentId,
+        status: "error",
+      });
+      return;
+    }
+
+    if (loadState.status === "ready") {
+      setLoadState({
+        ...loadState,
+        booking: {
+          ...loadState.booking,
+          payment_status: data.payment_status,
+          payments: loadState.booking.payments.map((payment) =>
+            payment.id === paymentId
+              ? { ...payment, payment_status: "paid", rejected_reason: null }
+              : payment,
+          ),
+        },
+      });
+    }
+
+    setRejectingPaymentId(null);
+    setRejectReason("");
+    setPaymentActionState({
+      error: null,
+      message: "อนุมัติการชำระเงินแล้ว",
+      paymentId,
+      status: "success",
+    });
+  }
+
+  async function handleRejectPayment(paymentId: string) {
+    const normalizedReason = rejectReason.trim();
+
+    if (normalizedReason.length === 0) {
+      setPaymentActionState({
+        error: "กรุณากรอกเหตุผลที่ปฏิเสธสลิป",
+        message: null,
+        paymentId,
+        status: "error",
+      });
+      return;
+    }
+
+    setPaymentActionState({
+      error: null,
+      message: null,
+      paymentId,
+      status: "updating",
+    });
+
+    const supabase = createClient();
+    const { data, error } = await rejectAdminBookingPayment(
+      supabase,
+      paymentId,
+      normalizedReason,
+    );
+
+    if (error || !data) {
+      setPaymentActionState({
+        error: error?.message ?? "ปฏิเสธการชำระเงินไม่สำเร็จ",
+        message: null,
+        paymentId,
+        status: "error",
+      });
+      return;
+    }
+
+    if (loadState.status === "ready") {
+      setLoadState({
+        ...loadState,
+        booking: {
+          ...loadState.booking,
+          payment_status: data.payment_status,
+          payments: loadState.booking.payments.map((payment) =>
+            payment.id === paymentId
+              ? {
+                  ...payment,
+                  payment_status: "rejected",
+                  rejected_reason: normalizedReason,
+                }
+              : payment,
+          ),
+        },
+      });
+    }
+
+    setRejectingPaymentId(null);
+    setRejectReason("");
+    setPaymentActionState({
+      error: null,
+      message: "ปฏิเสธสลิปแล้ว",
+      paymentId,
+      status: "success",
+    });
+  }
+
   function cancelEditStatus() {
     if (loadState.status === "ready") {
       setSelectedStatus(loadState.booking.status);
@@ -446,7 +682,7 @@ export function AdminBookingDetailPanel({ bookingId }: { bookingId: string }) {
             </p>
           </div>
           <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href="/admin/bookings"
           >
             กลับไปหน้าการจอง
@@ -456,7 +692,7 @@ export function AdminBookingDetailPanel({ bookingId }: { bookingId: string }) {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดรายละเอียด booking admin...
           </div>
         </section>
@@ -488,7 +724,7 @@ export function AdminBookingDetailPanel({ bookingId }: { bookingId: string }) {
 
       {loadState.status === "not-found" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-[var(--line)] bg-white p-5 text-sm leading-6 text-[var(--muted)] shadow-sm">
+          <div className="max-w-lg rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 text-sm leading-6 text-[var(--muted)] shadow-sm">
             <p className="font-semibold text-[var(--foreground)]">
               ไม่พบการจอง
             </p>
@@ -505,7 +741,7 @@ export function AdminBookingDetailPanel({ bookingId }: { bookingId: string }) {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -513,7 +749,7 @@ export function AdminBookingDetailPanel({ bookingId }: { bookingId: string }) {
 
       {loadState.status === "ready" ? (
         <section className="grid gap-6 py-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+          <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="text-sm font-semibold text-[var(--brand)]">
@@ -570,7 +806,7 @@ export function AdminBookingDetailPanel({ bookingId }: { bookingId: string }) {
             </dl>
 
             {loadState.booking.note ? (
-              <div className="mt-5 rounded-md bg-slate-50 p-4 text-sm leading-6 text-[var(--muted)]">
+              <div className="mt-5 rounded-md bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--muted)]">
                 <p className="font-semibold text-[var(--foreground)]">หมายเหตุ</p>
                 <p className="mt-2">{loadState.booking.note}</p>
               </div>
@@ -581,7 +817,7 @@ export function AdminBookingDetailPanel({ bookingId }: { bookingId: string }) {
             </p>
 
             <Link
-              className="mt-5 inline-flex min-h-10 items-center rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+              className="mt-5 inline-flex min-h-10 items-center rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
               href={`/admin/bookings/${loadState.booking.id}/receipt`}
             >
               เปิดเอกสารการจอง / ใบรับงาน
@@ -589,7 +825,7 @@ export function AdminBookingDetailPanel({ bookingId }: { bookingId: string }) {
           </article>
 
           <aside className="h-fit space-y-4">
-            <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+            <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
               <p className="text-sm font-semibold text-[var(--brand)]">
                 ลูกค้า
               </p>
@@ -609,7 +845,7 @@ export function AdminBookingDetailPanel({ bookingId }: { bookingId: string }) {
               </dl>
             </section>
 
-            <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+            <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
               <p className="text-sm font-semibold text-[var(--brand)]">
                 รถ
               </p>
@@ -639,7 +875,7 @@ export function AdminBookingDetailPanel({ bookingId }: { bookingId: string }) {
               </dl>
             </section>
 
-            <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+            <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
               <p className="text-sm font-semibold text-[var(--brand)]">
                 ใบงานซ่อม
               </p>
@@ -658,12 +894,12 @@ export function AdminBookingDetailPanel({ bookingId }: { bookingId: string }) {
                   </Link>
                 </div>
               ) : (
-                <div className="mt-4 rounded-md border border-[var(--line)] bg-slate-50 p-3 text-sm leading-6 text-[var(--muted)]">
+                <div className="mt-4 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] p-3 text-sm leading-6 text-[var(--muted)]">
                   <p>
                     สร้างใบงานซ่อมจากการจองที่ยืนยันแล้ว เพื่อให้ช่างติดตามงานต่อได้
                   </p>
                   {loadState.booking.status !== "confirmed" ? (
-                    <p className="mt-2 font-semibold text-amber-800">
+                    <p className="mt-2 font-semibold text-amber-400">
                       ต้องยืนยันการจองก่อนสร้างใบงานซ่อม
                     </p>
                   ) : null}
@@ -687,17 +923,203 @@ export function AdminBookingDetailPanel({ bookingId }: { bookingId: string }) {
               ) : null}
             </section>
 
-            <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+            {loadState.booking.payment_status !== "not_required" ? (
+              <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <p className="text-sm font-semibold text-[var(--brand)]">
+                    การชำระเงิน
+                  </p>
+                  <span
+                    className={`w-fit rounded-md px-2.5 py-1 text-xs font-semibold ${getBookingPaymentStatusStyle(
+                      loadState.booking.payment_status,
+                    )}`}
+                  >
+                    {formatBookingPaymentStatus(loadState.booking.payment_status)}
+                  </span>
+                </div>
+
+                {loadState.booking.payment_amount != null ? (
+                  <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
+                    ยอดที่ต้องชำระ:{" "}
+                    <span className="font-semibold text-[var(--foreground)]">
+                      {currencyFormatter.format(loadState.booking.payment_amount)}
+                    </span>
+                  </p>
+                ) : null}
+
+                {signedUrlError ? (
+                  <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-800">
+                    เปิด signed slip link ไม่สำเร็จ: {signedUrlError}
+                  </div>
+                ) : null}
+
+                {paymentActionState.status === "success" ? (
+                  <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm leading-6 text-[var(--brand-strong)]">
+                    {paymentActionState.message}
+                  </div>
+                ) : null}
+
+                {paymentActionState.status === "error" ? (
+                  <div className="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-700">
+                    {paymentActionState.error}
+                  </div>
+                ) : null}
+
+                {loadState.booking.payments.length > 0 ? (
+                  <div className="mt-4 space-y-3">
+                    {loadState.booking.payments.map((payment: AdminBookingPayment) => {
+                      const isUpdatingPayment =
+                        paymentActionState.status === "updating" &&
+                        paymentActionState.paymentId === payment.id;
+                      const canApprove = payment.payment_status === "pending";
+                      const canReject = payment.payment_status === "pending";
+
+                      return (
+                        <div
+                          className="rounded-md border border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm"
+                          key={payment.id}
+                        >
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <p className="font-semibold text-[var(--foreground)]">
+                              {currencyFormatter.format(payment.amount)}
+                            </p>
+                            <span
+                              className={`w-fit rounded-md px-2.5 py-1 text-xs font-semibold ${
+                                payment.payment_status === "paid"
+                                  ? "bg-emerald-50 text-[var(--brand-strong)]"
+                                  : payment.payment_status === "rejected"
+                                    ? "bg-red-50 text-red-700"
+                                    : "bg-amber-50 text-amber-800"
+                              }`}
+                            >
+                              {payment.payment_status === "paid"
+                                ? "อนุมัติแล้ว"
+                                : payment.payment_status === "rejected"
+                                  ? "ปฏิเสธแล้ว"
+                                  : "รอตรวจ"}
+                            </span>
+                          </div>
+
+                          <dl className="mt-3 grid gap-2 text-xs text-[var(--muted)] sm:grid-cols-2">
+                            <div>
+                              <dt>ส่งเมื่อ</dt>
+                              <dd className="font-semibold text-[var(--foreground)]">
+                                {formatDateTime(payment.submitted_at)}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt>ตรวจเมื่อ</dt>
+                              <dd className="font-semibold text-[var(--foreground)]">
+                                {formatDateTime(payment.verified_at)}
+                              </dd>
+                            </div>
+                            {payment.rejected_reason ? (
+                              <div className="sm:col-span-2">
+                                <dt>เหตุผลที่ไม่ผ่าน</dt>
+                                <dd className="font-semibold text-[var(--foreground)]">
+                                  {payment.rejected_reason}
+                                </dd>
+                              </div>
+                            ) : null}
+                          </dl>
+
+                          {signedSlipUrls[payment.id] ? (
+                            <a
+                              className="mt-3 inline-flex min-h-9 items-center rounded-md bg-[var(--brand)] px-3 text-sm font-semibold text-white"
+                              href={signedSlipUrls[payment.id]}
+                              rel="noreferrer"
+                              target="_blank"
+                            >
+                              เปิดรูปสลิป
+                            </a>
+                          ) : (
+                            <p className="mt-3 text-xs text-[var(--muted)]">
+                              กำลังเตรียมลิงก์รูปสลิป...
+                            </p>
+                          )}
+
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            <button
+                              className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                              disabled={!canApprove || isUpdatingPayment}
+                              onClick={() => handleApprovePayment(payment.id)}
+                              type="button"
+                            >
+                              {isUpdatingPayment ? "กำลังบันทึก..." : "อนุมัติชำระเงิน"}
+                            </button>
+                            <button
+                              className="min-h-10 rounded-md border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                              disabled={!canReject || isUpdatingPayment}
+                              onClick={() => {
+                                setRejectingPaymentId(payment.id);
+                                setRejectReason(payment.rejected_reason ?? "");
+                              }}
+                              type="button"
+                            >
+                              ปฏิเสธสลิป
+                            </button>
+                          </div>
+
+                          {rejectingPaymentId === payment.id ? (
+                            <div className="mt-3 space-y-3">
+                              <label className="block text-sm font-semibold text-[var(--foreground)]">
+                                เหตุผลที่ปฏิเสธ
+                                <textarea
+                                  className="mt-2 min-h-24 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                                  disabled={isUpdatingPayment}
+                                  onChange={(event) =>
+                                    setRejectReason(event.target.value)
+                                  }
+                                  placeholder="เช่น ยอดเงินไม่ตรง หรือรูปสลิปไม่ชัด"
+                                  value={rejectReason}
+                                />
+                              </label>
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
+                                  disabled={isUpdatingPayment}
+                                  onClick={() => {
+                                    setRejectingPaymentId(null);
+                                    setRejectReason("");
+                                  }}
+                                  type="button"
+                                >
+                                  ยกเลิกการปฏิเสธ
+                                </button>
+                                <button
+                                  className="min-h-10 rounded-md bg-red-600 px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                                  disabled={isUpdatingPayment}
+                                  onClick={() => handleRejectPayment(payment.id)}
+                                  type="button"
+                                >
+                                  ยืนยันปฏิเสธ
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-[var(--muted)]">
+                    ยังไม่มีสลิปที่ลูกค้าส่งมา
+                  </p>
+                )}
+              </section>
+            ) : null}
+
+            <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
               <p className="text-sm font-semibold text-[var(--brand)]">
                 จัดการสถานะ
               </p>
 
               {isEditingStatus ? (
-                <div className="mt-4 rounded-md border border-[var(--line)] bg-slate-50 p-3">
+                <div className="mt-4 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] p-3">
                   <label className="text-sm font-semibold text-[var(--foreground)]">
                     แก้ไขสถานะ
                     <select
-                      className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                      className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                       disabled={isUpdating}
                       onChange={(event) =>
                         setSelectedStatus(
@@ -715,7 +1137,7 @@ export function AdminBookingDetailPanel({ bookingId }: { bookingId: string }) {
                   </label>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
-                      className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                      className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                       disabled={isUpdating}
                       onClick={cancelEditStatus}
                       type="button"
@@ -752,7 +1174,7 @@ export function AdminBookingDetailPanel({ bookingId }: { bookingId: string }) {
                     </p>
                   )}
                   <button
-                    className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                    className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                     disabled={isUpdating}
                     onClick={() => setIsEditingStatus(true)}
                     type="button"

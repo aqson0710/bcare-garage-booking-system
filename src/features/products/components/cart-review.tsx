@@ -50,6 +50,44 @@ function getLineTotal(item: CartItemWithProduct) {
   return (item.product?.unit_price ?? 0) * item.quantity;
 }
 
+function QuantityStepper({
+  disabled,
+  item,
+  onChange,
+}: {
+  disabled: boolean;
+  item: CartItemWithProduct;
+  onChange: (quantity: number) => void;
+}) {
+  const maxQuantity = item.product?.stock_quantity ?? item.quantity;
+  const canDecrease = item.quantity > 1;
+  const canIncrease = item.quantity < maxQuantity;
+
+  return (
+    <div className="flex h-10 w-fit items-center rounded-md border border-[var(--line)]">
+      <button
+        className="flex h-full w-9 items-center justify-center text-base font-bold text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-30"
+        disabled={!canDecrease || disabled}
+        onClick={() => onChange(item.quantity - 1)}
+        type="button"
+      >
+        −
+      </button>
+      <span className="flex h-full w-10 items-center justify-center border-x border-[var(--line)] text-sm font-semibold text-[var(--foreground)]">
+        {item.quantity}
+      </span>
+      <button
+        className="flex h-full w-9 items-center justify-center text-base font-bold text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-30"
+        disabled={!canIncrease || disabled}
+        onClick={() => onChange(item.quantity + 1)}
+        type="button"
+      >
+        +
+      </button>
+    </div>
+  );
+}
+
 function CartItemRow({
   actionState,
   item,
@@ -65,97 +103,49 @@ function CartItemRow({
   const isUpdating =
     actionState.itemId === item.id &&
     (actionState.status === "updating" || actionState.status === "removing");
-  const maxQuantity = product?.stock_quantity ?? item.quantity;
-  const canDecrease = item.quantity > 1;
-  const canIncrease = product ? item.quantity < product.stock_quantity : false;
 
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-          <ProductImageThumb
-            alt={`รูปสินค้า ${product?.name ?? "สินค้า"}`}
-            size="lg"
-            src={product?.image_url}
-          />
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--brand)]">
-              {product?.category?.name ?? "สินค้า"}
-            </p>
-            <h2 className="mt-2 text-lg font-bold text-[var(--foreground)]">
-              {product?.name ?? "ไม่พบข้อมูลสินค้า"}
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              SKU: {product?.sku || "-"} · มีสินค้า{" "}
-              {product?.stock_quantity ?? 0} ชิ้น
-            </p>
-            {product?.description ? (
-              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                {product.description}
-              </p>
-            ) : null}
-          </div>
-        </div>
+    <article className="flex flex-col gap-4 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 sm:flex-row sm:items-center">
+      <ProductImageThumb
+        alt={`รูปสินค้า ${product?.name ?? "สินค้า"}`}
+        size="lg"
+        src={product?.image_url}
+      />
 
-        <div className="grid gap-3">
-          <div className="rounded-lg bg-slate-50 p-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]">
-              ยอดรายการนี้
-            </p>
-            <p className="mt-1 text-xl font-bold text-[var(--foreground)]">
-              {currencyFormatter.format(getLineTotal(item))}
-            </p>
-            <p className="mt-1 text-xs text-[var(--muted)]">
-              {currencyFormatter.format(product?.unit_price ?? 0)} x {item.quantity}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-[44px_minmax(0,1fr)_44px] gap-2">
-            <button
-              className="min-h-10 rounded-md border border-[var(--line)] bg-white text-lg font-bold text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40"
-              disabled={!canDecrease || isUpdating}
-              onClick={() => onUpdateQuantity(item, item.quantity - 1)}
-              type="button"
-            >
-              -
-            </button>
-            <input
-              className="min-h-10 rounded-md border border-[var(--line)] bg-white px-3 text-center text-sm font-semibold text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              disabled={isUpdating}
-              max={maxQuantity}
-              min={1}
-              onChange={(event) => {
-                const quantity = Number(event.target.value);
-
-                if (Number.isInteger(quantity)) {
-                  onUpdateQuantity(item, quantity);
-                }
-              }}
-              type="number"
-              value={item.quantity}
-            />
-            <button
-              className="min-h-10 rounded-md border border-[var(--line)] bg-white text-lg font-bold text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40"
-              disabled={!canIncrease || isUpdating}
-              onClick={() => onUpdateQuantity(item, item.quantity + 1)}
-              type="button"
-            >
-              +
-            </button>
-          </div>
-
-          <button
-            className="min-h-10 rounded-md border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isUpdating}
-            onClick={() => onRemove(item)}
-            type="button"
-          >
-            {actionState.status === "removing" && actionState.itemId === item.id
-              ? "กำลังลบ..."
-              : "ลบออกจากตะกร้า"}
-          </button>
-        </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-semibold uppercase tracking-wide text-[var(--brand)]">
+          {product?.category?.name ?? "สินค้า"}
+        </p>
+        <h2 className="mt-1 truncate text-base font-bold text-[var(--foreground)]">
+          {product?.name ?? "ไม่พบข้อมูลสินค้า"}
+        </h2>
+        <p className="mt-1 text-sm text-[var(--muted)]">
+          {currencyFormatter.format(product?.unit_price ?? 0)} ต่อชิ้น · เหลือ{" "}
+          {product?.stock_quantity ?? 0} ชิ้น
+        </p>
       </div>
+
+      <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end sm:justify-center sm:gap-2">
+        <QuantityStepper
+          disabled={isUpdating}
+          item={item}
+          onChange={(quantity) => onUpdateQuantity(item, quantity)}
+        />
+        <p className="text-lg font-bold text-[var(--foreground)]">
+          {currencyFormatter.format(getLineTotal(item))}
+        </p>
+      </div>
+
+      <button
+        className="text-sm font-semibold text-[var(--danger)] underline decoration-red-300 underline-offset-4 disabled:cursor-not-allowed disabled:opacity-50 sm:ml-2"
+        disabled={isUpdating}
+        onClick={() => onRemove(item)}
+        type="button"
+      >
+        {actionState.status === "removing" && actionState.itemId === item.id
+          ? "กำลังลบ..."
+          : "ลบ"}
+      </button>
     </article>
   );
 }
@@ -192,28 +182,16 @@ export function CartReview() {
       }
 
       if (error) {
-        setAuthState({
-          error: error.message,
-          status: "error",
-          user: null,
-        });
+        setAuthState({ error: error.message, status: "error", user: null });
         return;
       }
 
       if (!session?.user) {
-        setAuthState({
-          error: null,
-          status: "signed-out",
-          user: null,
-        });
+        setAuthState({ error: null, status: "signed-out", user: null });
         return;
       }
 
-      setAuthState({
-        error: null,
-        status: "ready",
-        user: session.user,
-      });
+      setAuthState({ error: null, status: "ready", user: session.user });
     }
 
     loadAuthState();
@@ -235,11 +213,7 @@ export function CartReview() {
 
     async function loadCart() {
       if (authState.status !== "ready") {
-        setCartState({
-          details: emptyCartDetails,
-          error: null,
-          status: "idle",
-        });
+        setCartState({ details: emptyCartDetails, error: null, status: "idle" });
         return;
       }
 
@@ -265,11 +239,7 @@ export function CartReview() {
         return;
       }
 
-      setCartState({
-        details: data ?? emptyCartDetails,
-        error: null,
-        status: "ready",
-      });
+      setCartState({ details: data ?? emptyCartDetails, error: null, status: "ready" });
     }
 
     loadCart();
@@ -279,19 +249,12 @@ export function CartReview() {
     };
   }, [authState]);
 
-  async function handleUpdateQuantity(
-    item: CartItemWithProduct,
-    quantity: number,
-  ) {
+  async function handleUpdateQuantity(item: CartItemWithProduct, quantity: number) {
     if (authState.status !== "ready" || quantity === item.quantity) {
       return;
     }
 
-    setActionState({
-      itemId: item.id,
-      message: null,
-      status: "updating",
-    });
+    setActionState({ itemId: item.id, message: null, status: "updating" });
 
     const supabase = createClient();
     const { data, error } = await updateCartItemQuantity(
@@ -302,19 +265,11 @@ export function CartReview() {
     );
 
     if (error) {
-      setActionState({
-        itemId: item.id,
-        message: error.message,
-        status: "error",
-      });
+      setActionState({ itemId: item.id, message: error.message, status: "error" });
       return;
     }
 
-    setCartState({
-      details: data ?? emptyCartDetails,
-      error: null,
-      status: "ready",
-    });
+    setCartState({ details: data ?? emptyCartDetails, error: null, status: "ready" });
     setActionState({
       itemId: item.id,
       message: "อัปเดตจำนวนสินค้าแล้ว",
@@ -327,33 +282,17 @@ export function CartReview() {
       return;
     }
 
-    setActionState({
-      itemId: item.id,
-      message: null,
-      status: "removing",
-    });
+    setActionState({ itemId: item.id, message: null, status: "removing" });
 
     const supabase = createClient();
-    const { data, error } = await removeCartItem(
-      supabase,
-      authState.user.id,
-      item.id,
-    );
+    const { data, error } = await removeCartItem(supabase, authState.user.id, item.id);
 
     if (error) {
-      setActionState({
-        itemId: item.id,
-        message: error.message,
-        status: "error",
-      });
+      setActionState({ itemId: item.id, message: error.message, status: "error" });
       return;
     }
 
-    setCartState({
-      details: data ?? emptyCartDetails,
-      error: null,
-      status: "ready",
-    });
+    setCartState({ details: data ?? emptyCartDetails, error: null, status: "ready" });
     setActionState({
       itemId: null,
       message: "ลบสินค้าออกจากตะกร้าแล้ว",
@@ -362,44 +301,22 @@ export function CartReview() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 pb-6 pt-0 sm:px-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-5 pb-6 pt-0 sm:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold leading-tight text-[var(--foreground)]">
-              ตะกร้าสินค้า
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-              ตรวจรายการสินค้า แก้จำนวน หรือลบสินค้าออกจากตะกร้าก่อนเข้าสู่ขั้นตอนยืนยันคำสั่งซื้อ
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:w-80">
-            <div className="rounded-lg border border-[var(--line)] bg-white p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]">
-                จำนวน
-              </p>
-              <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
-                {cartState.details.itemCount}
-              </p>
-            </div>
-            <div className="rounded-lg border border-[var(--line)] bg-white p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]">
-                ยอดรวม
-              </p>
-              <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
-                {currencyFormatter.format(cartState.details.subtotal)}
-              </p>
-            </div>
-          </div>
-        </div>
+        <h1 className="text-3xl font-bold leading-tight text-[var(--foreground)]">
+          ตะกร้าสินค้า
+        </h1>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
+          ตรวจรายการ ปรับจำนวน หรือลบสินค้าออกก่อนไปยืนยันคำสั่งซื้อ
+        </p>
       </header>
 
       {authState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังตรวจสอบบัญชี...
           </div>
         </section>
@@ -411,7 +328,7 @@ export function CartReview() {
             <p className="font-semibold">ต้องเข้าสู่ระบบก่อนดูตะกร้า</p>
             <p className="mt-2">ระบบจะแยกตะกร้าตามบัญชีลูกค้าแต่ละคน</p>
             <Link
-              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
               href="/auth"
             >
               ไปที่หน้าบัญชี
@@ -422,7 +339,7 @@ export function CartReview() {
 
       {authState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {authState.error}
           </div>
         </section>
@@ -430,9 +347,9 @@ export function CartReview() {
 
       {authState.status === "ready" ? (
         <section className="grid gap-6 py-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="space-y-4">
+          <div className="space-y-3">
             {cartState.status === "loading" ? (
-              <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+              <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
                 กำลังโหลดตะกร้า...
               </div>
             ) : null}
@@ -440,12 +357,6 @@ export function CartReview() {
             {cartState.status === "error" ? (
               <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">
                 {cartState.error}
-              </div>
-            ) : null}
-
-            {actionState.status === "success" ? (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-[var(--brand-strong)]">
-                {actionState.message}
               </div>
             ) : null}
 
@@ -466,7 +377,7 @@ export function CartReview() {
                 />
               ))
             ) : cartState.status === "ready" ? (
-              <div className="rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
+              <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-8 text-center text-sm leading-6 text-[var(--muted)]">
                 <p className="font-semibold text-[var(--foreground)]">
                   ยังไม่มีสินค้าในตะกร้า
                 </p>
@@ -481,10 +392,8 @@ export function CartReview() {
             ) : null}
           </div>
 
-          <aside className="h-fit rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm lg:sticky lg:top-6">
-            <p className="text-sm font-semibold text-[var(--brand)]">
-              สรุปตะกร้า
-            </p>
+          <aside className="h-fit rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm lg:sticky lg:top-6">
+            <p className="text-sm font-semibold text-[var(--brand)]">สรุปตะกร้า</p>
             <dl className="mt-4 space-y-3 text-sm">
               <div className="flex items-center justify-between gap-4">
                 <dt className="text-[var(--muted)]">จำนวนสินค้า</dt>
@@ -504,14 +413,14 @@ export function CartReview() {
               className={
                 cartState.details.items.length > 0
                   ? "mt-5 flex min-h-11 w-full items-center justify-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-                  : "mt-5 flex min-h-11 w-full items-center justify-center rounded-md border border-[var(--line)] bg-slate-50 px-4 text-sm font-semibold text-[var(--muted)]"
+                  : "pointer-events-none mt-5 flex min-h-11 w-full items-center justify-center rounded-md border border-[var(--line)] bg-[var(--surface-muted)] px-4 text-sm font-semibold text-[var(--muted)]"
               }
               href="/checkout"
             >
-              ไป checkout
+              ไปต่อที่ checkout
             </Link>
             <Link
-              className="mt-3 flex min-h-10 items-center justify-center rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+              className="mt-3 flex min-h-10 items-center justify-center rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
               href="/products"
             >
               เลือกสินค้าเพิ่ม

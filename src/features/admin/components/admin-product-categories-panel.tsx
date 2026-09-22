@@ -54,7 +54,7 @@ function getStatusStyle(status: AdminProductCategory["status"]) {
     return "bg-emerald-50 text-[var(--brand-strong)]";
   }
 
-  return "bg-slate-100 text-slate-700";
+  return "bg-[var(--surface-muted)] text-[var(--foreground)]";
 }
 
 function formatCategoryStatus(status: StatusFilter) {
@@ -84,6 +84,7 @@ function AddProductCategoryForm({
   createState: CreateState;
   onCreate: (input: AdminProductCategoryCreateInput) => void;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] =
@@ -99,15 +100,36 @@ function AddProductCategoryForm({
     });
   }
 
+  if (!isOpen) {
+    return (
+      <button
+        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[var(--line)] bg-[var(--surface)] text-sm font-semibold text-[var(--muted)] hover:border-[var(--brand)] hover:text-[var(--foreground)]"
+        onClick={() => setIsOpen(true)}
+        type="button"
+      >
+        + เพิ่มหมวดสินค้า
+      </button>
+    );
+  }
+
   return (
-    <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
-      <div className="border-b border-[var(--line)] pb-4">
-        <p className="text-sm font-semibold text-[var(--brand)]">
-          เพิ่มหมวดสินค้า
-        </p>
-        <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
-          หมวดใหม่จะถูกนำไปใช้ในตัวเลือกหมวดสินค้าของหลังบ้าน
-        </p>
+    <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
+      <div className="flex items-start justify-between border-b border-[var(--line)] pb-4">
+        <div>
+          <p className="text-sm font-semibold text-[var(--brand)]">
+            เพิ่มหมวดสินค้า
+          </p>
+          <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
+            หมวดใหม่จะถูกนำไปใช้ในตัวเลือกหมวดสินค้าของหลังบ้าน
+          </p>
+        </div>
+        <button
+          className="text-sm font-semibold text-[var(--muted)]"
+          onClick={() => setIsOpen(false)}
+          type="button"
+        >
+          ปิด
+        </button>
       </div>
 
       <form className="mt-4 grid gap-3" onSubmit={handleSubmit}>
@@ -115,7 +137,7 @@ function AddProductCategoryForm({
           <label className="text-sm font-semibold text-[var(--foreground)]">
             ชื่อหมวดสินค้า
             <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) => setName(event.target.value)}
               placeholder="เช่น อะไหล่เครื่องยนต์"
               value={name}
@@ -125,7 +147,7 @@ function AddProductCategoryForm({
           <label className="text-sm font-semibold text-[var(--foreground)]">
             สถานะ
             <select
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
               onChange={(event) =>
                 setStatus(event.target.value as AdminProductCategory["status"])
               }
@@ -140,7 +162,7 @@ function AddProductCategoryForm({
         <label className="text-sm font-semibold text-[var(--foreground)]">
           รายละเอียด
           <textarea
-            className="mt-2 min-h-20 w-full resize-y rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            className="mt-2 min-h-20 w-full resize-y rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
             onChange={(event) => setDescription(event.target.value)}
             value={description}
           />
@@ -156,11 +178,11 @@ function AddProductCategoryForm({
           </button>
 
           {createState.status === "error" ? (
-            <p className="text-sm text-red-700">{createState.error}</p>
+            <p className="text-sm text-[var(--danger)]">{createState.error}</p>
           ) : null}
 
           {createState.status === "created" ? (
-            <p className="text-sm font-semibold text-[var(--brand-strong)]">
+            <p className="text-sm font-semibold text-emerald-400">
               {createState.message}
             </p>
           ) : null}
@@ -173,14 +195,18 @@ function AddProductCategoryForm({
 function AdminProductCategoryRow({
   actionState,
   category,
+  isExpanded,
   onSave,
+  onToggle,
 }: {
   actionState: ActionState;
   category: AdminProductCategory;
+  isExpanded: boolean;
   onSave: (
     category: AdminProductCategory,
     input: AdminProductCategoryUpdateInput,
   ) => void;
+  onToggle: () => void;
 }) {
   const [name, setName] = useState(category.name);
   const [description, setDescription] = useState(category.description ?? "");
@@ -203,85 +229,98 @@ function AdminProductCategoryRow({
   }
 
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-[var(--line)] pb-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <span
-            className={`rounded-md px-2.5 py-1 text-xs font-semibold ${getStatusStyle(
-              category.status,
-            )}`}
-          >
-            {formatCategoryStatus(category.status)}
-          </span>
-          <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">
-            {category.name}
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-            {category.description ?? "-"}
+    <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">
+      <button
+        className="flex w-full items-center justify-between gap-3 p-4 text-left"
+        onClick={onToggle}
+        type="button"
+      >
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="truncate text-base font-bold text-[var(--foreground)]">
+              {category.name}
+            </h2>
+            <span
+              className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold ${getStatusStyle(category.status)}`}
+            >
+              {formatCategoryStatus(category.status)}
+            </span>
+          </div>
+          <p className="mt-1 truncate text-sm text-[var(--muted)]">
+            {category.description || "ไม่มีรายละเอียด"}
           </p>
         </div>
-        <p className="text-xs text-[var(--muted)]">
-          อัปเดตล่าสุด {new Date(category.updated_at).toLocaleString("th-TH")}
-        </p>
-      </div>
+        <span className="shrink-0 text-sm font-semibold text-[var(--muted)]">
+          {isExpanded ? "ย่อ" : "แก้ไข"}
+        </span>
+      </button>
 
-      <form className="mt-4 grid gap-3" onSubmit={handleSubmit}>
-        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_160px] md:items-end">
+      {isExpanded ? (
+        <form
+          className="grid gap-3 border-t border-[var(--line)] p-4"
+          onSubmit={handleSubmit}
+        >
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_160px] md:items-end">
+            <label className="text-sm font-semibold text-[var(--foreground)]">
+              ชื่อหมวดสินค้า
+              <input
+                className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                onChange={(event) => setName(event.target.value)}
+                value={name}
+              />
+            </label>
+
+            <label className="text-sm font-semibold text-[var(--foreground)]">
+              สถานะ
+              <select
+                className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                onChange={(event) =>
+                  setStatus(event.target.value as AdminProductCategory["status"])
+                }
+                value={status}
+              >
+                <option value="active">เปิดใช้งาน</option>
+                <option value="inactive">ปิดใช้งาน</option>
+              </select>
+            </label>
+          </div>
+
           <label className="text-sm font-semibold text-[var(--foreground)]">
-            ชื่อหมวดสินค้า
-            <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              onChange={(event) => setName(event.target.value)}
-              value={name}
+            รายละเอียด
+            <textarea
+              className="mt-2 min-h-24 w-full resize-y rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+              onChange={(event) => setDescription(event.target.value)}
+              value={description}
             />
           </label>
 
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            สถานะ
-            <select
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              onChange={(event) =>
-                setStatus(event.target.value as AdminProductCategory["status"])
-              }
-              value={status}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={!hasChanges || isSaving}
+              type="submit"
             >
-              <option value="active">เปิดใช้งาน</option>
-              <option value="inactive">ปิดใช้งาน</option>
-            </select>
-          </label>
-        </div>
+              {isSaving ? "กำลังบันทึก..." : "บันทึกหมวดสินค้า"}
+            </button>
 
-        <label className="text-sm font-semibold text-[var(--foreground)]">
-          รายละเอียด
-          <textarea
-            className="mt-2 min-h-24 w-full resize-y rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-            onChange={(event) => setDescription(event.target.value)}
-            value={description}
-          />
-        </label>
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <button
-            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={!hasChanges || isSaving}
-            type="submit"
-          >
-            {isSaving ? "กำลังบันทึก..." : "บันทึกหมวดสินค้า"}
-          </button>
-
-          {actionState.status === "error" &&
-          actionState.categoryId === category.id ? (
-            <p className="text-sm text-red-700">{actionState.error}</p>
-          ) : null}
-
-          {actionState.status === "saved" &&
-          actionState.categoryId === category.id ? (
-            <p className="text-sm font-semibold text-[var(--brand-strong)]">
-              {actionState.message}
+            <p className="text-xs text-[var(--muted)]">
+              อัปเดตล่าสุด {new Date(category.updated_at).toLocaleString("th-TH")}
             </p>
-          ) : null}
-        </div>
-      </form>
+
+            {actionState.status === "error" &&
+            actionState.categoryId === category.id ? (
+              <p className="text-sm text-[var(--danger)]">{actionState.error}</p>
+            ) : null}
+
+            {actionState.status === "saved" &&
+            actionState.categoryId === category.id ? (
+              <p className="text-sm font-semibold text-emerald-400">
+                {actionState.message}
+              </p>
+            ) : null}
+          </div>
+        </form>
+      ) : null}
     </article>
   );
 }
@@ -295,6 +334,9 @@ export function AdminProductCategoriesPanel() {
   });
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchInput, setSearchInput] = useState("");
+  const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(
+    null,
+  );
   const [actionState, setActionState] = useState<ActionState>({
     categoryId: null,
     error: null,
@@ -443,7 +485,7 @@ export function AdminProductCategoriesPanel() {
 
     if (duplicateCategory) {
       setCreateState({
-        error: "This product category name already exists.",
+        error: "หมวดสินค้าชื่อนี้มีอยู่แล้ว",
         message: null,
         status: "error",
       });
@@ -578,7 +620,7 @@ export function AdminProductCategoriesPanel() {
               จัดการสินค้า
             </Link>
             <Link
-              className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+              className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
               href="/admin"
             >
               หน้าแอดมิน
@@ -589,7 +631,7 @@ export function AdminProductCategoriesPanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดหมวดสินค้า...
           </div>
         </section>
@@ -621,7 +663,7 @@ export function AdminProductCategoriesPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -636,19 +678,14 @@ export function AdminProductCategoriesPanel() {
           />
 
           <div className="mt-5 flex flex-col gap-4 border-b border-[var(--line)] pb-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-[var(--foreground)]">
-                {filteredCategories.length} of {loadState.categories.length}{" "}
-                หมวดสินค้า
-              </p>
-              <p className="mt-1 text-sm text-[var(--muted)]">
-                หมวดที่ปิดใช้งานยังดูย้อนหลังในหลังบ้านได้ และสามารถซ่อนจากหน้าขายสินค้าได้ในภายหลัง
-              </p>
-            </div>
+            <p className="text-sm font-semibold text-[var(--foreground)]">
+              {filteredCategories.length} จาก {loadState.categories.length}{" "}
+              หมวดสินค้า
+            </p>
 
             <div className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-2xl">
               <input
-                className="min-h-10 flex-1 rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                className="min-h-10 flex-1 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="ค้นหาหมวดสินค้า"
                 type="search"
@@ -660,7 +697,7 @@ export function AdminProductCategoriesPanel() {
                     className={
                       statusFilter === status
                         ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-                        : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                        : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                     }
                     key={status}
                     onClick={() => setStatusFilter(status)}
@@ -674,18 +711,24 @@ export function AdminProductCategoriesPanel() {
           </div>
 
           {filteredCategories.length > 0 ? (
-            <div className="mt-5 space-y-4">
+            <div className="mt-5 space-y-3">
               {filteredCategories.map((category) => (
                 <AdminProductCategoryRow
                   actionState={actionState}
                   category={category}
+                  isExpanded={expandedCategoryId === category.id}
                   key={category.id}
                   onSave={handleSaveCategory}
+                  onToggle={() =>
+                    setExpandedCategoryId((current) =>
+                      current === category.id ? null : category.id,
+                    )
+                  }
                 />
               ))}
             </div>
           ) : (
-            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
+            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
               ไม่พบหมวดสินค้าที่ตรงกับตัวกรองปัจจุบัน
             </div>
           )}

@@ -116,7 +116,7 @@ function getInitialFormState(workOrder: TechnicianWorkOrder): WorkOrderFormState
 
 function WorkOrderSummary({ workOrder }: { workOrder: TechnicianWorkOrder }) {
   return (
-    <section className="grid gap-4 rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm md:grid-cols-2">
+    <section className="grid gap-4 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm md:grid-cols-2">
       <div>
         <p className="text-sm font-semibold text-[var(--brand)]">
           {workOrder.service?.name ?? "ไม่พบบริการ"}
@@ -352,7 +352,7 @@ export function TechnicianWorkOrderDetailPanel({
             </p>
           </div>
           <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href="/technician/work-orders"
           >
             กลับไปหน้างานซ่อม
@@ -362,7 +362,7 @@ export function TechnicianWorkOrderDetailPanel({
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดงานซ่อม...
           </div>
         </section>
@@ -385,7 +385,7 @@ export function TechnicianWorkOrderDetailPanel({
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -417,7 +417,7 @@ export function TechnicianWorkOrderDetailPanel({
         <section className="space-y-5 py-6">
           <WorkOrderSummary workOrder={workOrder} />
 
-          <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+          <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
             <div className="flex flex-col gap-3 border-b border-[var(--line)] pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-xl font-bold text-[var(--foreground)]">
@@ -429,7 +429,7 @@ export function TechnicianWorkOrderDetailPanel({
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
-                  className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={isClosed || isSaving}
                   onClick={() => handleSave("in_progress")}
                   type="button"
@@ -442,16 +442,21 @@ export function TechnicianWorkOrderDetailPanel({
                   onClick={() => handleSave("completed")}
                   type="button"
                 >
-                  ปิดงานซ่อม
+                  เสร็จงาน
                 </button>
               </div>
             </div>
+
+            <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
+              กด &quot;เสร็จงาน&quot; เมื่อซ่อมเสร็จแล้ว ระบบจะแจ้งให้ลูกค้าชำระเงินตามราคาบริการ
+              และลูกค้าจะกดยืนยันรับรถคืนได้หลังชำระเงินเรียบร้อย
+            </p>
 
             <div className="mt-5 grid gap-4">
               <label className="text-sm font-semibold text-[var(--foreground)]">
                 สถานะ
                 <select
-                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                  className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   disabled={isClosed || isSaving}
                   onChange={(event) =>
                     setFormState((current) => ({
@@ -472,7 +477,7 @@ export function TechnicianWorkOrderDetailPanel({
               <label className="text-sm font-semibold text-[var(--foreground)]">
                 ผลวิเคราะห์อาการ
                 <textarea
-                  className="mt-2 min-h-32 w-full rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm leading-6 text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                  className="mt-2 min-h-32 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm leading-6 text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   disabled={isClosed || isSaving}
                   onChange={(event) =>
                     setFormState((current) => ({
@@ -487,7 +492,7 @@ export function TechnicianWorkOrderDetailPanel({
               <label className="text-sm font-semibold text-[var(--foreground)]">
                 บันทึกงานซ่อม
                 <textarea
-                  className="mt-2 min-h-32 w-full rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm leading-6 text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                  className="mt-2 min-h-32 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm leading-6 text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   disabled={isClosed || isSaving}
                   onChange={(event) =>
                     setFormState((current) => ({
@@ -510,13 +515,13 @@ export function TechnicianWorkOrderDetailPanel({
                 </button>
 
                 {saveState.status === "saved" ? (
-                  <p className="text-sm font-semibold text-[var(--brand-strong)]">
+                  <p className="text-sm font-semibold text-emerald-400">
                     อัปเดตงานซ่อมเรียบร้อยแล้ว
                   </p>
                 ) : null}
 
                 {saveState.status === "error" ? (
-                  <p className="text-sm font-semibold text-red-700">
+                  <p className="text-sm font-semibold text-[var(--danger)]">
                     {saveState.error}
                   </p>
                 ) : null}
@@ -530,7 +535,7 @@ export function TechnicianWorkOrderDetailPanel({
             </div>
           </section>
 
-          <dl className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-5 text-xs text-[var(--muted)] shadow-sm md:grid-cols-2">
+          <dl className="grid gap-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 text-xs text-[var(--muted)] shadow-sm md:grid-cols-2">
             <div>
               <dt className="font-semibold text-[var(--foreground)]">รหัสการจอง</dt>
               <dd className="mt-1 break-all">{workOrder.booking_id}</dd>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import {
@@ -66,6 +67,10 @@ const stockFilters: { label: string; value: StockFilter }[] = [
 
 const lowStockThreshold = 2;
 
+function isStockFilter(value: string | null): value is StockFilter {
+  return stockFilters.some((filter) => filter.value === value);
+}
+
 const currencyFormatter = new Intl.NumberFormat("th-TH", {
   currency: "THB",
   maximumFractionDigits: 0,
@@ -105,7 +110,7 @@ function getStockStatusStyle(stockStatus: StockFilter) {
   }
 
   if (stockStatus === "inactive") {
-    return "bg-slate-100 text-slate-700";
+    return "bg-[var(--surface-muted)] text-[var(--foreground)]";
   }
 
   return "bg-emerald-50 text-[var(--brand-strong)]";
@@ -214,12 +219,12 @@ function ReviewProductRow({ product }: { product: ReviewProduct }) {
         <div className="flex flex-col gap-2">
           <Link
             className="min-h-9 rounded-md bg-[var(--brand)] px-3 py-2 text-center text-xs font-semibold text-white"
-            href="/admin/inventory"
+            href={`/admin/inventory?product=${product.id}`}
           >
             รับเข้า/ตัดสต็อก
           </Link>
           <Link
-            className="min-h-9 rounded-md border border-[var(--line)] bg-white px-3 py-2 text-center text-xs font-semibold text-[var(--muted)]"
+            className="min-h-9 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-center text-xs font-semibold text-[var(--muted)]"
             href="/admin/products"
           >
             แก้ไขสินค้า
@@ -231,6 +236,8 @@ function ReviewProductRow({ product }: { product: ReviewProduct }) {
 }
 
 export function AdminInventoryReviewPanel() {
+  const searchParams = useSearchParams();
+  const filterParam = searchParams.get("filter");
   const [loadState, setLoadState] = useState<LoadState>({
     access: null,
     error: null,
@@ -239,7 +246,9 @@ export function AdminInventoryReviewPanel() {
     status: "loading",
   });
   const [searchInput, setSearchInput] = useState("");
-  const [stockFilter, setStockFilter] = useState<StockFilter>("all");
+  const [stockFilter, setStockFilter] = useState<StockFilter>(
+    isStockFilter(filterParam) ? filterParam : "all",
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -428,7 +437,7 @@ export function AdminInventoryReviewPanel() {
               บันทึกสต็อก
             </Link>
             <Link
-              className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+              className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
               href="/admin/products"
             >
               จัดการสินค้า
@@ -439,7 +448,7 @@ export function AdminInventoryReviewPanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดข้อมูลสต็อก...
           </div>
         </section>
@@ -471,7 +480,7 @@ export function AdminInventoryReviewPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -480,7 +489,7 @@ export function AdminInventoryReviewPanel() {
       {loadState.status === "ready" ? (
         <section className="py-6">
           <div className="grid gap-3 md:grid-cols-5">
-            <div className="rounded-lg border border-[var(--line)] bg-white p-5">
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5">
               <p className="text-sm font-semibold text-[var(--muted)]">
                 สินค้าที่เปิดขาย
               </p>
@@ -488,7 +497,7 @@ export function AdminInventoryReviewPanel() {
                 {summary.activeCount}
               </p>
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-white p-5">
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5">
               <p className="text-sm font-semibold text-[var(--muted)]">
                 จำนวนสต็อกรวม
               </p>
@@ -496,26 +505,53 @@ export function AdminInventoryReviewPanel() {
                 {summary.totalStock}
               </p>
             </div>
-            <div className="rounded-lg border border-red-200 bg-white p-5">
-              <p className="text-sm font-semibold text-red-700">หมดสต็อก</p>
-              <p className="mt-2 text-3xl font-bold text-red-700">
+            <button
+              className={
+                stockFilter === "out"
+                  ? "rounded-lg border-2 border-[var(--danger)] bg-[var(--surface)] p-5 text-left transition"
+                  : "rounded-lg border border-red-200 bg-[var(--surface)] p-5 text-left transition hover:border-[var(--danger)]"
+              }
+              onClick={() => setStockFilter("out")}
+              type="button"
+            >
+              <p className="text-sm font-semibold text-[var(--danger)]">หมดสต็อก</p>
+              <p className="mt-2 text-3xl font-bold text-[var(--danger)]">
                 {summary.outCount}
               </p>
-            </div>
-            <div className="rounded-lg border border-amber-200 bg-white p-5">
-              <p className="text-sm font-semibold text-amber-800">ใกล้หมด</p>
-              <p className="mt-2 text-3xl font-bold text-amber-800">
+              <p className="mt-1 text-xs text-[var(--muted)]">แตะเพื่อกรอง</p>
+            </button>
+            <button
+              className={
+                stockFilter === "low"
+                  ? "rounded-lg border-2 border-amber-400 bg-[var(--surface)] p-5 text-left transition"
+                  : "rounded-lg border border-amber-200 bg-[var(--surface)] p-5 text-left transition hover:border-amber-400"
+              }
+              onClick={() => setStockFilter("low")}
+              type="button"
+            >
+              <p className="text-sm font-semibold text-amber-400">ใกล้หมด</p>
+              <p className="mt-2 text-3xl font-bold text-amber-400">
                 {summary.lowCount}
               </p>
-            </div>
-            <div className="rounded-lg border border-emerald-200 bg-white p-5">
-              <p className="text-sm font-semibold text-[var(--brand-strong)]">
+              <p className="mt-1 text-xs text-[var(--muted)]">แตะเพื่อกรอง</p>
+            </button>
+            <button
+              className={
+                stockFilter === "healthy"
+                  ? "rounded-lg border-2 border-emerald-400 bg-[var(--surface)] p-5 text-left transition"
+                  : "rounded-lg border border-emerald-200 bg-[var(--surface)] p-5 text-left transition hover:border-emerald-400"
+              }
+              onClick={() => setStockFilter("healthy")}
+              type="button"
+            >
+              <p className="text-sm font-semibold text-emerald-400">
                 พร้อมขาย
               </p>
-              <p className="mt-2 text-3xl font-bold text-[var(--brand-strong)]">
+              <p className="mt-2 text-3xl font-bold text-emerald-400">
                 {summary.healthyCount}
               </p>
-            </div>
+              <p className="mt-1 text-xs text-[var(--muted)]">แตะเพื่อกรอง</p>
+            </button>
           </div>
 
           <div className="mt-5 flex flex-col gap-4 border-b border-[var(--line)] pb-4 lg:flex-row lg:items-end lg:justify-between">
@@ -530,7 +566,7 @@ export function AdminInventoryReviewPanel() {
 
             <div className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-3xl">
               <input
-                className="min-h-10 flex-1 rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                className="min-h-10 flex-1 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="ค้นหาสินค้า SKU หรือหมวดสินค้า"
                 type="search"
@@ -542,7 +578,7 @@ export function AdminInventoryReviewPanel() {
                     className={
                       stockFilter === filter.value
                         ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-                        : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+                        : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                     }
                     key={filter.value}
                     onClick={() => setStockFilter(filter.value)}
@@ -555,10 +591,10 @@ export function AdminInventoryReviewPanel() {
             </div>
           </div>
 
-          <section className="mt-5 overflow-auto rounded-lg border border-[var(--line)] bg-white shadow-sm">
+          <section className="mt-5 overflow-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">
             {filteredProducts.length > 0 ? (
               <table className="w-full min-w-[1040px] border-collapse text-left text-sm">
-                <thead className="border-b border-[var(--line)] bg-slate-50 text-[var(--foreground)]">
+                <thead className="border-b border-[var(--line)] bg-[var(--surface-muted)] text-[var(--foreground)]">
                   <tr>
                     <th className="px-4 py-3 font-semibold">สินค้า</th>
                     <th className="px-4 py-3 font-semibold">หมวดสินค้า</th>

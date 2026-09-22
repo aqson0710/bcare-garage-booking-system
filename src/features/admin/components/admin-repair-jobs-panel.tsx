@@ -142,7 +142,7 @@ function AdminRepairJobRow({
     selectedMechanicId !== (repairJob.mechanic_id ?? "");
 
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+    <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -164,8 +164,8 @@ function AdminRepairJobRow({
 
         {repairJob.booking ? (
           <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
-            href={`/admin/bookings/${repairJob.booking.id}`}
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            href={`/admin/bookings?bookingId=${repairJob.booking.id}`}
           >
             ดูการจอง
           </Link>
@@ -215,12 +215,12 @@ function AdminRepairJobRow({
         </div>
       </dl>
 
-      <section className="mt-4 rounded-md border border-[var(--line)] bg-slate-50 p-3">
+      <section className="mt-4 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] p-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <label className="text-sm font-semibold text-[var(--foreground)]">
             มอบหมายช่าง
             <select
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)] lg:w-80"
+              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)] lg:w-80"
               disabled={isClosed || isSaving || mechanics.length === 0}
               onChange={(event) => setSelectedMechanicId(event.target.value)}
               value={selectedMechanicId}
@@ -247,7 +247,7 @@ function AdminRepairJobRow({
         </div>
 
         {mechanics.length === 0 ? (
-          <p className="mt-2 text-xs font-semibold text-amber-800">
+          <p className="mt-2 text-xs font-semibold text-amber-400">
             ยังไม่พบโปรไฟล์ช่างในระบบ
           </p>
         ) : null}
@@ -260,18 +260,18 @@ function AdminRepairJobRow({
 
         {assignmentState.status === "error" &&
         assignmentState.repairJobId === repairJob.id ? (
-          <p className="mt-2 text-sm text-red-700">{assignmentState.error}</p>
+          <p className="mt-2 text-sm text-[var(--danger)]">{assignmentState.error}</p>
         ) : null}
       </section>
 
       <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
-        <div className="rounded-md bg-slate-50 p-3">
+        <div className="rounded-md bg-[var(--surface-muted)] p-3">
           <p className="font-semibold text-[var(--foreground)]">ผลตรวจ/วิเคราะห์อาการ</p>
           <p className="mt-2 leading-6 text-[var(--muted)]">
             {repairJob.diagnosis || "-"}
           </p>
         </div>
-        <div className="rounded-md bg-slate-50 p-3">
+        <div className="rounded-md bg-[var(--surface-muted)] p-3">
           <p className="font-semibold text-[var(--foreground)]">บันทึกการซ่อม</p>
           <p className="mt-2 leading-6 text-[var(--muted)]">
             {repairJob.repair_notes || "-"}
@@ -498,7 +498,7 @@ export function AdminRepairJobsPanel() {
             </p>
           </div>
           <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href="/admin"
           >
             หน้าหลังบ้าน
@@ -508,7 +508,7 @@ export function AdminRepairJobsPanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดใบงานซ่อม...
           </div>
         </section>
@@ -540,7 +540,7 @@ export function AdminRepairJobsPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -549,7 +549,7 @@ export function AdminRepairJobsPanel() {
       {loadState.status === "ready" ? (
         <section className="py-6">
           <div className="grid gap-3 border-b border-[var(--line)] pb-5 sm:grid-cols-2 lg:grid-cols-6">
-            <div className="rounded-lg border border-[var(--line)] bg-white p-4">
+            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                 ทั้งหมด
               </p>
@@ -559,7 +559,7 @@ export function AdminRepairJobsPanel() {
             </div>
             {statusOrder.map((status) => (
               <div
-                className="rounded-lg border border-[var(--line)] bg-white p-4"
+                className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4"
                 key={status}
               >
                 <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
@@ -585,7 +585,7 @@ export function AdminRepairJobsPanel() {
               ))}
             </div>
           ) : (
-            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
+            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
               ยังไม่พบใบงานซ่อมในระบบ
             </div>
           )}

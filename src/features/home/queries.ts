@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import type { HomepageFooterSettingInput, HomepageSlideInput } from "./types";
+import type {
+  HomepageAppearanceSettingInput,
+  HomepageFooterSettingInput,
+  HomepageLogoSettingInput,
+  HomepageSlideInput,
+} from "./types";
 
 type BCareSupabaseClient = SupabaseClient<Database>;
 
@@ -28,6 +33,27 @@ function toSlidePayload(input: HomepageSlideInput) {
     status: input.status,
     subtitle: nullableText(input.subtitle),
     title: input.title.trim(),
+    updated_by: input.updatedBy,
+  };
+}
+
+function toAppearancePayload(input: HomepageAppearanceSettingInput) {
+  return {
+    background_color: input.backgroundColor.trim() || "#0a0d0b",
+    background_image_url: nullableText(input.backgroundImageUrl),
+    setting_key: "default",
+    updated_by: input.updatedBy,
+  };
+}
+
+// Deliberately minimal: only touches logo_url on conflict, so saving the
+// logo never overwrites the background color / background image that were
+// set independently (Supabase upsert only writes the columns in the
+// payload).
+function toLogoPayload(input: HomepageLogoSettingInput) {
+  return {
+    logo_url: nullableText(input.logoUrl),
+    setting_key: "default",
     updated_by: input.updatedBy,
   };
 }
@@ -126,6 +152,41 @@ export async function upsertHomepageFooterSetting(
   return supabase
     .from("homepage_footer_settings")
     .upsert(toFooterPayload(input), { onConflict: "setting_key" })
+    .select("*")
+    .single();
+}
+
+// Unlike the footer setting, this has no "active/inactive" status - the
+// homepage background applies whether or not the footer is shown, so both
+// the public homepage and the admin settings page use this same query.
+export async function getHomepageAppearanceSetting(
+  supabase: BCareSupabaseClient,
+) {
+  return supabase
+    .from("homepage_appearance_settings")
+    .select("*")
+    .eq("setting_key", "default")
+    .maybeSingle();
+}
+
+export async function upsertHomepageAppearanceSetting(
+  supabase: BCareSupabaseClient,
+  input: HomepageAppearanceSettingInput,
+) {
+  return supabase
+    .from("homepage_appearance_settings")
+    .upsert(toAppearancePayload(input), { onConflict: "setting_key" })
+    .select("*")
+    .single();
+}
+
+export async function upsertHomepageLogoSetting(
+  supabase: BCareSupabaseClient,
+  input: HomepageLogoSettingInput,
+) {
+  return supabase
+    .from("homepage_appearance_settings")
+    .upsert(toLogoPayload(input), { onConflict: "setting_key" })
     .select("*")
     .single();
 }

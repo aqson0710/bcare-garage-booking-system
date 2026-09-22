@@ -7,6 +7,7 @@ import type { FormEvent, ReactNode, SyntheticEvent } from "react";
 import { useEffect, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import {
+  cancelOwnProductOrder,
   getActivePaymentSetting,
   getCustomerProductOrderById,
   submitProductPaymentSlip,
@@ -57,7 +58,13 @@ type LoadState =
 type PaymentSubmitState =
   | { status: "idle"; error: null }
   | { status: "submitting"; error: null }
+  | { status: "verifying"; error: null }
   | { status: "success"; error: null }
+  | { status: "error"; error: string };
+
+type CancelOrderState =
+  | { status: "idle"; error: null }
+  | { status: "cancelling"; error: null }
   | { status: "error"; error: string };
 
 type PaymentNotice = {
@@ -160,7 +167,7 @@ function getPaymentStatusStyle(status: ProductOrderWithItems["payment_status"]) 
     return "bg-emerald-50 text-[var(--brand-strong)]";
   }
 
-  if (status === "pending") {
+  if (status === "pending" || status === "partially_paid") {
     return "bg-amber-50 text-amber-800";
   }
 
@@ -172,7 +179,7 @@ function getPaymentStatusStyle(status: ProductOrderWithItems["payment_status"]) 
     return "bg-red-50 text-red-700";
   }
 
-  return "bg-slate-100 text-slate-700";
+  return "bg-[var(--surface-muted)] text-[var(--foreground)]";
 }
 
 function getVerificationStatusStyle(status: ProductPayment["verification_status"]) {
@@ -188,7 +195,7 @@ function getVerificationStatusStyle(status: ProductPayment["verification_status"
     return "bg-red-50 text-red-700";
   }
 
-  return "bg-slate-100 text-slate-700";
+  return "bg-[var(--surface-muted)] text-[var(--foreground)]";
 }
 
 function formatOrderStatus(status: ProductOrderWithItems["status"]) {
@@ -222,6 +229,10 @@ function formatOrderStatus(status: ProductOrderWithItems["status"]) {
 function formatPaymentStatus(status: ProductOrderWithItems["payment_status"]) {
   if (status === "paid") {
     return "ชำระเงินแล้ว";
+  }
+
+  if (status === "partially_paid") {
+    return "ชำระบางส่วน";
   }
 
   if (status === "pending") {
@@ -361,7 +372,7 @@ function getPaymentNotice(
   return {
     message: "แนบสลิปโอนเงินเพื่อให้แอดมินตรวจและยืนยันการชำระเงิน",
     title: "ยังไม่ส่งสลิป",
-    tone: "border-slate-200 bg-slate-50 text-slate-700",
+    tone: "border-[var(--line)] bg-[var(--surface-muted)] text-[var(--foreground)]",
   };
 }
 
@@ -401,13 +412,13 @@ function PaymentInstructionPanel({
   paymentMethod: "promptpay" | "bank_transfer";
 }) {
   return (
-    <div className="rounded-lg border border-[var(--line)] bg-slate-50 p-4">
+    <div className="rounded-lg border border-[var(--line)] bg-[var(--surface-muted)] p-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
         {paymentMethod === "promptpay" ? (
           <>
             <img
               alt="PromptPay QR code"
-              className="h-40 w-40 rounded-md border border-[var(--line)] bg-white p-2"
+              className="h-40 w-40 rounded-md border border-[var(--line)] bg-[var(--surface)] p-2"
               onError={handleQrImageError}
               src={
                 displaySettings.promptPayQrImageUrl ??
@@ -431,12 +442,12 @@ function PaymentInstructionPanel({
                 value={currencyFormatter.format(amount)}
               />
               {displaySettings.instructions ? (
-                <p className="text-xs leading-5 text-amber-700">
+                <p className="text-xs leading-5 text-amber-400">
                   {displaySettings.instructions}
                 </p>
               ) : null}
               {displaySettings.isFallback ? (
-                <p className="text-xs leading-5 text-red-700">
+                <p className="text-xs leading-5 text-[var(--danger)]">
                   ระบบยังใช้ QR ทดสอบอยู่ กรุณาให้แอดมินตั้งค่าช่องทางชำระเงินจริงก่อนใช้งานจริง
                 </p>
               ) : null}
@@ -468,12 +479,12 @@ function PaymentInstructionPanel({
               value={currencyFormatter.format(amount)}
             />
             {displaySettings.instructions ? (
-              <p className="text-xs leading-5 text-amber-700">
+              <p className="text-xs leading-5 text-amber-400">
                 {displaySettings.instructions}
               </p>
             ) : null}
             {displaySettings.isFallback ? (
-              <p className="text-xs leading-5 text-red-700">
+              <p className="text-xs leading-5 text-[var(--danger)]">
                 ระบบยังใช้บัญชีทดสอบอยู่ กรุณาให้แอดมินตั้งค่าช่องทางชำระเงินจริงก่อนใช้งานจริง
               </p>
             ) : null}
@@ -516,7 +527,11 @@ function PaymentSlipUploadPanel({
       latestPayment.verification_status === "rejected");
   const [paymentMethod, setPaymentMethod] =
     useState<"promptpay" | "bank_transfer">("promptpay");
-  const [amount, setAmount] = useState(String(order.total_amount));
+  // The amount is always the order's own total and is never editable by the
+  // customer: the backend verifies against order.total_amount regardless of
+  // what this field shows, so letting it be edited only invited confusion
+  // (or, before this fix, a way to under-report the amount).
+  const amount = order.total_amount;
   const [slipReference, setSlipReference] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [submitState, setSubmitState] = useState<PaymentSubmitState>({
@@ -551,11 +566,11 @@ function PaymentSlipUploadPanel({
       return;
     }
 
-    const resolvedAmount = Number(amount);
+    const resolvedAmount = amount;
 
     if (!Number.isFinite(resolvedAmount) || resolvedAmount <= 0) {
       setSubmitState({
-        error: "กรุณากรอกยอดเงินให้ถูกต้อง",
+        error: "ยอดเงินของคำสั่งซื้อนี้ไม่ถูกต้อง กรุณาติดต่อแอดมิน",
         status: "error",
       });
       return;
@@ -593,16 +608,68 @@ function PaymentSlipUploadPanel({
 
     setSubmitState({
       error: null,
-      status: "success",
+      status: "verifying",
     });
     setFile(null);
     setSlipReference("");
     onPaymentUpdated(data, "pending");
+
+    try {
+      const sessionResult = await supabase.auth.getSession();
+      const accessToken = sessionResult.data.session?.access_token;
+
+      if (accessToken) {
+        const verifyResponse = await fetch(
+          `/api/product-payments/${data.id}/verify-slipok`,
+          {
+            body: JSON.stringify({ accessToken }),
+            credentials: "include",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            method: "POST",
+          },
+        );
+        const verifyResult = (await verifyResponse
+          .json()
+          .catch(() => null)) as {
+          message?: string;
+          ok: boolean;
+          order?: { payment_status: ProductOrderWithItems["payment_status"] };
+          payment?: ProductPayment;
+        } | null;
+
+        if (verifyResult?.payment) {
+          onPaymentUpdated(
+            verifyResult.payment,
+            verifyResult.order?.payment_status,
+          );
+
+          if (!verifyResult.ok) {
+            setSubmitState({
+              error:
+                verifyResult.message ??
+                "ระบบตรวจสลิปอัตโนมัติไม่ผ่าน กรุณาส่งสลิปใหม่",
+              status: "error",
+            });
+            return;
+          }
+        }
+      }
+    } catch {
+      // ตรวจสลิปอัตโนมัติไม่สำเร็จเพราะเครือข่าย ปล่อยให้ SlipOK/แอดมินตรวจซ้ำได้ภายหลัง
+    }
+
+    setSubmitState({
+      error: null,
+      status: "success",
+    });
   }
 
   return (
     <section
-      className="mt-5 scroll-mt-6 rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm"
+      className="mt-5 scroll-mt-6 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm"
       id="payment"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -611,14 +678,14 @@ function PaymentSlipUploadPanel({
             หลักฐานการชำระเงิน
           </p>
           <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-            แนบสลิปโอนเงินแล้วรอแอดมินตรวจ หากสลิปไม่ผ่านจะส่งใหม่ได้
+            แนบสลิปโอนเงินแล้วระบบจะตรวจสอบให้อัตโนมัติทันที หากสลิปไม่ผ่านจะส่งใหม่ได้
           </p>
         </div>
         <span
           className={`w-fit rounded-md px-2.5 py-1 text-xs font-semibold ${
             latestPayment
               ? getVerificationStatusStyle(latestPayment.verification_status)
-              : "bg-slate-100 text-slate-700"
+              : "bg-[var(--surface-muted)] text-[var(--foreground)]"
           }`}
         >
           {latestPayment
@@ -647,7 +714,7 @@ function PaymentSlipUploadPanel({
       ) : null}
 
       {latestPayment ? (
-        <dl className="mt-4 grid gap-3 rounded-md bg-slate-50 p-4 text-sm sm:grid-cols-2">
+        <dl className="mt-4 grid gap-3 rounded-md bg-[var(--surface-muted)] p-4 text-sm sm:grid-cols-2">
           <DetailItem
             label="วิธีชำระ"
             value={formatPaymentMethod(latestPayment.payment_method)}
@@ -698,7 +765,7 @@ function PaymentSlipUploadPanel({
               วิธีชำระเงิน
             </legend>
             {displaySettings.promptPayEnabled ? (
-              <label className="flex min-h-12 items-center gap-3 rounded-md border border-[var(--line)] bg-white px-4 text-sm text-[var(--foreground)]">
+              <label className="flex min-h-12 items-center gap-3 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm text-[var(--foreground)]">
                 <input
                   checked={resolvedPaymentMethod === "promptpay"}
                   name="paymentMethod"
@@ -709,7 +776,7 @@ function PaymentSlipUploadPanel({
               </label>
             ) : null}
             {displaySettings.bankTransferEnabled ? (
-              <label className="flex min-h-12 items-center gap-3 rounded-md border border-[var(--line)] bg-white px-4 text-sm text-[var(--foreground)]">
+              <label className="flex min-h-12 items-center gap-3 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm text-[var(--foreground)]">
                 <input
                   checked={resolvedPaymentMethod === "bank_transfer"}
                   name="paymentMethod"
@@ -727,23 +794,20 @@ function PaymentSlipUploadPanel({
             paymentMethod={resolvedPaymentMethod}
           />
 
-          <label className="grid gap-2 text-sm font-medium text-[var(--foreground)]">
-            ยอดเงินบนสลิป
-            <input
-              className="min-h-11 rounded-md border border-[var(--line)] bg-white px-3 text-sm outline-none focus:border-[var(--brand)]"
-              min="1"
-              onChange={(event) => setAmount(event.target.value)}
-              required
-              step="0.01"
-              type="number"
-              value={amount}
-            />
-          </label>
+          <div className="grid gap-2 text-sm font-medium text-[var(--foreground)]">
+            ยอดเงินที่ต้องชำระ
+            <div className="min-h-11 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] px-3 py-2 text-sm text-[var(--foreground)]">
+              {currencyFormatter.format(amount)}
+            </div>
+            <p className="text-xs font-normal text-[var(--muted)]">
+              ระบบตรวจสลิปกับยอดนี้เท่านั้น หากโอนไม่ครบยอด การตรวจจะไม่ผ่าน
+            </p>
+          </div>
 
           <label className="grid gap-2 text-sm font-medium text-[var(--foreground)]">
             เลขอ้างอิงสลิป
             <input
-              className="min-h-11 rounded-md border border-[var(--line)] bg-white px-3 text-sm outline-none focus:border-[var(--brand)]"
+              className="min-h-11 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm outline-none focus:border-[var(--brand)]"
               onChange={(event) => setSlipReference(event.target.value)}
               placeholder="ถ้ามี เช่น เลขอ้างอิงจากแอปธนาคาร"
               value={slipReference}
@@ -754,7 +818,7 @@ function PaymentSlipUploadPanel({
             รูปสลิป
             <input
               accept="image/png,image/jpeg"
-              className="min-h-11 rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm"
+              className="min-h-11 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm"
               onChange={(event) => setFile(event.target.files?.[0] ?? null)}
               required
               type="file"
@@ -767,6 +831,12 @@ function PaymentSlipUploadPanel({
             </div>
           ) : null}
 
+          {submitState.status === "verifying" ? (
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-800">
+              กำลังตรวจสลิปอัตโนมัติ...
+            </div>
+          ) : null}
+
           {submitState.status === "success" ? (
             <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm leading-6 text-[var(--brand-strong)]">
               บันทึกหลักฐานการชำระเงินแล้ว
@@ -775,22 +845,27 @@ function PaymentSlipUploadPanel({
 
           <button
             className="min-h-11 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={submitState.status === "submitting"}
+            disabled={
+              submitState.status === "submitting" ||
+              submitState.status === "verifying"
+            }
             type="submit"
           >
             {submitState.status === "submitting"
               ? "กำลังบันทึกสลิป..."
-              : latestPayment
-                ? "ส่งสลิปใหม่"
-                : "ส่งหลักฐานการชำระเงิน"}
+              : submitState.status === "verifying"
+                ? "กำลังตรวจสลิป..."
+                : latestPayment
+                  ? "ส่งสลิปใหม่"
+                  : "ส่งหลักฐานการชำระเงิน"}
           </button>
         </form>
       ) : (
-        <div className="mt-5 rounded-md bg-slate-50 p-4 text-sm leading-6 text-[var(--muted)]">
+        <div className="mt-5 rounded-md bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--muted)]">
           {order.payment_status === "paid"
             ? "ออเดอร์นี้ชำระเงินแล้ว จึงไม่ต้องส่งสลิปเพิ่ม"
             : latestPayment?.verification_status === "submitted"
-              ? "ส่งสลิปแล้ว กรุณารอแอดมินตรวจ หากไม่ผ่านจึงจะส่งใหม่ได้"
+              ? "ส่งสลิปแล้ว ระบบกำลังตรวจสอบอัตโนมัติ หากไม่ผ่านจึงจะส่งใหม่ได้"
               : !hasPaymentMethod
                 ? "ยังไม่มีช่องทางชำระเงินที่เปิดใช้งาน กรุณาติดต่ออู่"
                 : !hasPayableAmount
@@ -815,6 +890,10 @@ export function CustomerProductOrderDetailPanel({
     userId: null,
   });
   const [refreshKey, setRefreshKey] = useState(0);
+  const [cancelState, setCancelState] = useState<CancelOrderState>({
+    error: null,
+    status: "idle",
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -935,6 +1014,32 @@ export function CustomerProductOrderDetailPanel({
     });
   }, [loadState.status]);
 
+  async function handleCancel() {
+    if (loadState.status !== "ready") {
+      return;
+    }
+
+    if (
+      !window.confirm(
+        "ยืนยันยกเลิกคำสั่งซื้อนี้หรือไม่? ระบบจะคืนสต๊อกสินค้าที่ตัดไว้ให้อัตโนมัติ และไม่สามารถย้อนกลับได้",
+      )
+    ) {
+      return;
+    }
+
+    setCancelState({ error: null, status: "cancelling" });
+    const supabase = createClient();
+    const { error } = await cancelOwnProductOrder(supabase, loadState.order.id);
+
+    if (error) {
+      setCancelState({ error: error.message, status: "error" });
+      return;
+    }
+
+    setCancelState({ error: null, status: "idle" });
+    setRefreshKey((current) => current + 1);
+  }
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
@@ -951,13 +1056,13 @@ export function CustomerProductOrderDetailPanel({
             </p>
           </div>
           <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href="/my-product-orders"
           >
             กลับไปคำสั่งซื้อ
           </Link>
           <button
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             onClick={() => setRefreshKey((current) => current + 1)}
             type="button"
           >
@@ -968,7 +1073,7 @@ export function CustomerProductOrderDetailPanel({
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดคำสั่งซื้อ...
           </div>
         </section>
@@ -990,7 +1095,7 @@ export function CustomerProductOrderDetailPanel({
 
       {loadState.status === "not-found" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-[var(--line)] bg-white p-5 text-sm leading-6 text-[var(--muted)] shadow-sm">
+          <div className="max-w-lg rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 text-sm leading-6 text-[var(--muted)] shadow-sm">
             <p className="font-semibold text-[var(--foreground)]">
               ไม่พบคำสั่งซื้อ
             </p>
@@ -1009,7 +1114,7 @@ export function CustomerProductOrderDetailPanel({
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -1018,7 +1123,7 @@ export function CustomerProductOrderDetailPanel({
       {loadState.status === "ready" ? (
         <section className="grid gap-5 py-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div>
-            <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+            <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
               <div className="flex flex-col gap-3 border-b border-[var(--line)] pb-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-[var(--brand)]">
@@ -1059,7 +1164,7 @@ export function CustomerProductOrderDetailPanel({
                 {loadState.order.items.length > 0 ? (
                   loadState.order.items.map((item) => (
                     <div
-                      className="grid gap-3 rounded-lg border border-[var(--line)] bg-slate-50 p-4 sm:grid-cols-[minmax(0,1fr)_110px_140px]"
+                      className="grid gap-3 rounded-lg border border-[var(--line)] bg-[var(--surface-muted)] p-4 sm:grid-cols-[minmax(0,1fr)_110px_140px]"
                       key={item.id}
                     >
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
@@ -1098,14 +1203,14 @@ export function CustomerProductOrderDetailPanel({
                     </div>
                   ))
                 ) : (
-                  <div className="rounded-lg border border-dashed border-[var(--line)] bg-slate-50 p-4 text-sm text-[var(--muted)]">
+                  <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm text-[var(--muted)]">
                     ไม่พบรายการสินค้าในคำสั่งซื้อนี้
                   </div>
                 )}
               </div>
 
               {loadState.order.note ? (
-                <div className="mt-5 rounded-md bg-slate-50 p-4 text-sm leading-6 text-[var(--muted)]">
+                <div className="mt-5 rounded-md bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--muted)]">
                   <p className="font-semibold text-[var(--foreground)]">
                     หมายเหตุ
                   </p>
@@ -1141,7 +1246,7 @@ export function CustomerProductOrderDetailPanel({
             />
           </div>
 
-          <aside className="h-fit rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm lg:sticky lg:top-6">
+          <aside className="h-fit rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm lg:sticky lg:top-6">
             <p className="text-sm font-semibold text-[var(--brand)]">
               สรุปคำสั่งซื้อ
             </p>
@@ -1174,32 +1279,87 @@ export function CustomerProductOrderDetailPanel({
                   {currencyFormatter.format(loadState.order.total_amount)}
                 </dd>
               </div>
+              {loadState.order.amountPaid != null &&
+              loadState.order.amountPaid > 0 &&
+              loadState.order.payment_status !== "paid" ? (
+                <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-3 text-xs">
+                    <span className="text-amber-800">ยอดที่จ่ายแล้ว</span>
+                    <span className="font-semibold text-amber-800">
+                      {currencyFormatter.format(loadState.order.amountPaid)}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 flex items-center justify-between gap-3 text-xs">
+                    <span className="text-amber-800">ยอดคงเหลือ</span>
+                    <span className="font-semibold text-amber-800">
+                      {currencyFormatter.format(
+                        loadState.order.amountRemaining ??
+                          loadState.order.total_amount,
+                      )}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
             </dl>
 
             {loadState.order.delivery_method === "delivery" ? (
-              <div className="mt-5 rounded-md bg-slate-50 p-4 text-sm leading-6 text-[var(--muted)]">
+              <div className="mt-5 rounded-md bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--muted)]">
                 <p className="font-semibold text-[var(--foreground)]">
                   ที่อยู่จัดส่ง
                 </p>
                 <p className="mt-2 whitespace-pre-line">
                   {loadState.order.delivery_address ?? "-"}
                 </p>
+                {loadState.order.delivery_latitude != null &&
+                loadState.order.delivery_longitude != null ? (
+                  <a
+                    className="mt-3 inline-flex min-h-9 items-center rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-xs font-semibold text-[var(--brand-strong)] hover:border-[var(--brand)]"
+                    href={`https://www.google.com/maps?q=${loadState.order.delivery_latitude},${loadState.order.delivery_longitude}`}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    เปิดตำแหน่งที่ปักหมุดใน Google Maps
+                  </a>
+                ) : null}
               </div>
             ) : null}
 
             <Link
-              className="mt-5 flex min-h-10 items-center justify-center rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+              className="mt-5 flex min-h-10 items-center justify-center rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
               href={`/my-product-orders/${loadState.order.id}/receipt`}
             >
               เปิดใบเสร็จ / ใบแจ้งชำระเงิน
             </Link>
 
             <Link
-              className="mt-3 flex min-h-10 items-center justify-center rounded-md border border-[var(--line)] bg-white px-4 text-sm font-semibold text-[var(--muted)]"
+              className="mt-3 flex min-h-10 items-center justify-center rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
               href="/products"
             >
               เลือกสินค้าเพิ่ม
             </Link>
+
+            {loadState.order.status === "pending" ? (
+              <div className="mt-5 border-t border-[var(--line)] pt-5">
+                <button
+                  className="flex min-h-10 w-full items-center justify-center rounded-md border border-red-200 bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--danger)] disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={cancelState.status === "cancelling"}
+                  onClick={handleCancel}
+                  type="button"
+                >
+                  {cancelState.status === "cancelling"
+                    ? "กำลังยกเลิก..."
+                    : "ยกเลิกคำสั่งซื้อ"}
+                </button>
+                <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
+                  ยกเลิกได้เฉพาะตอนที่ออเดอร์ยังรอดำเนินการและยังไม่ชำระเงินเท่านั้น
+                </p>
+                {cancelState.status === "error" ? (
+                  <p className="mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs leading-5 text-red-700">
+                    {cancelState.error}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </aside>
         </section>
       ) : null}

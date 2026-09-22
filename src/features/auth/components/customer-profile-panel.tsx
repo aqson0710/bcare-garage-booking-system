@@ -371,7 +371,7 @@ export function CustomerProfilePanel() {
             </p>
           </div>
           <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--foreground)]"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--foreground)]"
             href="/auth"
           >
             จัดการการเข้าสู่ระบบ
@@ -381,7 +381,7 @@ export function CustomerProfilePanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดโปรไฟล์...
           </div>
         </section>
@@ -406,7 +406,7 @@ export function CustomerProfilePanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -415,7 +415,7 @@ export function CustomerProfilePanel() {
       {loadState.status === "ready" ? (
         <section className="grid gap-6 py-6 lg:grid-cols-[minmax(0,1fr)_340px]">
           <form
-            className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm"
+            className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm"
             onSubmit={handleSubmit}
           >
             <div className="flex flex-col gap-4 border-b border-[var(--line)] pb-5 sm:flex-row sm:items-center">
@@ -444,12 +444,12 @@ export function CustomerProfilePanel() {
               </div>
             </div>
 
-            <section className="mt-5 rounded-md border border-[var(--line)] bg-slate-50 p-4">
+            <section className="mt-5 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] p-4">
               <label className="text-sm font-medium text-[var(--foreground)]">
                 รูปโปรไฟล์
                 <input
                   accept="image/png,image/jpeg,image/webp"
-                  className="mt-2 block w-full rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm text-[var(--foreground)]"
+                  className="mt-2 block w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
                   disabled={uploadState.status === "uploading"}
                   onChange={handleAvatarUpload}
                   type="file"
@@ -479,7 +479,7 @@ export function CustomerProfilePanel() {
               <label className="text-sm font-medium text-[var(--foreground)]">
                 ชื่อ-นามสกุล
                 <input
-                  className="mt-2 min-h-11 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                  className="mt-2 min-h-11 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   onChange={(event) => setFullName(event.target.value)}
                   value={fullName}
                 />
@@ -488,7 +488,7 @@ export function CustomerProfilePanel() {
               <label className="text-sm font-medium text-[var(--foreground)]">
                 เบอร์โทรศัพท์
                 <input
-                  className="mt-2 min-h-11 w-full rounded-md border border-[var(--line)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                  className="mt-2 min-h-11 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   inputMode="tel"
                   onChange={(event) => setPhoneNumber(event.target.value)}
                   value={phoneNumber}
@@ -498,7 +498,7 @@ export function CustomerProfilePanel() {
               <label className="text-sm font-medium text-[var(--foreground)]">
                 อีเมล
                 <input
-                  className="mt-2 min-h-11 w-full rounded-md border border-[var(--line)] bg-slate-50 px-3 text-sm text-[var(--muted)]"
+                  className="mt-2 min-h-11 w-full rounded-md border border-[var(--line)] bg-[var(--surface-muted)] px-3 text-sm text-[var(--muted)]"
                   readOnly
                   value={loadState.email ?? "-"}
                 />
@@ -507,14 +507,14 @@ export function CustomerProfilePanel() {
               <label className="text-sm font-medium text-[var(--foreground)]">
                 ประเภทบัญชี
                 <input
-                  className="mt-2 min-h-11 w-full rounded-md border border-[var(--line)] bg-slate-50 px-3 text-sm text-[var(--muted)]"
+                  className="mt-2 min-h-11 w-full rounded-md border border-[var(--line)] bg-[var(--surface-muted)] px-3 text-sm text-[var(--muted)]"
                   readOnly
                   value={roleLabel}
                 />
               </label>
             </div>
 
-            <div className="mt-5 rounded-md border border-dashed border-[var(--line)] bg-slate-50 p-4 text-sm leading-6 text-[var(--muted)]">
+            <div className="mt-5 rounded-md border border-dashed border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--muted)]">
               ข้อมูลนี้จะถูกใช้เติมข้อมูลเริ่มต้นในหน้าจองบริการและช่วยให้อู่ติดต่อกลับได้ถูกต้อง
             </div>
 
@@ -542,7 +542,7 @@ export function CustomerProfilePanel() {
           </form>
 
           <aside className="space-y-4">
-            <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+            <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
               <p className="text-sm font-semibold text-[var(--brand)]">
                 ใช้ข้อมูลนี้กับ
               </p>
@@ -553,31 +553,31 @@ export function CustomerProfilePanel() {
               </div>
             </section>
 
-            <section className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+            <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
               <p className="text-sm font-semibold text-[var(--brand)]">
                 ทางลัดของลูกค้า
               </p>
               <div className="mt-4 grid gap-2">
                 <Link
-                  className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--foreground)]"
+                  className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--foreground)]"
                   href="/my-vehicles"
                 >
                   รถของฉัน
                 </Link>
                 <Link
-                  className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--foreground)]"
+                  className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--foreground)]"
                   href="/my-bookings"
                 >
                   การจองของฉัน
                 </Link>
                 <Link
-                  className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--foreground)]"
+                  className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--foreground)]"
                   href="/my-product-orders"
                 >
                   คำสั่งซื้อสินค้า
                 </Link>
                 <Link
-                  className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--foreground)]"
+                  className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--foreground)]"
                   href="/notifications"
                 >
                   การแจ้งเตือน

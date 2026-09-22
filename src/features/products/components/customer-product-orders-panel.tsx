@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import {
+  cancelOwnProductOrder,
   getCustomerProductOrders,
   type ProductOrderWithItems,
 } from "@/features/products";
@@ -16,11 +17,41 @@ type LoadState =
   | { status: "ready"; orders: ProductOrderWithItems[]; error: null }
   | { status: "error"; orders: null; error: string };
 
+type StatusFilter = "all" | "action_needed" | "in_progress" | "done";
+
 const currencyFormatter = new Intl.NumberFormat("th-TH", {
   currency: "THB",
   maximumFractionDigits: 0,
   style: "currency",
 });
+
+const filterOptions: { value: StatusFilter; label: string }[] = [
+  { label: "ทั้งหมด", value: "all" },
+  { label: "ต้องดำเนินการ", value: "action_needed" },
+  { label: "กำลังดำเนินการ", value: "in_progress" },
+  { label: "เสร็จสิ้น / ยกเลิก", value: "done" },
+];
+
+function matchesFilter(order: ProductOrderWithItems, filter: StatusFilter) {
+  if (filter === "all") {
+    return true;
+  }
+
+  const latestPayment = order.payments[0] ?? null;
+  const needsAction =
+    order.payment_status === "unpaid" ||
+    latestPayment?.verification_status === "rejected";
+
+  if (filter === "action_needed") {
+    return needsAction;
+  }
+
+  if (filter === "done") {
+    return order.status === "completed" || order.status === "cancelled";
+  }
+
+  return !needsAction && order.status !== "completed" && order.status !== "cancelled";
+}
 
 function getOrderStatusStyle(status: ProductOrderWithItems["status"]) {
   if (status === "pending") {
@@ -48,7 +79,7 @@ function getPaymentStatusStyle(status: ProductOrderWithItems["payment_status"]) 
     return "bg-emerald-50 text-[var(--brand-strong)]";
   }
 
-  if (status === "pending") {
+  if (status === "pending" || status === "partially_paid") {
     return "bg-amber-50 text-amber-800";
   }
 
@@ -60,25 +91,7 @@ function getPaymentStatusStyle(status: ProductOrderWithItems["payment_status"]) 
     return "bg-red-50 text-red-700";
   }
 
-  return "bg-slate-100 text-slate-700";
-}
-
-function getVerificationStatusStyle(
-  status: ProductOrderWithItems["payments"][number]["verification_status"],
-) {
-  if (status === "verified") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
-  }
-
-  if (status === "submitted") {
-    return "bg-amber-50 text-amber-800";
-  }
-
-  if (status === "rejected" || status === "failed") {
-    return "bg-red-50 text-red-700";
-  }
-
-  return "bg-slate-100 text-slate-700";
+  return "bg-[var(--surface-muted)] text-[var(--foreground)]";
 }
 
 function formatOrderStatus(status: ProductOrderWithItems["status"]) {
@@ -114,6 +127,10 @@ function formatPaymentStatus(status: ProductOrderWithItems["payment_status"]) {
     return "ชำระเงินแล้ว";
   }
 
+  if (status === "partially_paid") {
+    return "ชำระบางส่วน";
+  }
+
   if (status === "pending") {
     return "รอตรวจชำระเงิน";
   }
@@ -129,42 +146,6 @@ function formatPaymentStatus(status: ProductOrderWithItems["payment_status"]) {
   return "ยังไม่ชำระเงิน";
 }
 
-function formatVerificationStatus(
-  status: ProductOrderWithItems["payments"][number]["verification_status"],
-) {
-  if (status === "not_submitted") {
-    return "ยังไม่ส่งสลิป";
-  }
-
-  if (status === "submitted") {
-    return "ส่งสลิปแล้ว รอตรวจ";
-  }
-
-  if (status === "verified") {
-    return "สลิปผ่านแล้ว";
-  }
-
-  if (status === "rejected") {
-    return "สลิปไม่ผ่าน";
-  }
-
-  return "ตรวจสลิปล้มเหลว";
-}
-
-function getPaymentVerifierLabel(
-  payment: ProductOrderWithItems["payments"][number] | null,
-) {
-  if (!payment) {
-    return "-";
-  }
-
-  if (payment.verification_provider === "slipok") {
-    return "SlipOK";
-  }
-
-  return "แอดมิน";
-}
-
 function formatDeliveryMethod(method: ProductOrderWithItems["delivery_method"]) {
   return method === "delivery" ? "จัดส่งถึงบ้าน" : "รับที่อู่";
 }
@@ -176,148 +157,134 @@ function formatDateTime(value: string) {
   });
 }
 
-function ProductOrderCard({ order }: { order: ProductOrderWithItems }) {
+function ProductOrderRow({
+  onCancelled,
+  order,
+}: {
+  onCancelled: (orderId: string) => void;
+  order: ProductOrderWithItems;
+}) {
   const itemCount = order.items.reduce((total, item) => total + item.quantity, 0);
-  const firstItems = order.items.slice(0, 3);
+  const previewItems = order.items.slice(0, 4);
   const latestPayment = order.payments[0] ?? null;
+  const needsAttention =
+    order.payment_status === "unpaid" ||
+    latestPayment?.verification_status === "rejected";
+  const [cancelState, setCancelState] = useState<
+    { status: "idle"; error: null } | { status: "cancelling"; error: null } | { status: "error"; error: string }
+  >({ error: null, status: "idle" });
+
+  async function handleCancel() {
+    if (
+      !window.confirm(
+        "ยืนยันยกเลิกคำสั่งซื้อนี้หรือไม่? ระบบจะคืนสต๊อกสินค้าที่ตัดไว้ให้อัตโนมัติ และไม่สามารถย้อนกลับได้",
+      )
+    ) {
+      return;
+    }
+
+    setCancelState({ error: null, status: "cancelling" });
+    const supabase = createClient();
+    const { error } = await cancelOwnProductOrder(supabase, order.id);
+
+    if (error) {
+      setCancelState({ error: error.message, status: "error" });
+      return;
+    }
+
+    setCancelState({ error: null, status: "idle" });
+    onCancelled(order.id);
+  }
 
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+    <article
+      className={
+        needsAttention
+          ? "rounded-lg border-2 border-amber-300 bg-[var(--surface)] p-4 shadow-sm sm:p-5"
+          : "rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 shadow-sm sm:p-5"
+      }
+    >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-[var(--brand)]">
-            {order.order_number}
-          </p>
-          <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">
-            {formatDateTime(order.created_at)}
-          </h2>
-          <p className="mt-2 text-sm text-[var(--muted)]">
-            {formatDeliveryMethod(order.delivery_method)} · {itemCount} รายการ
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <span
-            className={`w-fit rounded-md px-2.5 py-1 text-xs font-semibold ${getOrderStatusStyle(
-              order.status,
-            )}`}
-          >
-            {formatOrderStatus(order.status)}
-          </span>
-          <span
-            className={`w-fit rounded-md px-2.5 py-1 text-xs font-semibold ${getPaymentStatusStyle(
-              order.payment_status,
-            )}`}
-          >
-            {formatPaymentStatus(order.payment_status)}
-          </span>
-          {latestPayment ? (
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-bold text-[var(--foreground)]">
+              {order.order_number}
+            </p>
             <span
-              className={`w-fit rounded-md px-2.5 py-1 text-xs font-semibold ${getVerificationStatusStyle(
-                latestPayment.verification_status,
-              )}`}
+              className={`rounded-md px-2 py-0.5 text-xs font-semibold ${getOrderStatusStyle(order.status)}`}
             >
-              {formatVerificationStatus(latestPayment.verification_status)}
+              {formatOrderStatus(order.status)}
             </span>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="mt-5 grid gap-4 border-t border-[var(--line)] pt-4 text-sm sm:grid-cols-[minmax(0,1fr)_160px]">
-        <div>
-          <p className="font-semibold text-[var(--foreground)]">สินค้า</p>
-          <div className="mt-2 space-y-2 text-[var(--muted)]">
-            {firstItems.length > 0 ? (
-              firstItems.map((item) => (
-                <div className="flex items-center gap-3" key={item.id}>
-                  <ProductImageThumb
-                    alt={`รูปสินค้า ${item.product?.name ?? "สินค้า"}`}
-                    size="sm"
-                    src={item.product?.image_url}
-                  />
-                  <p>
-                    {item.product?.name ?? "สินค้า"} x {item.quantity}
-                  </p>
-                </div>
-              ))
-            ) : (
-              <p>ไม่มีรายการสินค้า</p>
-            )}
-            {order.items.length > firstItems.length ? (
-              <p>และอีก {order.items.length - firstItems.length} รายการ</p>
-            ) : null}
+            <span
+              className={`rounded-md px-2 py-0.5 text-xs font-semibold ${getPaymentStatusStyle(order.payment_status)}`}
+            >
+              {formatPaymentStatus(order.payment_status)}
+            </span>
           </div>
-        </div>
-        <div>
-          <p className="text-[var(--muted)]">ยอดรวม</p>
-          <p className="mt-2 text-xl font-bold text-[var(--foreground)]">
-            {currencyFormatter.format(order.total_amount)}
+          <p className="mt-1.5 text-xs text-[var(--muted)]">
+            {formatDateTime(order.created_at)} · {formatDeliveryMethod(order.delivery_method)}{" "}
+            · {itemCount} ชิ้น
           </p>
         </div>
-      </div>
-
-      {order.status === "cancelled" ? (
-        <div className="mt-5 rounded-md border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-700">
-          <p className="font-semibold">คำสั่งซื้อนี้ถูกยกเลิกแล้ว</p>
-          <p className="mt-1">
-            ออเดอร์นี้จะไม่ถูกจัดเตรียมหรือจัดส่งต่อแล้ว
-          </p>
-        </div>
-      ) : null}
-
-      {latestPayment?.verification_status === "rejected" ? (
-        <div className="mt-5 rounded-md border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-700">
-          <p className="font-semibold">สลิปไม่ผ่าน สามารถส่งใหม่ได้</p>
-          <p className="mt-1">
-            {latestPayment.rejected_reason
-              ? `${getPaymentVerifierLabel(latestPayment)} ตรวจไม่ผ่าน: ${
-                  latestPayment.rejected_reason
-                }`
-              : `${getPaymentVerifierLabel(
-                  latestPayment,
-                )} ตรวจไม่ผ่าน กรุณาเปิดรายละเอียดเพื่อส่งสลิปใหม่`}
-          </p>
-        </div>
-      ) : null}
-
-      {latestPayment?.verification_status === "submitted" ? (
-        <div className="mt-5 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-800">
-          <p className="font-semibold">ส่งสลิปแล้ว รอตรวจ</p>
-          <p className="mt-1">
-            {latestPayment.verification_provider === "slipok"
-              ? "เมื่อ SlipOK หรือแอดมินตรวจผ่าน สถานะจะเปลี่ยนเป็นชำระเงินแล้ว"
-              : "เมื่อแอดมินอนุมัติ สถานะจะเปลี่ยนเป็นชำระเงินแล้ว"}
-          </p>
-        </div>
-      ) : null}
-
-      {latestPayment?.verification_status === "verified" ? (
-        <div className="mt-5 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm leading-6 text-[var(--brand-strong)]">
-          <p className="font-semibold">ชำระเงินเรียบร้อยแล้ว</p>
-          <p className="mt-1">
-            {getPaymentVerifierLabel(latestPayment)} ตรวจสลิปผ่านแล้ว
-          </p>
-        </div>
-      ) : null}
-
-      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="break-all text-xs text-[var(--muted)]">
-          รหัสออเดอร์: {order.id}
+        <p className="text-xl font-bold text-[var(--foreground)] sm:text-right">
+          {currencyFormatter.format(order.total_amount)}
         </p>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
-            href={`/my-product-orders/${order.id}`}
-          >
-            ดูรายละเอียด
-          </Link>
-          <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
-            href={`/my-product-orders/${order.id}/receipt`}
-          >
-            ใบเสร็จ / ใบแจ้งชำระเงิน
-          </Link>
-        </div>
       </div>
+
+      <div className="mt-4 flex items-center gap-2 overflow-x-auto">
+        {previewItems.map((item) => (
+          <ProductImageThumb
+            alt={`รูปสินค้า ${item.product?.name ?? "สินค้า"}`}
+            key={item.id}
+            size="sm"
+            src={item.product?.image_url}
+          />
+        ))}
+        {order.items.length > previewItems.length ? (
+          <span className="flex h-10 shrink-0 items-center rounded-md bg-[var(--surface-muted)] px-2 text-xs font-semibold text-[var(--muted)]">
+            +{order.items.length - previewItems.length}
+          </span>
+        ) : null}
+      </div>
+
+      {needsAttention ? (
+        <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-800">
+          {latestPayment?.verification_status === "rejected"
+            ? "สลิปไม่ผ่านการตรวจ กรุณาเปิดรายละเอียดเพื่อส่งสลิปใหม่"
+            : "ยังไม่ได้ชำระเงินสำหรับคำสั่งซื้อนี้"}
+        </div>
+      ) : null}
+
+      <div className="mt-4 flex flex-wrap gap-2 border-t border-[var(--line)] pt-4">
+        <Link
+          className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+          href={`/my-product-orders/${order.id}`}
+        >
+          ดูรายละเอียด
+        </Link>
+        <Link
+          className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+          href={`/my-product-orders/${order.id}/receipt`}
+        >
+          ใบเสร็จ
+        </Link>
+        {order.status === "pending" ? (
+          <button
+            className="min-h-10 rounded-md border border-red-200 bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--danger)] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={cancelState.status === "cancelling"}
+            onClick={handleCancel}
+            type="button"
+          >
+            {cancelState.status === "cancelling" ? "กำลังยกเลิก..." : "ยกเลิกคำสั่งซื้อ"}
+          </button>
+        ) : null}
+      </div>
+
+      {cancelState.status === "error" ? (
+        <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs leading-5 text-red-700">
+          {cancelState.error}
+        </p>
+      ) : null}
     </article>
   );
 }
@@ -328,6 +295,7 @@ export function CustomerProductOrdersPanel() {
     orders: null,
     status: "loading",
   });
+  const [filter, setFilter] = useState<StatusFilter>("all");
 
   useEffect(() => {
     let isMounted = true;
@@ -406,6 +374,29 @@ export function CustomerProductOrdersPanel() {
     };
   }, []);
 
+  const filteredOrders = useMemo(() => {
+    if (loadState.status !== "ready") {
+      return [];
+    }
+
+    return loadState.orders.filter((order) => matchesFilter(order, filter));
+  }, [loadState, filter]);
+
+  function handleOrderCancelled(orderId: string) {
+    setLoadState((current) => {
+      if (current.status !== "ready") {
+        return current;
+      }
+
+      return {
+        ...current,
+        orders: current.orders.map((order) =>
+          order.id === orderId ? { ...order, status: "cancelled" } : order,
+        ),
+      };
+    });
+  }
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
@@ -418,8 +409,7 @@ export function CustomerProductOrdersPanel() {
               คำสั่งซื้อสินค้า
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-              ดูประวัติการสั่งซื้อสินค้า สถานะออเดอร์ วิธีรับสินค้า และยอดรวม
-              ของบัญชีที่เข้าสู่ระบบอยู่
+              ดูประวัติการสั่งซื้อสินค้า สถานะออเดอร์ และยอดชำระเงิน
             </p>
           </div>
           <Link
@@ -433,7 +423,7 @@ export function CustomerProductOrdersPanel() {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดคำสั่งซื้อ...
           </div>
         </section>
@@ -456,7 +446,7 @@ export function CustomerProductOrdersPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -465,13 +455,42 @@ export function CustomerProductOrdersPanel() {
       {loadState.status === "ready" ? (
         <section className="py-6">
           {loadState.orders.length > 0 ? (
-            <div className="space-y-4">
-              {loadState.orders.map((order) => (
-                <ProductOrderCard key={order.id} order={order} />
-              ))}
-            </div>
+            <>
+              <div className="mb-4 flex flex-wrap gap-2">
+                {filterOptions.map((option) => (
+                  <button
+                    className={
+                      filter === option.value
+                        ? "min-h-9 rounded-full bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+                        : "min-h-9 rounded-full border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
+                    }
+                    key={option.value}
+                    onClick={() => setFilter(option.value)}
+                    type="button"
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              {filteredOrders.length > 0 ? (
+                <div className="space-y-4">
+                  {filteredOrders.map((order) => (
+                    <ProductOrderRow
+                      key={order.id}
+                      onCancelled={handleOrderCancelled}
+                      order={order}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-center text-sm text-[var(--muted)]">
+                  ไม่มีคำสั่งซื้อในหมวดนี้
+                </div>
+              )}
+            </>
           ) : (
-            <div className="rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm leading-6 text-[var(--muted)]">
+            <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
               <p className="font-semibold text-[var(--foreground)]">
                 ยังไม่มีคำสั่งซื้อสินค้า
               </p>

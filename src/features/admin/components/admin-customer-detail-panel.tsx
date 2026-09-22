@@ -55,7 +55,7 @@ function getStatusStyle(status: AdminCustomerDetail["bookings"][number]["status"
     return "bg-red-50 text-red-700";
   }
 
-  return "bg-slate-100 text-slate-700";
+  return "bg-[var(--surface-muted)] text-[var(--foreground)]";
 }
 
 function formatBookingStatus(
@@ -209,7 +209,7 @@ export function AdminCustomerDetailPanel({ customerId }: { customerId: string })
             </p>
           </div>
           <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href="/admin/customers"
           >
             กลับไปรายชื่อลูกค้า
@@ -219,7 +219,7 @@ export function AdminCustomerDetailPanel({ customerId }: { customerId: string })
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดข้อมูลลูกค้า...
           </div>
         </section>
@@ -251,7 +251,7 @@ export function AdminCustomerDetailPanel({ customerId }: { customerId: string })
 
       {loadState.status === "not-found" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-[var(--line)] bg-white p-5 text-sm leading-6 text-[var(--muted)] shadow-sm">
+          <div className="max-w-lg rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 text-sm leading-6 text-[var(--muted)] shadow-sm">
             ไม่พบข้อมูลลูกค้า
           </div>
         </section>
@@ -259,7 +259,7 @@ export function AdminCustomerDetailPanel({ customerId }: { customerId: string })
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -267,7 +267,7 @@ export function AdminCustomerDetailPanel({ customerId }: { customerId: string })
 
       {loadState.status === "ready" ? (
         <section className="grid gap-6 py-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-          <aside className="h-fit rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+          <aside className="h-fit rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
             <p className="text-sm font-semibold text-[var(--brand)]">
               โปรไฟล์ลูกค้า
             </p>
@@ -316,7 +316,7 @@ export function AdminCustomerDetailPanel({ customerId }: { customerId: string })
                 <div className="grid gap-3 md:grid-cols-2">
                   {loadState.customer.vehicles.map((vehicle) => (
                     <article
-                      className="rounded-lg border border-[var(--line)] bg-white p-4 shadow-sm"
+                      className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 shadow-sm"
                       key={vehicle.id}
                     >
                       <h3 className="text-lg font-bold text-[var(--foreground)]">
@@ -332,7 +332,7 @@ export function AdminCustomerDetailPanel({ customerId }: { customerId: string })
                   ))}
                 </div>
               ) : (
-                <div className="rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm text-[var(--muted)]">
+                <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm text-[var(--muted)]">
                   ยังไม่มีข้อมูลรถ
                 </div>
               )}
@@ -351,7 +351,7 @@ export function AdminCustomerDetailPanel({ customerId }: { customerId: string })
                 <div className="space-y-3">
                   {loadState.customer.bookings.map((booking) => (
                     <article
-                      className="rounded-lg border border-[var(--line)] bg-white p-4 shadow-sm"
+                      className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 shadow-sm"
                       key={booking.id}
                     >
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -377,7 +377,7 @@ export function AdminCustomerDetailPanel({ customerId }: { customerId: string })
                           </p>
                         </div>
                         <Link
-                          className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                          className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
                           href={`/admin/bookings/${booking.id}`}
                         >
                           ดูการจอง
@@ -387,7 +387,7 @@ export function AdminCustomerDetailPanel({ customerId }: { customerId: string })
                   ))}
                 </div>
               ) : (
-                <div className="rounded-lg border border-dashed border-[var(--line)] bg-white p-6 text-sm text-[var(--muted)]">
+                <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm text-[var(--muted)]">
                   ยังไม่มีประวัติการจอง
                 </div>
               )}

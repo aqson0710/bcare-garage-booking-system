@@ -1,26 +1,77 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
+
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { FormEvent, ReactNode, SyntheticEvent } from "react";
 import { useEffect, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import {
   cancelCurrentUserBooking,
+  confirmBookingPickup,
   getCurrentUserBookingById,
+  submitBookingPaymentSlip,
+  type BookingPayment,
   type MyBooking,
 } from "@/features/bookings";
+import {
+  getActivePaymentSetting,
+  type PaymentSetting,
+} from "@/features/products";
 import { createClient } from "@/lib/supabase/browser";
 
 type LoadState =
-  | { status: "loading"; booking: null; error: null; userId: null }
-  | { status: "signed-out"; booking: null; error: null; userId: null }
-  | { status: "not-found"; booking: null; error: null; userId: string }
-  | { status: "ready"; booking: MyBooking; error: null; userId: string }
-  | { status: "error"; booking: null; error: string; userId: null };
+  | {
+      status: "loading";
+      booking: null;
+      error: null;
+      userId: null;
+      paymentSetting: null;
+    }
+  | {
+      status: "signed-out";
+      booking: null;
+      error: null;
+      userId: null;
+      paymentSetting: null;
+    }
+  | {
+      status: "not-found";
+      booking: null;
+      error: null;
+      userId: string;
+      paymentSetting: null;
+    }
+  | {
+      status: "ready";
+      booking: MyBooking;
+      error: null;
+      userId: string;
+      paymentSetting: PaymentSetting | null;
+    }
+  | {
+      status: "error";
+      booking: null;
+      error: string;
+      userId: null;
+      paymentSetting: null;
+    };
 
 type CancelState =
   | { status: "idle"; error: null }
   | { status: "cancelling"; error: null }
+  | { status: "error"; error: string };
+
+type PaymentSubmitState =
+  | { status: "idle"; error: null }
+  | { status: "submitting"; error: null }
+  | { status: "verifying"; error: null }
+  | { status: "success"; error: null }
+  | { status: "error"; error: string };
+
+type PickupState =
+  | { status: "idle"; error: null }
+  | { status: "confirming"; error: null }
   | { status: "error"; error: string };
 
 const currencyFormatter = new Intl.NumberFormat("th-TH", {
@@ -59,7 +110,7 @@ function getStatusStyle(status: MyBooking["status"]) {
     return "bg-red-50 text-red-700";
   }
 
-  return "bg-slate-100 text-slate-700";
+  return "bg-[var(--surface-muted)] text-[var(--foreground)]";
 }
 
 function formatBookingStatus(status: MyBooking["status"]) {
@@ -144,7 +195,18 @@ function getCancelButtonClass(bookingStatus: MyBooking["status"]) {
     return "min-h-10 rounded-md border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-60";
   }
 
-  return "min-h-10 rounded-md border border-slate-200 bg-slate-100 px-4 text-sm font-semibold text-slate-500 disabled:cursor-not-allowed";
+  return "min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] px-4 text-sm font-semibold text-[var(--muted)] disabled:cursor-not-allowed";
+}
+
+function handleQrImageError(event: SyntheticEvent<HTMLImageElement>) {
+  const image = event.currentTarget;
+
+  if (image.src.endsWith("/mock-promptpay-qr.svg")) {
+    return;
+  }
+
+  image.src = "/mock-promptpay-qr.svg";
+  image.alt = "Fallback PromptPay QR code";
 }
 
 function DetailItem({
@@ -170,14 +232,68 @@ function formatNullableDateTime(value: string | null) {
   return new Date(value).toLocaleString("th-TH");
 }
 
+function formatBookingPaymentStatus(status: MyBooking["payment_status"]) {
+  if (status === "awaiting_payment") {
+    return "รอชำระเงิน";
+  }
+
+  if (status === "pending_review") {
+    return "ส่งสลิปแล้ว รอตรวจ";
+  }
+
+  if (status === "paid") {
+    return "ชำระเงินแล้ว";
+  }
+
+  if (status === "rejected") {
+    return "สลิปไม่ผ่าน กรุณาส่งใหม่";
+  }
+
+  return "ยังไม่ต้องชำระเงิน";
+}
+
+function getBookingPaymentStatusStyle(status: MyBooking["payment_status"]) {
+  if (status === "paid") {
+    return "bg-emerald-50 text-[var(--brand-strong)]";
+  }
+
+  if (status === "pending_review") {
+    return "bg-amber-50 text-amber-800";
+  }
+
+  if (status === "rejected") {
+    return "bg-red-50 text-red-700";
+  }
+
+  if (status === "awaiting_payment") {
+    return "bg-cyan-50 text-cyan-800";
+  }
+
+  return "bg-[var(--surface-muted)] text-[var(--foreground)]";
+}
+
 export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
   const [loadState, setLoadState] = useState<LoadState>({
     booking: null,
     error: null,
+    paymentSetting: null,
     status: "loading",
     userId: null,
   });
   const [cancelState, setCancelState] = useState<CancelState>({
+    error: null,
+    status: "idle",
+  });
+  const [paymentMethod, setPaymentMethod] = useState<
+    "promptpay" | "bank_transfer"
+  >("promptpay");
+  const [paymentFile, setPaymentFile] = useState<File | null>(null);
+  const [paymentSubmitState, setPaymentSubmitState] =
+    useState<PaymentSubmitState>({
+      error: null,
+      status: "idle",
+    });
+  const [pickupState, setPickupState] = useState<PickupState>({
     error: null,
     status: "idle",
   });
@@ -190,6 +306,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
       setLoadState({
         booking: null,
         error: null,
+        paymentSetting: null,
         status: "loading",
         userId: null,
       });
@@ -207,6 +324,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
         setLoadState({
           booking: null,
           error: sessionError.message,
+          paymentSetting: null,
           status: "error",
           userId: null,
         });
@@ -217,17 +335,18 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
         setLoadState({
           booking: null,
           error: null,
+          paymentSetting: null,
           status: "signed-out",
           userId: null,
         });
         return;
       }
 
-      const { data, error } = await getCurrentUserBookingById(
-        supabase,
-        session.user.id,
-        bookingId,
-      );
+      const [bookingResult, paymentSettingResult] = await Promise.all([
+        getCurrentUserBookingById(supabase, session.user.id, bookingId),
+        getActivePaymentSetting(supabase),
+      ]);
+      const { data, error } = bookingResult;
 
       if (!isMounted) {
         return;
@@ -237,6 +356,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
         setLoadState({
           booking: null,
           error: error.message,
+          paymentSetting: null,
           status: "error",
           userId: null,
         });
@@ -247,6 +367,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
         setLoadState({
           booking: null,
           error: null,
+          paymentSetting: null,
           status: "not-found",
           userId: session.user.id,
         });
@@ -256,6 +377,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
       setLoadState({
         booking: data,
         error: null,
+        paymentSetting: paymentSettingResult.data,
         status: "ready",
         userId: session.user.id,
       });
@@ -322,6 +444,162 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
     });
   }
 
+  async function handlePaymentSlipSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (loadState.status !== "ready") {
+      return;
+    }
+
+    if (!paymentFile) {
+      setPaymentSubmitState({
+        error: "กรุณาแนบรูปสลิป",
+        status: "error",
+      });
+      return;
+    }
+
+    setPaymentSubmitState({
+      error: null,
+      status: "submitting",
+    });
+
+    const supabase = createClient();
+    const { data, error } = await submitBookingPaymentSlip(
+      supabase,
+      loadState.userId,
+      {
+        bookingId: loadState.booking.id,
+        file: paymentFile,
+        paymentMethod,
+      },
+    );
+
+    if (error || !data) {
+      setPaymentSubmitState({
+        error: error?.message ?? "ส่งสลิปไม่สำเร็จ",
+        status: "error",
+      });
+      return;
+    }
+
+    setPaymentFile(null);
+    setLoadState({
+      ...loadState,
+      booking: {
+        ...loadState.booking,
+        latestPayment: data,
+        payment_status: "pending_review",
+      },
+    });
+    setPaymentSubmitState({
+      error: null,
+      status: "verifying",
+    });
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+
+      if (accessToken) {
+        const verifyResponse = await fetch(
+          `/api/booking-payments/${data.id}/verify-slipok`,
+          {
+            body: JSON.stringify({ accessToken }),
+            credentials: "include",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            method: "POST",
+          },
+        );
+        const verifyResult = (await verifyResponse
+          .json()
+          .catch(() => null)) as {
+          booking?: { payment_status: MyBooking["payment_status"] };
+          message?: string;
+          ok: boolean;
+          payment?: BookingPayment;
+        } | null;
+
+        if (verifyResult?.payment) {
+          setLoadState((current) =>
+            current.status === "ready"
+              ? {
+                  ...current,
+                  booking: {
+                    ...current.booking,
+                    latestPayment: verifyResult.payment ?? null,
+                    payment_status:
+                      verifyResult.booking?.payment_status ??
+                      current.booking.payment_status,
+                  },
+                }
+              : current,
+          );
+
+          if (!verifyResult.ok) {
+            setPaymentSubmitState({
+              error:
+                verifyResult.message ??
+                "ระบบตรวจสลิปอัตโนมัติไม่ผ่าน กรุณาส่งสลิปใหม่",
+              status: "error",
+            });
+            return;
+          }
+        }
+      }
+    } catch {
+      // ตรวจสลิปอัตโนมัติไม่สำเร็จเพราะเครือข่าย ปล่อยให้แอดมินตรวจซ้ำได้ภายหลัง
+    }
+
+    setPaymentSubmitState({
+      error: null,
+      status: "success",
+    });
+  }
+
+  async function handleConfirmPickup() {
+    if (loadState.status !== "ready" || loadState.booking.payment_status !== "paid") {
+      return;
+    }
+
+    setPickupState({
+      error: null,
+      status: "confirming",
+    });
+
+    const supabase = createClient();
+    const { data, error } = await confirmBookingPickup(
+      supabase,
+      loadState.booking.id,
+    );
+
+    if (error || !data) {
+      setPickupState({
+        error: error?.message ?? "ยืนยันรับรถไม่สำเร็จ",
+        status: "error",
+      });
+      return;
+    }
+
+    setLoadState({
+      ...loadState,
+      booking: {
+        ...loadState.booking,
+        picked_up_at: data.picked_up_at,
+        status: data.status,
+      },
+    });
+    setPickupState({
+      error: null,
+      status: "idle",
+    });
+  }
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
@@ -338,7 +616,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
             </p>
           </div>
           <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
             href="/my-bookings"
           >
             กลับไปการจองของฉัน
@@ -348,7 +626,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
 
       {loadState.status === "loading" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-white px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
             กำลังโหลดการจอง...
           </div>
         </section>
@@ -371,7 +649,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
 
       {loadState.status === "not-found" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-[var(--line)] bg-white p-5 text-sm leading-6 text-[var(--muted)] shadow-sm">
+          <div className="max-w-lg rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 text-sm leading-6 text-[var(--muted)] shadow-sm">
             <p className="font-semibold text-[var(--foreground)]">
               ไม่พบการจอง
             </p>
@@ -390,7 +668,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-white px-5 py-4 text-sm text-red-700 shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -398,7 +676,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
 
       {loadState.status === "ready" ? (
         <section className="py-6">
-          <article className="rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+          <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="text-sm font-semibold text-[var(--brand)]">
@@ -469,7 +747,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
             </dl>
 
             {loadState.booking.note ? (
-              <div className="mt-5 rounded-md bg-slate-50 p-4 text-sm leading-6 text-[var(--muted)]">
+              <div className="mt-5 rounded-md bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--muted)]">
                 <p className="font-semibold text-[var(--foreground)]">หมายเหตุ</p>
                 <p className="mt-2">{loadState.booking.note}</p>
               </div>
@@ -481,13 +759,13 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
 
             <div className="mt-5 flex flex-col gap-3 border-t border-[var(--line)] pt-5 sm:flex-row">
               <Link
-                className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
                 href={`/my-bookings/${loadState.booking.id}/receipt`}
               >
                 เปิดเอกสารการจอง
               </Link>
               <Link
-                className="min-h-10 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
                 href="/my-vehicles"
               >
                 แก้ไขรถ
@@ -515,7 +793,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
             ) : null}
           </article>
 
-          <article className="mt-5 rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm">
+          <article className="mt-5 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="text-sm font-semibold text-[var(--brand)]">
@@ -536,7 +814,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
                   {formatRepairJobStatus(loadState.booking.repairJob.status)}
                 </span>
               ) : (
-                <span className="w-fit rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                <span className="w-fit rounded-md bg-[var(--surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--foreground)]">
                   ยังไม่สร้าง
                 </span>
               )}
@@ -573,7 +851,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
                 </dl>
 
                 <div className="mt-5 grid gap-3 text-sm md:grid-cols-2">
-                  <div className="rounded-md bg-slate-50 p-4">
+                  <div className="rounded-md bg-[var(--surface-muted)] p-4">
                     <p className="font-semibold text-[var(--foreground)]">
                       ผลตรวจ/วิเคราะห์อาการ
                     </p>
@@ -581,7 +859,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
                       {loadState.booking.repairJob.diagnosis || "-"}
                     </p>
                   </div>
-                  <div className="rounded-md bg-slate-50 p-4">
+                  <div className="rounded-md bg-[var(--surface-muted)] p-4">
                     <p className="font-semibold text-[var(--foreground)]">
                       บันทึกการซ่อม
                     </p>
@@ -601,6 +879,235 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
               </p>
             )}
           </article>
+
+          {loadState.booking.payment_status !== "not_required" ? (
+            <article
+              className="mt-5 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm"
+              id="payment"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-[var(--brand)]">
+                    การชำระเงิน
+                  </p>
+                  <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">
+                    {loadState.booking.payment_amount != null
+                      ? currencyFormatter.format(
+                          loadState.booking.payment_amount,
+                        )
+                      : "-"}
+                  </h2>
+                </div>
+                <span
+                  className={`w-fit rounded-md px-2.5 py-1 text-xs font-semibold ${getBookingPaymentStatusStyle(
+                    loadState.booking.payment_status,
+                  )}`}
+                >
+                  {formatBookingPaymentStatus(loadState.booking.payment_status)}
+                </span>
+              </div>
+
+              {loadState.booking.payment_status === "rejected" &&
+              loadState.booking.latestPayment?.rejected_reason ? (
+                <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-700">
+                  <p className="font-semibold">สลิปไม่ผ่าน</p>
+                  <p className="mt-1">
+                    {loadState.booking.latestPayment.rejected_reason}
+                  </p>
+                </div>
+              ) : null}
+
+              {loadState.booking.payment_status === "pending_review" ? (
+                <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-800">
+                  ส่งสลิปแล้ว กรุณารอแอดมินตรวจสอบและยืนยันการชำระเงิน
+                </div>
+              ) : null}
+
+              {loadState.booking.payment_status === "paid" ? (
+                <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm leading-6 text-[var(--brand-strong)]">
+                  แอดมินตรวจสอบและยืนยันการชำระเงินแล้ว
+                </div>
+              ) : null}
+
+              {loadState.booking.payment_status === "awaiting_payment" ||
+              loadState.booking.payment_status === "rejected" ? (
+                <form
+                  className="mt-5 grid gap-4"
+                  onSubmit={handlePaymentSlipSubmit}
+                >
+                  <fieldset className="grid gap-3">
+                    <legend className="text-sm font-semibold text-[var(--foreground)]">
+                      วิธีชำระเงิน
+                    </legend>
+                    {loadState.paymentSetting?.promptpay_enabled !== false ? (
+                      <label className="flex min-h-12 items-center gap-3 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm text-[var(--foreground)]">
+                        <input
+                          checked={paymentMethod === "promptpay"}
+                          name="paymentMethod"
+                          onChange={() => setPaymentMethod("promptpay")}
+                          type="radio"
+                        />
+                        PromptPay / QR
+                      </label>
+                    ) : null}
+                    {loadState.paymentSetting?.bank_transfer_enabled !==
+                    false ? (
+                      <label className="flex min-h-12 items-center gap-3 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm text-[var(--foreground)]">
+                        <input
+                          checked={paymentMethod === "bank_transfer"}
+                          name="paymentMethod"
+                          onChange={() => setPaymentMethod("bank_transfer")}
+                          type="radio"
+                        />
+                        โอนเข้าบัญชีธนาคาร
+                      </label>
+                    ) : null}
+                  </fieldset>
+
+                  <div className="rounded-lg border border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm">
+                    {paymentMethod === "promptpay" ? (
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                        <img
+                          alt="PromptPay QR code"
+                          className="h-40 w-40 rounded-md border border-[var(--line)] bg-[var(--surface)] p-2"
+                          onError={handleQrImageError}
+                          src={
+                            loadState.paymentSetting?.promptpay_qr_image_url ??
+                            "/mock-promptpay-qr.svg"
+                          }
+                        />
+                        <dl className="grid gap-3">
+                          <DetailItem
+                            label="ชื่อผู้รับ"
+                            value={
+                              loadState.paymentSetting
+                                ?.promptpay_display_name ?? "-"
+                            }
+                          />
+                          <DetailItem
+                            label="PromptPay"
+                            value={
+                              loadState.paymentSetting?.promptpay_id ?? "-"
+                            }
+                          />
+                          <DetailItem
+                            label="ยอดที่ต้องชำระ"
+                            value={
+                              loadState.booking.payment_amount != null
+                                ? currencyFormatter.format(
+                                    loadState.booking.payment_amount,
+                                  )
+                                : "-"
+                            }
+                          />
+                        </dl>
+                      </div>
+                    ) : (
+                      <dl className="grid gap-3">
+                        <DetailItem
+                          label="ธนาคาร"
+                          value={loadState.paymentSetting?.bank_name ?? "-"}
+                        />
+                        <DetailItem
+                          label="เลขบัญชี"
+                          value={
+                            loadState.paymentSetting?.bank_account_number ??
+                            "-"
+                          }
+                        />
+                        <DetailItem
+                          label="ชื่อบัญชี"
+                          value={
+                            loadState.paymentSetting?.bank_account_name ?? "-"
+                          }
+                        />
+                        <DetailItem
+                          label="สาขา"
+                          value={loadState.paymentSetting?.bank_branch ?? "-"}
+                        />
+                      </dl>
+                    )}
+                    {loadState.paymentSetting?.payment_instructions ? (
+                      <p className="mt-3 text-xs leading-5 text-amber-400">
+                        {loadState.paymentSetting.payment_instructions}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <label className="text-sm font-semibold text-[var(--foreground)]">
+                    แนบรูปสลิปโอนเงิน
+                    <input
+                      accept="image/*"
+                      className="mt-2 block w-full text-sm text-[var(--foreground)]"
+                      onChange={(event) =>
+                        setPaymentFile(event.target.files?.[0] ?? null)
+                      }
+                      type="file"
+                    />
+                  </label>
+                  <p className="text-xs leading-5 text-[var(--muted)]">
+                    แนบสลิปโอนเงินแล้วระบบจะตรวจสอบให้อัตโนมัติทันที
+                    หากตรวจอัตโนมัติไม่ผ่านแอดมินจะตรวจสอบให้ด้วยตนเองอีกครั้ง
+                  </p>
+
+                  <button
+                    className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={
+                      paymentSubmitState.status === "submitting" ||
+                      paymentSubmitState.status === "verifying"
+                    }
+                    type="submit"
+                  >
+                    {paymentSubmitState.status === "submitting"
+                      ? "กำลังส่งสลิป..."
+                      : paymentSubmitState.status === "verifying"
+                        ? "กำลังตรวจสลิปอัตโนมัติ..."
+                        : "ส่งสลิปชำระเงิน"}
+                  </button>
+
+                  {paymentSubmitState.status === "error" ? (
+                    <p className="text-sm font-semibold text-[var(--danger)]">
+                      {paymentSubmitState.error}
+                    </p>
+                  ) : null}
+                  {paymentSubmitState.status === "success" ? (
+                    <p className="text-sm font-semibold text-emerald-400">
+                      ตรวจสลิปแล้ว หากยังรอตรวจอยู่แอดมินจะตรวจสอบให้อีกครั้ง
+                    </p>
+                  ) : null}
+                </form>
+              ) : null}
+
+              {loadState.booking.payment_status === "paid" ? (
+                <div className="mt-5 border-t border-[var(--line)] pt-5">
+                  {loadState.booking.picked_up_at ? (
+                    <p className="text-sm font-semibold text-[var(--brand-strong)]">
+                      รับรถคืนแล้วเมื่อ{" "}
+                      {formatNullableDateTime(loadState.booking.picked_up_at)}
+                    </p>
+                  ) : (
+                    <>
+                      <button
+                        className="flex min-h-10 w-full items-center justify-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                        disabled={pickupState.status === "confirming"}
+                        onClick={handleConfirmPickup}
+                        type="button"
+                      >
+                        {pickupState.status === "confirming"
+                          ? "กำลังยืนยัน..."
+                          : "รับรถคืนแล้ว"}
+                      </button>
+                      {pickupState.status === "error" ? (
+                        <p className="mt-2 text-sm font-semibold text-[var(--danger)]">
+                          {pickupState.error}
+                        </p>
+                      ) : null}
+                    </>
+                  )}
+                </div>
+              ) : null}
+            </article>
+          ) : null}
         </section>
       ) : null}
     </main>
