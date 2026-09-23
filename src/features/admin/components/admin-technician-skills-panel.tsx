@@ -420,6 +420,34 @@ export function AdminTechnicianSkillsPanel() {
     });
   }, [loadState, searchInput, statusFilter]);
 
+  const statusCounts = useMemo(() => {
+    const counts = new Map<StatusFilter, number>(
+      statusFilters.map((status) => [status, 0]),
+    );
+
+    if (loadState.status !== "ready") {
+      return counts;
+    }
+
+    const normalizedSearch = searchInput.trim().toLowerCase();
+
+    for (const skill of loadState.skills) {
+      const matchesSearch =
+        !normalizedSearch ||
+        skill.name.toLowerCase().includes(normalizedSearch) ||
+        (skill.description ?? "").toLowerCase().includes(normalizedSearch);
+
+      if (!matchesSearch) {
+        continue;
+      }
+
+      counts.set("all", (counts.get("all") ?? 0) + 1);
+      counts.set(skill.status, (counts.get(skill.status) ?? 0) + 1);
+    }
+
+    return counts;
+  }, [loadState, searchInput]);
+
   async function handleSaveSkill(
     skill: AdminTechnicianSkill,
     input: AdminTechnicianSkillUpdateInput,
@@ -626,40 +654,46 @@ export function AdminTechnicianSkillsPanel() {
             onCreate={handleCreateSkill}
           />
 
-          <div className="mt-5 flex flex-col gap-4 border-b border-[var(--line)] pb-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-[var(--foreground)]">
-                พบ {filteredSkills.length} จาก {loadState.skills.length} ทักษะ
-              </p>
-              <p className="mt-1 text-sm text-[var(--muted)]">
-                ทักษะที่ปิดใช้งานจะยังเก็บในประวัติ แต่จะไม่แสดงให้ช่างเลือกในโปรไฟล์
-              </p>
-            </div>
+          <div className="mt-5 flex flex-col gap-4 border-b border-[var(--line)] pb-4">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-[var(--foreground)]">
+                  พบ {filteredSkills.length} จาก {loadState.skills.length} ทักษะ
+                </p>
+                <p className="mt-1 text-sm text-[var(--muted)]">
+                  ทักษะที่ปิดใช้งานจะยังเก็บในประวัติ แต่จะไม่แสดงให้ช่างเลือกในโปรไฟล์
+                </p>
+              </div>
 
-            <div className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-2xl">
               <input
-                className="min-h-10 flex-1 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                className="min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)] lg:w-80"
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="ค้นหาทักษะ"
                 type="search"
                 value={searchInput}
               />
-              <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
-                {statusFilters.map((status) => (
-                  <button
-                    className={
-                      statusFilter === status
-                        ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-                        : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
-                    }
-                    key={status}
-                    onClick={() => setStatusFilter(status)}
-                    type="button"
-                  >
+            </div>
+
+            <div className="flex divide-x divide-[var(--line)] overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">
+              {statusFilters.map((status) => (
+                <button
+                  className={`min-w-[7rem] flex-1 px-4 py-3 text-left transition ${
+                    statusFilter === status
+                      ? "bg-[var(--accent-soft)]"
+                      : "hover:bg-[var(--accent-soft)]"
+                  }`}
+                  key={status}
+                  onClick={() => setStatusFilter(status)}
+                  type="button"
+                >
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                     {formatSkillStatus(status)}
-                  </button>
-                ))}
-              </div>
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
+                    {statusCounts.get(status) ?? 0}
+                  </p>
+                </button>
+              ))}
             </div>
           </div>
 

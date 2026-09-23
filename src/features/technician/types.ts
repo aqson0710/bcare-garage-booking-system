@@ -21,6 +21,7 @@ export type TechnicianProfile =
     };
 
 export type TechnicianProfileUpdateInput = {
+  avatarUrl?: string | null;
   fullName: string;
   phoneNumber: string;
   selectedSkillIds: string[];

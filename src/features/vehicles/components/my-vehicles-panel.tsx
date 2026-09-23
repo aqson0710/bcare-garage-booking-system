@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import {
+  deleteCurrentUserVehicle,
   getCurrentUserVehicles,
   updateCurrentUserVehicle,
   updateCurrentUserVehicleImage,
@@ -39,6 +40,11 @@ type UploadState =
   | { status: "uploading"; message: null; error: null }
   | { status: "uploaded"; message: string; error: null }
   | { status: "error"; message: null; error: string };
+
+type DeleteState =
+  | { status: "idle"; error: null }
+  | { status: "deleting"; error: null }
+  | { status: "error"; error: string };
 
 const vehicleImagesBucket = "vehicle-images";
 
@@ -85,10 +91,12 @@ function validateVehicle(values: VehicleFormValues) {
 
 function VehicleCard({
   customerId,
+  onVehicleDeleted,
   onVehicleSaved,
   vehicle,
 }: {
   customerId: string;
+  onVehicleDeleted: (vehicleId: string) => void;
   onVehicleSaved: (vehicle: Vehicle) => void;
   vehicle: Vehicle;
 }) {
@@ -103,6 +111,10 @@ function VehicleCard({
   const [uploadState, setUploadState] = useState<UploadState>({
     error: null,
     message: null,
+    status: "idle",
+  });
+  const [deleteState, setDeleteState] = useState<DeleteState>({
+    error: null,
     status: "idle",
   });
 
@@ -247,10 +259,42 @@ function VehicleCard({
     });
   }
 
+  async function handleDelete() {
+    const confirmed = window.confirm(
+      `ต้องการลบรถทะเบียน "${vehicle.license_plate}" ออกจากบัญชีของคุณใช่หรือไม่ ทำแล้วกู้คืนไม่ได้`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeleteState({
+      error: null,
+      status: "deleting",
+    });
+
+    const supabase = createClient();
+    const { error } = await deleteCurrentUserVehicle(supabase, {
+      customerId,
+      id: vehicle.id,
+    });
+
+    if (error) {
+      setDeleteState({
+        error: error.message,
+        status: "error",
+      });
+      return;
+    }
+
+    onVehicleDeleted(vehicle.id);
+  }
+
   const isEditing =
     cardState.status === "edit" ||
     cardState.status === "saving" ||
     cardState.status === "error";
+  const isDeleting = deleteState.status === "deleting";
 
   return (
     <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
@@ -339,19 +383,29 @@ function VehicleCard({
                   </button>
                 </div>
               ) : (
-              <button
-                className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
-                onClick={() =>
-                  setCardState({
-                    error: null,
-                    message: null,
-                    status: "edit",
-                  })
-                }
-                type="button"
-              >
-                แก้ไข
-              </button>
+              <div className="flex gap-2">
+                <button
+                  className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
+                  onClick={() =>
+                    setCardState({
+                      error: null,
+                      message: null,
+                      status: "edit",
+                    })
+                  }
+                  type="button"
+                >
+                  แก้ไข
+                </button>
+                <button
+                  className="min-h-10 rounded-md border border-red-200 bg-[var(--surface)] px-4 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isDeleting}
+                  onClick={handleDelete}
+                  type="button"
+                >
+                  {isDeleting ? "กำลังลบ..." : "ลบรถ"}
+                </button>
+              </div>
               )}
             </div>
 
@@ -435,6 +489,12 @@ function VehicleCard({
         {cardState.status === "error" ? (
           <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {cardState.error}
+          </div>
+        ) : null}
+
+        {deleteState.status === "error" ? (
+          <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {deleteState.error}
           </div>
         ) : null}
           </div>
@@ -547,6 +607,19 @@ export function MyVehiclesPanel() {
     });
   }
 
+  function handleVehicleDeleted(vehicleId: string) {
+    if (loadState.status !== "ready") {
+      return;
+    }
+
+    setLoadState({
+      ...loadState,
+      vehicles: loadState.vehicles.filter(
+        (vehicle) => vehicle.id !== vehicleId,
+      ),
+    });
+  }
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
@@ -610,6 +683,7 @@ export function MyVehiclesPanel() {
                 <VehicleCard
                   customerId={loadState.userId}
                   key={vehicle.id}
+                  onVehicleDeleted={handleVehicleDeleted}
                   onVehicleSaved={handleVehicleSaved}
                   vehicle={vehicle}
                 />

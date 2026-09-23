@@ -14,8 +14,10 @@ import type {
 
 type BCareSupabaseClient = SupabaseClient<Database>;
 
-function getUniqueIds(values: string[]) {
-  return Array.from(new Set(values));
+function getUniqueIds(values: (string | null | undefined)[]) {
+  return Array.from(
+    new Set(values.filter((value): value is string => Boolean(value))),
+  );
 }
 
 function canTechnicianSetStatus(status: TechnicianRepairJobStatus) {
@@ -126,13 +128,19 @@ export async function updateTechnicianProfile(
   supabase: BCareSupabaseClient,
   input: TechnicianProfileUpdateInput,
 ) {
+  const payload: Database["public"]["Tables"]["profiles"]["Update"] = {
+    full_name: input.fullName,
+    phone_number: input.phoneNumber,
+    technician_specialty: input.technicianSpecialty,
+  };
+
+  if (input.avatarUrl !== undefined) {
+    payload.avatar_url = input.avatarUrl;
+  }
+
   const profileResult = await supabase
     .from("profiles")
-    .update({
-      full_name: input.fullName,
-      phone_number: input.phoneNumber,
-      technician_specialty: input.technicianSpecialty,
-    })
+    .update(payload)
     .eq("id", input.userId)
     .select("*")
     .single();
@@ -265,8 +273,12 @@ async function attachTechnicianWorkOrderDetails(
         customer: customerId ? (customersById.get(customerId) ?? null) : null,
         service: booking ? (servicesById.get(booking.service_id) ?? null) : null,
         vehicle:
-          vehiclesById.get(repairJob.vehicle_id) ??
-          (booking ? (vehiclesById.get(booking.vehicle_id) ?? null) : null),
+          (repairJob.vehicle_id
+            ? (vehiclesById.get(repairJob.vehicle_id) ?? null)
+            : null) ??
+          (booking?.vehicle_id
+            ? (vehiclesById.get(booking.vehicle_id) ?? null)
+            : null),
       } satisfies TechnicianWorkOrder;
     }),
     error: null,
@@ -527,6 +539,73 @@ export async function updateTechnicianWorkOrder(
 
   const detailsResult = await attachTechnicianWorkOrderDetails(supabase, [
     repairJobData,
+  ]);
+
+  if (detailsResult.error) {
+    return {
+      data: null,
+      error: detailsResult.error,
+    };
+  }
+
+  return {
+    data: detailsResult.data?.[0] ?? null,
+    error: null,
+  };
+}
+
+export async function reopenTechnicianWorkOrder(
+  supabase: BCareSupabaseClient,
+  userId: string,
+  workOrderId: string,
+) {
+  const currentResult = await supabase
+    .from("repair_jobs")
+    .select("*")
+    .eq("id", workOrderId)
+    .eq("mechanic_id", userId)
+    .maybeSingle();
+
+  if (currentResult.error) {
+    return {
+      data: null,
+      error: currentResult.error,
+    };
+  }
+
+  if (!currentResult.data) {
+    return {
+      data: null,
+      error: new Error("Work order not found for this technician account."),
+    };
+  }
+
+  if (currentResult.data.status !== "completed") {
+    return {
+      data: null,
+      error: new Error("Only completed work orders can be reopened."),
+    };
+  }
+
+  // Reopening reverses the payment-request side effect that completing
+  // the job set on the linked booking (payment_status back to
+  // not_required), which the technician's own session doesn't otherwise
+  // have rights to touch - done atomically via this security-definer
+  // RPC. It refuses (with a Thai message) once the customer has engaged
+  // with payment at all. See supabase/technician-work-order-reopen.sql.
+  const rpcResult = await supabase.rpc("reopen_repair_job", {
+    target_work_order_id: workOrderId,
+  });
+
+  if (rpcResult.error) {
+    return {
+      data: null,
+      error: rpcResult.error,
+    };
+  }
+
+  const detailsResult = await attachTechnicianWorkOrderDetails(supabase, [
+    rpcResult.data,
   ]);
 
   if (detailsResult.error) {

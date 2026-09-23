@@ -17,8 +17,10 @@ type BCareSupabaseClient = SupabaseClient<Database>;
 const bookingStartTime = "09:00";
 const bookingEndTime = "18:00";
 
-function getUniqueIds(values: string[]) {
-  return Array.from(new Set(values));
+function getUniqueIds(values: (string | null | undefined)[]) {
+  return Array.from(
+    new Set(values.filter((value): value is string => Boolean(value))),
+  );
 }
 
 function normalizeLicensePlate(licensePlate: string) {
@@ -267,7 +269,9 @@ async function attachBookingDetails(
           ...booking,
           repairJob: repairJobsByBookingId.get(booking.id) ?? null,
           service: servicesById.get(booking.service_id) ?? null,
-          vehicle: vehiclesById.get(booking.vehicle_id) ?? null,
+          vehicle: booking.vehicle_id
+            ? (vehiclesById.get(booking.vehicle_id) ?? null)
+            : null,
           latestPayment: latestPaymentByBookingId.get(booking.id) ?? null,
         }) satisfies MyBooking,
     ),

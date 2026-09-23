@@ -961,6 +961,29 @@ export function AdminCapacityPanel() {
     });
   }, [dateFilter, loadState, statusFilter]);
 
+  const statusCounts = useMemo(() => {
+    const counts = new Map<StatusFilter, number>(
+      statusFilters.map((status) => [status, 0]),
+    );
+
+    if (loadState.status !== "ready") {
+      return counts;
+    }
+
+    for (const capacity of loadState.capacity) {
+      const matchesDate = !dateFilter || capacity.booking_date === dateFilter;
+
+      if (!matchesDate) {
+        continue;
+      }
+
+      counts.set("all", (counts.get("all") ?? 0) + 1);
+      counts.set(capacity.status, (counts.get(capacity.status) ?? 0) + 1);
+    }
+
+    return counts;
+  }, [dateFilter, loadState]);
+
   const targetCapacity = useMemo(() => {
     if (loadState.status !== "ready" || !dateParam || !timeParam) {
       return null;
@@ -1324,48 +1347,56 @@ export function AdminCapacityPanel() {
             onBulkCreate={handleBulkCreate}
           />
 
-          <div className="mt-5 flex flex-col gap-4 border-b border-[var(--line)] pb-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-[var(--foreground)]">
-                แสดง {filteredCapacity.length} จาก {loadState.capacity.length} ช่วงเวลา
-              </p>
-              <p className="mt-1 text-sm text-[var(--muted)]">
-                จำนวนที่จองแล้วนับจาก booking สถานะ pending และ confirmed
-              </p>
-            </div>
+          <div className="mt-5 flex flex-col gap-4 border-b border-[var(--line)] pb-4">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-[var(--foreground)]">
+                  แสดง {filteredCapacity.length} จาก {loadState.capacity.length} ช่วงเวลา
+                </p>
+                <p className="mt-1 text-sm text-[var(--muted)]">
+                  จำนวนที่จองแล้วนับจาก booking สถานะ pending และ confirmed
+                </p>
+              </div>
 
-            <div className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-2xl">
-              <input
-                className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)] sm:w-48"
-                onChange={(event) => setDateFilter(event.target.value)}
-                type="date"
-                value={dateFilter}
-              />
-              <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
-                {statusFilters.map((status) => (
+              <div className="flex w-full gap-2 sm:w-auto">
+                <input
+                  className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)] sm:w-48"
+                  onChange={(event) => setDateFilter(event.target.value)}
+                  type="date"
+                  value={dateFilter}
+                />
+                {dateFilter ? (
                   <button
-                    className={
-                      statusFilter === status
-                        ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-                        : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
-                    }
-                    key={status}
-                    onClick={() => setStatusFilter(status)}
+                    className="min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
+                    onClick={() => setDateFilter("")}
                     type="button"
                   >
-                    {getStatusFilterLabel(status)}
+                    ล้างวันที่
                   </button>
-                ))}
+                ) : null}
               </div>
-              {dateFilter ? (
+            </div>
+
+            <div className="flex divide-x divide-[var(--line)] overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">
+              {statusFilters.map((status) => (
                 <button
-                  className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
-                  onClick={() => setDateFilter("")}
+                  className={`min-w-[7rem] flex-1 px-4 py-3 text-left transition ${
+                    statusFilter === status
+                      ? "bg-[var(--accent-soft)]"
+                      : "hover:bg-[var(--accent-soft)]"
+                  }`}
+                  key={status}
+                  onClick={() => setStatusFilter(status)}
                   type="button"
                 >
-                  ล้างวันที่
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                    {getStatusFilterLabel(status)}
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
+                    {statusCounts.get(status) ?? 0}
+                  </p>
                 </button>
-              ) : null}
+              ))}
             </div>
           </div>
 

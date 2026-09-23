@@ -26,14 +26,6 @@ const statusOrder: TechnicianWorkOrder["status"][] = [
   "cancelled",
 ];
 
-function formatDateTime(value: string | null) {
-  if (!value) {
-    return "-";
-  }
-
-  return new Date(value).toLocaleString("th-TH");
-}
-
 function formatBookingSchedule(workOrder: TechnicianWorkOrder) {
   if (!workOrder.booking) {
     return "-";
@@ -65,7 +57,7 @@ function getStatusStyle(status: TechnicianWorkOrder["status"]) {
   return "bg-red-50 text-red-700";
 }
 
-function formatWorkOrderStatus(status: StatusFilter) {
+function formatWorkOrderStatus(status: TechnicianWorkOrder["status"]) {
   if (status === "pending") {
     return "รอดำเนินการ";
   }
@@ -82,114 +74,88 @@ function formatWorkOrderStatus(status: StatusFilter) {
     return "เสร็จสิ้น";
   }
 
-  if (status === "cancelled") {
-    return "ยกเลิก";
-  }
-
-  return "ทั้งหมด";
+  return "ยกเลิก";
 }
 
+// Kept deliberately minimal - just enough to recognize and open the right
+// job (time/service/status, who/what car). Everything else (diagnosis,
+// repair notes, started/completed timestamps, ids) only shows once a
+// technician actually opens a job, on technician-work-order-detail-panel.tsx
+// - nothing here is lost, it's just one tap away instead of all on screen
+// at once.
 function TechnicianWorkOrderRow({
   workOrder,
 }: {
   workOrder: TechnicianWorkOrder;
 }) {
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-semibold text-[var(--brand)]">
-              {workOrder.service?.name ?? "ไม่พบบริการ"}
-            </p>
-            <span
-              className={`rounded-md px-2.5 py-1 text-xs font-semibold ${getStatusStyle(
-                workOrder.status,
-              )}`}
-            >
-              {formatWorkOrderStatus(workOrder.status)}
-            </span>
-          </div>
-          <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">
-            {formatBookingSchedule(workOrder)}
-          </h2>
+    <Link
+      className="flex flex-col gap-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 shadow-sm transition hover:border-[var(--brand)] sm:flex-row sm:items-center sm:justify-between"
+      href={`/technician/work-orders/${workOrder.id}`}
+    >
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={`rounded-md px-2.5 py-1 text-xs font-semibold ${getStatusStyle(
+              workOrder.status,
+            )}`}
+          >
+            {formatWorkOrderStatus(workOrder.status)}
+          </span>
+          <span className="text-sm font-semibold text-[var(--brand)]">
+            {workOrder.service?.name ?? "ไม่พบบริการ"}
+          </span>
         </div>
-
-        <Link
-          className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
-          href={`/technician/work-orders/${workOrder.id}`}
-        >
-          เปิดงานซ่อม
-        </Link>
+        <p className="mt-1 text-lg font-bold text-[var(--foreground)]">
+          {formatBookingSchedule(workOrder)}
+        </p>
       </div>
 
-      <dl className="mt-5 grid gap-4 border-t border-[var(--line)] pt-4 text-sm md:grid-cols-4">
-        <div>
-          <dt className="text-[var(--muted)]">ลูกค้า</dt>
-          <dd className="mt-1 font-semibold text-[var(--foreground)]">
-            {workOrder.customer?.full_name ?? "-"}
-          </dd>
-          <dd className="mt-1 text-xs text-[var(--muted)]">
-            {workOrder.customer?.phone_number ?? "-"}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-[var(--muted)]">รถ</dt>
-          <dd className="mt-1 font-semibold text-[var(--foreground)]">
-            {workOrder.vehicle?.license_plate ?? "-"}
-          </dd>
-          <dd className="mt-1 text-xs text-[var(--muted)]">
-            {workOrder.vehicle
-              ? `${workOrder.vehicle.brand ?? "-"} / ${
-                  workOrder.vehicle.model ?? "-"
-                }`
-              : "-"}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-[var(--muted)]">เริ่มงาน</dt>
-          <dd className="mt-1 font-semibold text-[var(--foreground)]">
-            {formatDateTime(workOrder.started_at)}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-[var(--muted)]">อัปเดตล่าสุด</dt>
-          <dd className="mt-1 font-semibold text-[var(--foreground)]">
-            {formatDateTime(workOrder.updated_at)}
-          </dd>
-        </div>
-      </dl>
-
-      <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
-        <div className="rounded-md bg-[var(--surface-muted)] p-3">
-          <p className="font-semibold text-[var(--foreground)]">ผลวิเคราะห์อาการ</p>
-          <p className="mt-2 leading-6 text-[var(--muted)]">
-            {workOrder.diagnosis || "-"}
-          </p>
-        </div>
-        <div className="rounded-md bg-[var(--surface-muted)] p-3">
-          <p className="font-semibold text-[var(--foreground)]">บันทึกงานซ่อม</p>
-          <p className="mt-2 leading-6 text-[var(--muted)]">
-            {workOrder.repair_notes || "-"}
-          </p>
-        </div>
+      <div className="text-sm sm:text-right">
+        <p className="font-semibold text-[var(--foreground)]">
+          {workOrder.customer?.full_name ?? "-"}
+        </p>
+        <p className="mt-1 text-[var(--muted)]">
+          {workOrder.vehicle?.license_plate ?? "-"}
+        </p>
       </div>
+    </Link>
+  );
+}
 
-      <dl className="mt-4 grid gap-3 border-t border-[var(--line)] pt-4 text-xs text-[var(--muted)] md:grid-cols-3">
-        <div>
-          <dt className="font-semibold text-[var(--foreground)]">เสร็จงาน</dt>
-          <dd className="mt-1">{formatDateTime(workOrder.completed_at)}</dd>
-        </div>
-        <div>
-          <dt className="font-semibold text-[var(--foreground)]">รหัสการจอง</dt>
-          <dd className="mt-1 break-all">{workOrder.booking_id}</dd>
-        </div>
-        <div>
-          <dt className="font-semibold text-[var(--foreground)]">รหัสงานซ่อม</dt>
-          <dd className="mt-1 break-all">{workOrder.id}</dd>
-        </div>
-      </dl>
-    </article>
+// Same "strip with dividers" pattern used across the rest of the app,
+// but each item is a clickable filter button (like the stock-filter
+// strip on admin-inventory-review-panel.tsx) rather than a plain stat -
+// tint the background instead of the old bordered-button style to show
+// which status is selected.
+function FilterItem({
+  isActive,
+  label,
+  onClick,
+  value,
+}: {
+  isActive: boolean;
+  label: string;
+  onClick: () => void;
+  value: number;
+}) {
+  return (
+    <button
+      className={`min-w-[7rem] flex-1 px-4 py-3 text-left transition ${
+        isActive
+          ? "bg-[var(--accent-soft)]"
+          : "hover:bg-[var(--accent-soft)]"
+      }`}
+      onClick={onClick}
+      type="button"
+    >
+      <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+        {label}
+      </p>
+      <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
+        {value}
+      </p>
+    </button>
   );
 }
 
@@ -278,35 +244,28 @@ export function TechnicianWorkOrdersPanel() {
     };
   }, []);
 
+  const workOrders =
+    loadState.status === "ready" && loadState.result?.allowed
+      ? loadState.result.workOrders
+      : [];
+
   const statusCounts = useMemo(() => {
-    const counts = new Map<TechnicianWorkOrder["status"], number>(
-      statusOrder.map((status) => [status, 0]),
-    );
-
-    if (loadState.status !== "ready" || !loadState.result?.allowed) {
-      return counts;
+    const counts = new Map<TechnicianWorkOrder["status"], number>();
+    for (const status of statusOrder) {
+      counts.set(status, 0);
     }
-
-    for (const workOrder of loadState.result.workOrders) {
+    for (const workOrder of workOrders) {
       counts.set(workOrder.status, (counts.get(workOrder.status) ?? 0) + 1);
     }
-
     return counts;
-  }, [loadState]);
+  }, [workOrders]);
 
   const filteredWorkOrders = useMemo(() => {
-    if (loadState.status !== "ready" || !loadState.result?.allowed) {
-      return [];
-    }
-
     if (statusFilter === "all") {
-      return loadState.result.workOrders;
+      return workOrders;
     }
-
-    return loadState.result.workOrders.filter(
-      (workOrder) => workOrder.status === statusFilter,
-    );
-  }, [loadState, statusFilter]);
+    return workOrders.filter((workOrder) => workOrder.status === statusFilter);
+  }, [statusFilter, workOrders]);
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
@@ -363,81 +322,41 @@ export function TechnicianWorkOrdersPanel() {
       ) : null}
 
       {loadState.status === "ready" && loadState.result?.allowed ? (
-        <section className="py-6">
-          <div className="grid gap-3 border-b border-[var(--line)] pb-5 sm:grid-cols-2 lg:grid-cols-6">
-            <button
-              className={`rounded-lg border p-4 text-left shadow-sm ${
-                statusFilter === "all"
-                  ? "border-[var(--brand)] bg-emerald-50"
-                  : "border-[var(--line)] bg-[var(--surface)]"
-              }`}
-              onClick={() => setStatusFilter("all")}
-              type="button"
-            >
-              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                ทั้งหมด
-              </p>
-              <p className="mt-2 text-2xl font-bold text-[var(--foreground)]">
-                {loadState.result.workOrders.length}
-              </p>
-            </button>
-            {statusOrder.map((status) => (
-              <button
-                className={`rounded-lg border p-4 text-left shadow-sm ${
-                  statusFilter === status
-                    ? "border-[var(--brand)] bg-emerald-50"
-                    : "border-[var(--line)] bg-[var(--surface)]"
-                }`}
-                key={status}
-                onClick={() => setStatusFilter(status)}
-                type="button"
-              >
-                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                  {formatWorkOrderStatus(status)}
-                </p>
-                <p className="mt-2 text-2xl font-bold text-[var(--foreground)]">
-                  {statusCounts.get(status) ?? 0}
-                </p>
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-5 flex flex-col gap-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 text-sm shadow-sm sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="font-semibold text-[var(--foreground)]">
-                แสดง {filteredWorkOrders.length} จาก{" "}
-                {loadState.result.workOrders.length} งานซ่อม
-              </p>
-              <p className="mt-1 text-[var(--muted)]">
-                ตัวกรอง: {formatWorkOrderStatus(statusFilter)}
-              </p>
+        <section className="flex flex-col gap-4 py-6">
+          {workOrders.length > 0 ? (
+            <div className="flex divide-x divide-[var(--line)] overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">
+              <FilterItem
+                isActive={statusFilter === "all"}
+                label="ทั้งหมด"
+                onClick={() => setStatusFilter("all")}
+                value={workOrders.length}
+              />
+              {statusOrder.map((status) => (
+                <FilterItem
+                  isActive={statusFilter === status}
+                  key={status}
+                  label={formatWorkOrderStatus(status)}
+                  onClick={() => setStatusFilter(status)}
+                  value={statusCounts.get(status) ?? 0}
+                />
+              ))}
             </div>
-            <button
-              className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={statusFilter === "all"}
-              onClick={() => setStatusFilter("all")}
-              type="button"
-            >
-              ล้างตัวกรอง
-            </button>
-          </div>
+          ) : null}
 
           {filteredWorkOrders.length > 0 ? (
-            <div className="mt-5 space-y-4">
+            <div className="space-y-3">
               {filteredWorkOrders.map((workOrder) => (
                 <TechnicianWorkOrderRow
-                  key={`${workOrder.id}-${workOrder.status}`}
+                  key={workOrder.id}
                   workOrder={workOrder}
                 />
               ))}
             </div>
-          ) : loadState.result.workOrders.length > 0 ? (
-            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
-              ไม่พบงานซ่อมที่ตรงกับตัวกรองนี้
-            </div>
           ) : (
-            <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
-              ยังไม่มีงานซ่อมที่มอบหมายให้คุณ
+            <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
+              {workOrders.length > 0
+                ? "ไม่มีงานซ่อมในสถานะที่เลือก"
+                : "ยังไม่มีงานซ่อมที่มอบหมายให้คุณ"}
             </div>
           )}
         </section>

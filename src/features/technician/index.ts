@@ -2,6 +2,7 @@ export {
   getTechnicianProfile,
   getTechnicianWorkOrderById,
   getTechnicianWorkOrders,
+  reopenTechnicianWorkOrder,
   updateTechnicianProfile,
   updateTechnicianWorkOrder,
 } from "./queries";

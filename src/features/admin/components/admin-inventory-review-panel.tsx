@@ -414,6 +414,32 @@ export function AdminInventoryReviewPanel() {
     });
   }, [reviewProducts, searchInput, stockFilter]);
 
+  const stockCounts = useMemo(() => {
+    const counts = new Map<StockFilter, number>(
+      stockFilters.map((filter) => [filter.value, 0]),
+    );
+    const normalizedSearch = searchInput.trim().toLowerCase();
+
+    for (const product of reviewProducts) {
+      const matchesSearch =
+        !normalizedSearch ||
+        product.name.toLowerCase().includes(normalizedSearch) ||
+        (product.sku ?? "").toLowerCase().includes(normalizedSearch) ||
+        (product.description ?? "").toLowerCase().includes(normalizedSearch) ||
+        (product.category?.name ?? "").toLowerCase().includes(normalizedSearch);
+
+      if (!matchesSearch) {
+        continue;
+      }
+
+      const stockStatus = getStockStatus(product);
+      counts.set("all", (counts.get("all") ?? 0) + 1);
+      counts.set(stockStatus, (counts.get(stockStatus) ?? 0) + 1);
+    }
+
+    return counts;
+  }, [reviewProducts, searchInput]);
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
@@ -488,69 +514,94 @@ export function AdminInventoryReviewPanel() {
 
       {loadState.status === "ready" ? (
         <section className="py-6">
-          <div className="grid gap-3 md:grid-cols-5">
-            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5">
-              <p className="text-sm font-semibold text-[var(--muted)]">
-                สินค้าที่เปิดขาย
+          <div className="flex divide-x divide-[var(--line)] overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">
+            <button
+              className={`min-w-[7rem] flex-1 px-4 py-3 text-left transition ${
+                stockFilter === "all"
+                  ? "bg-[var(--accent-soft)]"
+                  : "hover:bg-[var(--accent-soft)]"
+              }`}
+              onClick={() => setStockFilter("all")}
+              type="button"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                ทั้งหมด
               </p>
-              <p className="mt-2 text-3xl font-bold text-[var(--foreground)]">
-                {summary.activeCount}
+              <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
+                {stockCounts.get("all") ?? 0}
               </p>
-            </div>
-            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5">
-              <p className="text-sm font-semibold text-[var(--muted)]">
+            </button>
+            <div className="min-w-[8rem] flex-1 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                 จำนวนสต็อกรวม
               </p>
-              <p className="mt-2 text-3xl font-bold text-[var(--foreground)]">
+              <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
                 {summary.totalStock}
               </p>
             </div>
             <button
-              className={
+              className={`min-w-[8rem] flex-1 px-4 py-3 text-left transition ${
                 stockFilter === "out"
-                  ? "rounded-lg border-2 border-[var(--danger)] bg-[var(--surface)] p-5 text-left transition"
-                  : "rounded-lg border border-red-200 bg-[var(--surface)] p-5 text-left transition hover:border-[var(--danger)]"
-              }
+                  ? "bg-red-50"
+                  : "hover:bg-[var(--accent-soft)]"
+              }`}
               onClick={() => setStockFilter("out")}
               type="button"
             >
-              <p className="text-sm font-semibold text-[var(--danger)]">หมดสต็อก</p>
-              <p className="mt-2 text-3xl font-bold text-[var(--danger)]">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--danger)]">
+                หมดสต็อก
+              </p>
+              <p className="mt-1 text-2xl font-bold text-[var(--danger)]">
                 {summary.outCount}
               </p>
-              <p className="mt-1 text-xs text-[var(--muted)]">แตะเพื่อกรอง</p>
             </button>
             <button
-              className={
+              className={`min-w-[8rem] flex-1 px-4 py-3 text-left transition ${
                 stockFilter === "low"
-                  ? "rounded-lg border-2 border-amber-400 bg-[var(--surface)] p-5 text-left transition"
-                  : "rounded-lg border border-amber-200 bg-[var(--surface)] p-5 text-left transition hover:border-amber-400"
-              }
+                  ? "bg-amber-50"
+                  : "hover:bg-[var(--accent-soft)]"
+              }`}
               onClick={() => setStockFilter("low")}
               type="button"
             >
-              <p className="text-sm font-semibold text-amber-400">ใกล้หมด</p>
-              <p className="mt-2 text-3xl font-bold text-amber-400">
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-400">
+                ใกล้หมด
+              </p>
+              <p className="mt-1 text-2xl font-bold text-amber-400">
                 {summary.lowCount}
               </p>
-              <p className="mt-1 text-xs text-[var(--muted)]">แตะเพื่อกรอง</p>
             </button>
             <button
-              className={
+              className={`min-w-[8rem] flex-1 px-4 py-3 text-left transition ${
                 stockFilter === "healthy"
-                  ? "rounded-lg border-2 border-emerald-400 bg-[var(--surface)] p-5 text-left transition"
-                  : "rounded-lg border border-emerald-200 bg-[var(--surface)] p-5 text-left transition hover:border-emerald-400"
-              }
+                  ? "bg-emerald-50"
+                  : "hover:bg-[var(--accent-soft)]"
+              }`}
               onClick={() => setStockFilter("healthy")}
               type="button"
             >
-              <p className="text-sm font-semibold text-emerald-400">
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-400">
                 พร้อมขาย
               </p>
-              <p className="mt-2 text-3xl font-bold text-emerald-400">
+              <p className="mt-1 text-2xl font-bold text-emerald-400">
                 {summary.healthyCount}
               </p>
-              <p className="mt-1 text-xs text-[var(--muted)]">แตะเพื่อกรอง</p>
+            </button>
+            <button
+              className={`min-w-[7rem] flex-1 px-4 py-3 text-left transition ${
+                stockFilter === "inactive"
+                  ? "bg-[var(--accent-soft)]"
+                  : "hover:bg-[var(--accent-soft)]"
+              }`}
+              onClick={() => setStockFilter("inactive")}
+              type="button"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                ปิดใช้งาน
+              </p>
+              <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
+                {stockCounts.get("inactive") ?? 0}
+              </p>
             </button>
           </div>
 
@@ -564,31 +615,13 @@ export function AdminInventoryReviewPanel() {
               </p>
             </div>
 
-            <div className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-3xl">
-              <input
-                className="min-h-10 flex-1 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-                onChange={(event) => setSearchInput(event.target.value)}
-                placeholder="ค้นหาสินค้า SKU หรือหมวดสินค้า"
-                type="search"
-                value={searchInput}
-              />
-              <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
-                {stockFilters.map((filter) => (
-                  <button
-                    className={
-                      stockFilter === filter.value
-                        ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-                        : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
-                    }
-                    key={filter.value}
-                    onClick={() => setStockFilter(filter.value)}
-                    type="button"
-                  >
-                    {filter.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <input
+              className="min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)] lg:w-80"
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="ค้นหาสินค้า SKU หรือหมวดสินค้า"
+              type="search"
+              value={searchInput}
+            />
           </div>
 
           <section className="mt-5 overflow-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">

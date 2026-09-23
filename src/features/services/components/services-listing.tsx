@@ -22,6 +22,7 @@ import {
   type Service,
   type ServiceCategoryWithServices,
 } from "@/features/services";
+import { getCurrentUserVehicles, type Vehicle } from "@/features/vehicles";
 
 type LoadState =
   | { status: "loading"; data: null; error: null }
@@ -402,6 +403,43 @@ function BookingForm({
           (time) => availableSlotsByTime.get(time)?.isOpen,
         )
       : [];
+  const [savedVehicles, setSavedVehicles] = useState<Vehicle[]>([]);
+  const [vehicleInputMode, setVehicleInputMode] = useState<
+    "saved" | "manual"
+  >("manual");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadSavedVehicles() {
+      if (authState.status !== "ready") {
+        setSavedVehicles([]);
+        return;
+      }
+
+      const supabase = createClient();
+      const { data } = await getCurrentUserVehicles(
+        supabase,
+        authState.user.id,
+      );
+
+      if (!isMounted || !data) {
+        return;
+      }
+
+      setSavedVehicles(data);
+
+      if (data.length > 0) {
+        setVehicleInputMode("saved");
+      }
+    }
+
+    loadSavedVehicles();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [authState]);
 
   useEffect(() => {
     let isMounted = true;
@@ -742,18 +780,51 @@ function BookingForm({
       </div>
 
       <div>
-        <label
-          className="text-sm font-medium text-[var(--foreground)]"
-          htmlFor="vehiclePlate"
-        >
-          ทะเบียนรถ
-        </label>
-        <input
-          className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-          id="vehiclePlate"
-          onChange={(event) => updateValue("vehiclePlate", event.target.value)}
-          value={values.vehiclePlate}
-        />
+        <div className="flex items-center justify-between">
+          <label
+            className="text-sm font-medium text-[var(--foreground)]"
+            htmlFor="vehiclePlate"
+          >
+            ทะเบียนรถ
+          </label>
+          {savedVehicles.length > 0 ? (
+            <button
+              className="text-xs font-semibold text-[var(--brand)]"
+              onClick={() =>
+                setVehicleInputMode((mode) =>
+                  mode === "saved" ? "manual" : "saved",
+                )
+              }
+              type="button"
+            >
+              {vehicleInputMode === "saved"
+                ? "พิมพ์ทะเบียนเอง"
+                : "เลือกจากรถที่บันทึกไว้"}
+            </button>
+          ) : null}
+        </div>
+        {vehicleInputMode === "saved" && savedVehicles.length > 0 ? (
+          <select
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            id="vehiclePlate"
+            onChange={(event) => updateValue("vehiclePlate", event.target.value)}
+            value={values.vehiclePlate}
+          >
+            <option value="">เลือกรถของคุณ</option>
+            {savedVehicles.map((vehicle) => (
+              <option key={vehicle.id} value={vehicle.license_plate}>
+                {vehicle.license_plate} · {vehicle.brand} {vehicle.model}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            id="vehiclePlate"
+            onChange={(event) => updateValue("vehiclePlate", event.target.value)}
+            value={values.vehiclePlate}
+          />
+        )}
         {errors.vehiclePlate ? (
           <p className="mt-1 text-xs text-[var(--danger)]">{errors.vehiclePlate}</p>
         ) : null}
@@ -1089,8 +1160,8 @@ export function ServicesListing() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:w-80">
-            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
+          <div className="flex divide-x divide-[var(--line)] rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm sm:w-80">
+            <div className="flex-1 px-4 py-3">
               <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]">
                 หมวดหมู่
               </p>
@@ -1098,7 +1169,7 @@ export function ServicesListing() {
                 {loadState.status === "ready" ? categories.length : "-"}
               </p>
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
+            <div className="flex-1 px-4 py-3">
               <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]">
                 บริการ
               </p>

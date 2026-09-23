@@ -88,6 +88,7 @@ const customerActivityGroup: NavGroup = {
 const technicianGroup: NavGroup = {
   label: "ช่าง",
   links: [
+    { href: "/technician", label: "หน้าแรก" },
     { href: "/technician/work-orders", label: "งานซ่อมของฉัน" },
     { href: "/technician/profile", label: "โปรไฟล์ช่าง" },
   ],
@@ -178,7 +179,7 @@ function getVisibleGroups(viewer: ViewerState): NavGroup[] {
 }
 
 function isActiveLink(pathname: string, href: string) {
-  if (href === "/" || href === "/admin") {
+  if (href === "/" || href === "/admin" || href === "/technician") {
     return pathname === href;
   }
 
@@ -513,7 +514,7 @@ export function AppNav() {
     isNavLinkActive(pathname, link),
   );
   const drawerTitle = isAdminViewer ? "เมนูผู้ดูแลระบบ" : "เมนูช่าง";
-  const drawerDefaultLabel = isAdminViewer ? "แดชบอร์ด" : "งานซ่อมของฉัน";
+  const drawerDefaultLabel = isAdminViewer ? "แดชบอร์ด" : "หน้าแรก";
   const notificationShortcut = getNotificationShortcut(viewer);
   const profileShortcut = getProfileShortcut(viewer);
   const showCartShortcut = shouldShowCartShortcut(viewer);

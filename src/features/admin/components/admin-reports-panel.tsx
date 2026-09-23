@@ -34,7 +34,10 @@ const currencyFormatter = new Intl.NumberFormat("th-TH", {
   style: "currency",
 });
 
-function MetricCard({
+// One shared strip cut by dividing lines rather than a row of separately
+// bordered cards - matches the same treatment applied to the technician
+// home page's stat row.
+function MetricItem({
   label,
   value,
 }: {
@@ -42,12 +45,22 @@ function MetricCard({
   value: number | string;
 }) {
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
-      <p className="text-sm font-semibold text-[var(--muted)]">{label}</p>
-      <p className="mt-2 text-3xl font-bold text-[var(--foreground)]">
+    <div className="min-w-[8rem] flex-1 px-4 py-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+        {label}
+      </p>
+      <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
         {value}
       </p>
-    </article>
+    </div>
+  );
+}
+
+function StatStrip({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex divide-x divide-[var(--line)] overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">
+      {children}
+    </div>
   );
 }
 
@@ -71,7 +84,7 @@ function formatBookingStatus(status: AdminReports["statusCounts"][number]["statu
   return status;
 }
 
-function StatusCard({
+function StatusItem({
   count,
   status,
 }: {
@@ -80,13 +93,13 @@ function StatusCard({
 }) {
   return (
     <Link
-      className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 shadow-sm hover:border-[var(--brand)]"
+      className="min-w-[8rem] flex-1 px-4 py-3 transition hover:bg-[var(--accent-soft)]"
       href={`/admin/bookings?status=${status}`}
     >
-      <p className="text-sm font-semibold text-[var(--muted)]">
+      <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
         {formatBookingStatus(status)}
       </p>
-      <p className="mt-2 text-2xl font-bold text-[var(--foreground)]">
+      <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
         {count}
       </p>
     </Link>
@@ -262,40 +275,40 @@ export function AdminReportsPanel() {
 
       {loadState.status === "ready" ? (
         <section className="space-y-6 py-6">
-          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <MetricCard
+          <StatStrip>
+            <MetricItem
               label="การจองทั้งหมด"
               value={loadState.reports.totalBookingCount}
             />
-            <MetricCard
+            <MetricItem
               label="รายได้ประเมิน"
               value={currencyFormatter.format(loadState.reports.estimatedRevenue)}
             />
-            <MetricCard
+            <MetricItem
               label="มูลค่าเฉลี่ยต่อการจอง"
               value={currencyFormatter.format(
                 loadState.reports.averageBookingValue,
               )}
             />
-            <MetricCard
+            <MetricItem
               label="ลูกค้าที่มีการใช้งาน"
               value={loadState.reports.activeCustomerCount}
             />
-          </section>
+          </StatStrip>
 
           <section>
             <h2 className="mb-4 text-xl font-bold text-[var(--foreground)]">
               สถานะการจอง
             </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatStrip>
               {loadState.reports.statusCounts.map((item) => (
-                <StatusCard
+                <StatusItem
                   count={item.count}
                   key={item.status}
                   status={item.status}
                 />
               ))}
-            </div>
+            </StatStrip>
           </section>
 
           <section className="grid gap-4 lg:grid-cols-3">
@@ -389,16 +402,16 @@ export function AdminReportsPanel() {
             </article>
           </section>
 
-          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <MetricCard
+          <StatStrip>
+            <MetricItem
               label="ลูกค้าทั้งหมด"
               value={loadState.reports.totalCustomerCount}
             />
-            <MetricCard
+            <MetricItem
               label="รถทั้งหมด"
               value={loadState.reports.totalVehicleCount}
             />
-            <MetricCard
+            <MetricItem
               label="การจองที่นับรายได้"
               value={
                 loadState.reports.statusCounts.find(
@@ -409,7 +422,7 @@ export function AdminReportsPanel() {
                 )!.count
               }
             />
-          </section>
+          </StatStrip>
         </section>
       ) : null}
     </main>

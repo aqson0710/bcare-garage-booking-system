@@ -11,6 +11,7 @@ import {
   createAdminRepairJobFromBooking,
   getAdminBookingById,
   getAdminBookingsPage,
+  getAdminBookingStatusCounts,
   getAdminMechanics,
   getAdminRepairJobByBookingId,
   rejectAdminBookingPayment,
@@ -22,6 +23,7 @@ import {
   type AdminBookingListStatusFilter,
   type AdminBookingPayment,
   type AdminBookingStatusAction,
+  type AdminBookingStatusCounts,
   type AdminMechanic,
   type AdminRepairJob,
 } from "@/features/admin";
@@ -1400,6 +1402,8 @@ export function AdminBookingsPanel() {
       error: null,
       status: "idle",
     });
+  const [statusCounts, setStatusCounts] =
+    useState<AdminBookingStatusCounts | null>(null);
 
   useEffect(() => {
     if (!selectedBookingId) {
@@ -1636,6 +1640,27 @@ export function AdminBookingsPanel() {
       subscription.unsubscribe();
     };
   }, [page, reloadKey, statusFilter, submittedSearch]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const supabase = createClient();
+
+    async function loadStatusCounts() {
+      const { data } = await getAdminBookingStatusCounts(supabase);
+
+      if (!isMounted || !data) {
+        return;
+      }
+
+      setStatusCounts(data);
+    }
+
+    loadStatusCounts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [reloadKey]);
 
   function updateFilters(next: {
     page?: number;
@@ -1972,14 +1997,14 @@ export function AdminBookingsPanel() {
               </form>
             </div>
 
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <div className="flex divide-x divide-[var(--line)] overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">
               {statusFilters.map((status) => (
                 <button
-                  className={
+                  className={`min-w-[7rem] flex-1 px-4 py-3 text-left transition ${
                     statusFilter === status
-                      ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-                      : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
-                  }
+                      ? "bg-[var(--accent-soft)]"
+                      : "hover:bg-[var(--accent-soft)]"
+                  }`}
                   key={status}
                   onClick={() =>
                     updateFilters({
@@ -1989,7 +2014,19 @@ export function AdminBookingsPanel() {
                   }
                   type="button"
                 >
-                  {formatBookingStatus(status)}
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                    {formatBookingStatus(status)}
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
+                    {status === "all"
+                      ? (statusCounts
+                          ? Object.values(statusCounts).reduce(
+                              (sum, count) => sum + count,
+                              0,
+                            )
+                          : "-")
+                      : (statusCounts?.[status] ?? "-")}
+                  </p>
                 </button>
               ))}
             </div>

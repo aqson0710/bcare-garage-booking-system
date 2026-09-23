@@ -654,35 +654,32 @@ export function AdminInventoryPanel() {
             products={loadState.products}
           />
 
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
-            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5">
-              <p className="text-sm font-semibold text-[var(--muted)]">
+          <div className="mt-5 flex divide-x divide-[var(--line)] overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">
+            <div className="min-w-[8rem] flex-1 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                 สินค้าทั้งหมด
               </p>
-              <p className="mt-2 text-3xl font-bold text-[var(--foreground)]">
+              <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
                 {loadState.products.length}
               </p>
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5">
-              <p className="text-sm font-semibold text-[var(--muted)]">
+            <div className="min-w-[8rem] flex-1 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                 สต๊อกรวม
               </p>
-              <p className="mt-2 text-3xl font-bold text-[var(--foreground)]">
+              <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
                 {stockSummary.totalStock}
               </p>
             </div>
             <Link
-              className="rounded-lg border border-amber-200 bg-[var(--surface)] p-5 transition hover:border-amber-400"
+              className="min-w-[8rem] flex-1 px-4 py-3 transition hover:bg-[var(--accent-soft)]"
               href="/admin/inventory-review?filter=low"
             >
-              <p className="text-sm font-semibold text-amber-400">
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-400">
                 สต๊อกใกล้หมด
               </p>
-              <p className="mt-2 text-3xl font-bold text-amber-400">
+              <p className="mt-1 text-2xl font-bold text-amber-400">
                 {stockSummary.lowStockCount}
-              </p>
-              <p className="mt-1 text-xs text-[var(--muted)]">
-                แตะเพื่อดูรายการ →
               </p>
             </Link>
           </div>

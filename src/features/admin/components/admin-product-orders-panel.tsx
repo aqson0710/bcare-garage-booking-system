@@ -8,13 +8,17 @@ import { AppNav } from "@/components/app-nav";
 import {
   checkAdminAccess,
   getAdminProductOrdersPage,
+  getAdminProductOrderPaymentStatusCounts,
+  getAdminProductOrderStatusCounts,
   updateAdminProductOrderStatus,
   type AdminAccessResult,
   type AdminProductOrder,
   type AdminProductOrderListResult,
   type AdminProductOrderListPaymentFilter,
   type AdminProductOrderListStatusFilter,
+  type AdminProductOrderPaymentStatusCounts,
   type AdminProductOrderStatusAction,
+  type AdminProductOrderStatusCounts,
 } from "@/features/admin";
 import { ProductImageThumb } from "@/features/products/components/product-image-thumb";
 import { createClient } from "@/lib/supabase/browser";
@@ -749,6 +753,10 @@ export function AdminProductOrdersPanel() {
     orderId: null,
     status: "idle",
   });
+  const [statusCounts, setStatusCounts] =
+    useState<AdminProductOrderStatusCounts | null>(null);
+  const [paymentStatusCounts, setPaymentStatusCounts] =
+    useState<AdminProductOrderPaymentStatusCounts | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -850,6 +858,36 @@ export function AdminProductOrdersPanel() {
       subscription.unsubscribe();
     };
   }, [page, paymentFilter, reloadKey, statusFilter, submittedSearch]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const supabase = createClient();
+
+    async function loadCounts() {
+      const [statusCountsResult, paymentCountsResult] = await Promise.all([
+        getAdminProductOrderStatusCounts(supabase),
+        getAdminProductOrderPaymentStatusCounts(supabase),
+      ]);
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (statusCountsResult.data) {
+        setStatusCounts(statusCountsResult.data);
+      }
+
+      if (paymentCountsResult.data) {
+        setPaymentStatusCounts(paymentCountsResult.data);
+      }
+    }
+
+    loadCounts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [reloadKey]);
 
   function updateFilters(next: {
     page?: number;
@@ -1066,14 +1104,14 @@ export function AdminProductOrdersPanel() {
               <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                 สถานะออเดอร์
               </p>
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <div className="flex divide-x divide-[var(--line)] overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">
                 {statusFilters.map((status) => (
                   <button
-                    className={
+                    className={`min-w-[7rem] flex-1 px-4 py-3 text-left transition ${
                       statusFilter === status
-                        ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-                        : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
-                    }
+                        ? "bg-[var(--accent-soft)]"
+                        : "hover:bg-[var(--accent-soft)]"
+                    }`}
                     key={status}
                     onClick={() =>
                       updateFilters({
@@ -1083,7 +1121,18 @@ export function AdminProductOrdersPanel() {
                     }
                     type="button"
                   >
-                    {formatStatusFilterLabel(status)}
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                      {formatStatusFilterLabel(status)}
+                    </p>
+                    <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
+                      {status === "all"
+                        ? (statusCounts
+                            ? statusCounts.pending +
+                              statusCounts.in_progress +
+                              statusCounts.completed
+                            : "-")
+                        : (statusCounts?.[status] ?? "-")}
+                    </p>
                   </button>
                 ))}
               </div>
@@ -1093,14 +1142,14 @@ export function AdminProductOrdersPanel() {
               <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                 การชำระเงิน
               </p>
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <div className="flex divide-x divide-[var(--line)] overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">
                 {paymentFilters.map((paymentStatus) => (
                   <button
-                    className={
+                    className={`min-w-[7rem] flex-1 px-4 py-3 text-left transition ${
                       paymentFilter === paymentStatus
-                        ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-                        : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
-                    }
+                        ? "bg-[var(--accent-soft)]"
+                        : "hover:bg-[var(--accent-soft)]"
+                    }`}
                     key={paymentStatus}
                     onClick={() =>
                       updateFilters({
@@ -1110,7 +1159,18 @@ export function AdminProductOrdersPanel() {
                     }
                     type="button"
                   >
-                    {formatPaymentFilterLabel(paymentStatus)}
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                      {formatPaymentFilterLabel(paymentStatus)}
+                    </p>
+                    <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
+                      {paymentStatus === "all"
+                        ? (statusCounts
+                            ? statusCounts.pending +
+                              statusCounts.in_progress +
+                              statusCounts.completed
+                            : "-")
+                        : (paymentStatusCounts?.[paymentStatus] ?? "-")}
+                    </p>
                   </button>
                 ))}
               </div>

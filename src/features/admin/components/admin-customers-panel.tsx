@@ -1,35 +1,40 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import {
   checkAdminAccess,
-  getAdminCustomers,
+  getAdminCustomersPage,
   type AdminAccessResult,
+  type AdminCustomerListResult,
+  type AdminCustomerListRoleFilter,
   type AdminCustomerSummary,
 } from "@/features/admin";
 import type { ProfileRole } from "@/features/auth";
 import { createClient } from "@/lib/supabase/browser";
 
+const pageSize = 10;
+
 type LoadState =
-  | { status: "loading"; access: null; customers: null; error: null }
-  | { status: "signed-out"; access: null; customers: null; error: null }
+  | { status: "loading"; access: null; result: null; error: null }
+  | { status: "signed-out"; access: null; result: null; error: null }
   | {
       status: "access-denied";
       access: Extract<AdminAccessResult, { allowed: false }>;
-      customers: null;
+      result: null;
       error: null;
     }
   | {
       status: "ready";
       access: Extract<AdminAccessResult, { allowed: true }>;
-      customers: AdminCustomerSummary[];
+      result: AdminCustomerListResult;
       error: null;
     }
-  | { status: "error"; access: null; customers: null; error: string };
+  | { status: "error"; access: null; result: null; error: string };
 
-type RoleFilter = "all" | ProfileRole;
+type RoleFilter = AdminCustomerListRoleFilter;
 
 type RoleUpdateState =
   | { status: "idle"; error: null; message: null }
@@ -54,6 +59,90 @@ function formatDateTime(value: string) {
 
 function getRoleLabel(role: ProfileRole) {
   return roleOptions.find((option) => option.value === role)?.label ?? role;
+}
+
+function clampPage(page: number, totalPages: number) {
+  if (!Number.isFinite(page)) {
+    return 1;
+  }
+
+  return Math.min(Math.max(1, Math.floor(page)), totalPages);
+}
+
+function AdminCustomersPaginationControls({
+  onPageChange,
+  result,
+}: {
+  onPageChange: (page: number) => void;
+  result: AdminCustomerListResult;
+}) {
+  const inputId = `customer-page-jump-${result.page}-${result.totalPages}`;
+
+  function handlePageJump(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const requestedPage = Number(formData.get("page"));
+    onPageChange(clampPage(requestedPage, result.totalPages));
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 lg:flex-row lg:items-center lg:justify-between">
+      <p className="text-sm text-[var(--muted)]">
+        หน้า {result.page} จาก {result.totalPages} ({result.totalCount} ผู้ใช้)
+      </p>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex gap-2">
+          <button
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={result.page <= 1}
+            onClick={() => onPageChange(result.page - 1)}
+            type="button"
+          >
+            ก่อนหน้า
+          </button>
+          <button
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={result.page >= result.totalPages}
+            onClick={() => onPageChange(result.page + 1)}
+            type="button"
+          >
+            ถัดไป
+          </button>
+        </div>
+
+        <form
+          className="flex items-center gap-2"
+          key={inputId}
+          onSubmit={handlePageJump}
+        >
+          <label
+            className="whitespace-nowrap text-sm font-semibold text-[var(--muted)]"
+            htmlFor={inputId}
+          >
+            ไปหน้า
+          </label>
+          <input
+            className="min-h-10 w-24 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            defaultValue={result.page}
+            id={inputId}
+            inputMode="numeric"
+            max={result.totalPages}
+            min={1}
+            name="page"
+            type="number"
+          />
+          <button
+            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+            type="submit"
+          >
+            ไป
+          </button>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 async function requestCustomerRoleUpdate(
@@ -256,12 +345,25 @@ function CustomerCard({
 export function AdminCustomersPanel() {
   const [loadState, setLoadState] = useState<LoadState>({
     access: null,
-    customers: null,
     error: null,
+    result: null,
     status: "loading",
   });
   const [searchInput, setSearchInput] = useState("");
+  const [submittedSearch, setSubmittedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [page, setPage] = useState(1);
+
+  function handleRoleFilterChange(next: RoleFilter) {
+    setRoleFilter(next);
+    setPage(1);
+  }
+
+  function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubmittedSearch(searchInput.trim());
+    setPage(1);
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -270,8 +372,8 @@ export function AdminCustomersPanel() {
     async function loadCustomers() {
       setLoadState({
         access: null,
-        customers: null,
         error: null,
+        result: null,
         status: "loading",
       });
 
@@ -287,8 +389,8 @@ export function AdminCustomersPanel() {
       if (sessionError) {
         setLoadState({
           access: null,
-          customers: null,
           error: sessionError.message,
+          result: null,
           status: "error",
         });
         return;
@@ -297,8 +399,8 @@ export function AdminCustomersPanel() {
       if (!session?.user) {
         setLoadState({
           access: null,
-          customers: null,
           error: null,
+          result: null,
           status: "signed-out",
         });
         return;
@@ -313,14 +415,19 @@ export function AdminCustomersPanel() {
       if (!access.allowed) {
         setLoadState({
           access,
-          customers: null,
           error: null,
+          result: null,
           status: "access-denied",
         });
         return;
       }
 
-      const { data, error } = await getAdminCustomers(supabase);
+      const { data, error } = await getAdminCustomersPage(supabase, {
+        page,
+        pageSize,
+        role: roleFilter,
+        search: submittedSearch,
+      });
 
       if (!isMounted) {
         return;
@@ -329,17 +436,30 @@ export function AdminCustomersPanel() {
       if (error) {
         setLoadState({
           access: null,
-          customers: null,
           error: error.message,
+          result: null,
           status: "error",
         });
         return;
       }
 
+      if (!data) {
+        return;
+      }
+
+      if (
+        data.page < data.totalPages &&
+        data.customers.length === 0 &&
+        data.totalCount > 0
+      ) {
+        setPage(clampPage(page, data.totalPages));
+        return;
+      }
+
       setLoadState({
         access,
-        customers: data ?? [],
         error: null,
+        result: data,
         status: "ready",
       });
     }
@@ -356,31 +476,7 @@ export function AdminCustomersPanel() {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, []);
-
-  const filteredCustomers = useMemo(() => {
-    if (loadState.status !== "ready") {
-      return [];
-    }
-
-    const normalizedSearch = searchInput.trim().toLowerCase();
-
-    return loadState.customers.filter((customer) => {
-      if (roleFilter !== "all" && customer.role !== roleFilter) {
-        return false;
-      }
-
-      if (normalizedSearch) {
-        return (
-          customer.full_name.toLowerCase().includes(normalizedSearch) ||
-          customer.phone_number.toLowerCase().includes(normalizedSearch) ||
-          (customer.email ?? "").toLowerCase().includes(normalizedSearch)
-        );
-      }
-
-      return true;
-    });
-  }, [loadState, roleFilter, searchInput]);
+  }, [page, roleFilter, submittedSearch]);
 
   function handleCustomerRoleChanged(nextCustomer: AdminCustomerSummary) {
     if (loadState.status !== "ready") {
@@ -389,15 +485,18 @@ export function AdminCustomersPanel() {
 
     setLoadState({
       ...loadState,
-      customers: loadState.customers.map((customer) =>
-        customer.id === nextCustomer.id
-          ? {
-              ...customer,
-              role: nextCustomer.role,
-              updated_at: nextCustomer.updated_at,
-            }
-          : customer,
-      ),
+      result: {
+        ...loadState.result,
+        customers: loadState.result.customers.map((customer) =>
+          customer.id === nextCustomer.id
+            ? {
+                ...customer,
+                role: nextCustomer.role,
+                updated_at: nextCustomer.updated_at,
+              }
+            : customer,
+        ),
+      },
     });
   }
 
@@ -470,21 +569,23 @@ export function AdminCustomersPanel() {
           <div className="flex flex-col gap-4 border-b border-[var(--line)] pb-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-sm font-semibold text-[var(--foreground)]">
-                {filteredCustomers.length} จาก {loadState.customers.length}{" "}
-                ผู้ใช้
+                {loadState.result.totalCount} ผู้ใช้
               </p>
               <p className="mt-1 text-sm text-[var(--muted)]">
                 ใช้ role `technician` สำหรับบัญชีช่างในระบบ
               </p>
             </div>
 
-            <div className="grid w-full gap-3 sm:grid-cols-[180px_minmax(0,1fr)] lg:max-w-2xl">
+            <form
+              className="grid w-full gap-3 sm:grid-cols-[180px_minmax(0,1fr)_auto] lg:max-w-3xl"
+              onSubmit={handleSearchSubmit}
+            >
               <label className="text-sm font-medium text-[var(--foreground)]">
                 กรองสิทธิ์
                 <select
                   className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
                   onChange={(event) =>
-                    setRoleFilter(event.target.value as RoleFilter)
+                    handleRoleFilterChange(event.target.value as RoleFilter)
                   }
                   value={roleFilter}
                 >
@@ -505,12 +606,27 @@ export function AdminCustomersPanel() {
                   value={searchInput}
                 />
               </label>
-            </div>
+              <button
+                className="mt-2 min-h-10 self-end rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white sm:mt-0"
+                type="submit"
+              >
+                ค้นหา
+              </button>
+            </form>
           </div>
 
-          {filteredCustomers.length > 0 ? (
+          {loadState.result.totalCount > 0 ? (
+            <div className="mt-5">
+              <AdminCustomersPaginationControls
+                onPageChange={setPage}
+                result={loadState.result}
+              />
+            </div>
+          ) : null}
+
+          {loadState.result.customers.length > 0 ? (
             <div className="mt-5 space-y-4">
-              {filteredCustomers.map((customer) => (
+              {loadState.result.customers.map((customer) => (
                 <CustomerCard
                   currentAdminId={loadState.access.profile.id}
                   customer={customer}
@@ -524,6 +640,15 @@ export function AdminCustomersPanel() {
               ไม่พบผู้ใช้ที่ตรงกับตัวกรอง
             </div>
           )}
+
+          {loadState.result.totalCount > 0 ? (
+            <div className="mt-5">
+              <AdminCustomersPaginationControls
+                onPageChange={setPage}
+                result={loadState.result}
+              />
+            </div>
+          ) : null}
         </section>
       ) : null}
     </main>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import { getCurrentUserBookings, type MyBooking } from "@/features/bookings";
 import { createClient } from "@/lib/supabase/browser";
@@ -289,12 +289,53 @@ function BookingCard({ booking }: { booking: MyBooking }) {
   );
 }
 
+type StatusFilter = "all" | MyBooking["status"];
+
+const statusOrder: MyBooking["status"][] = [
+  "pending",
+  "confirmed",
+  "completed",
+  "cancelled",
+];
+
+function FilterItem({
+  isActive,
+  label,
+  onClick,
+  value,
+}: {
+  isActive: boolean;
+  label: string;
+  onClick: () => void;
+  value: number;
+}) {
+  return (
+    <button
+      className={`min-w-[7rem] flex-1 px-4 py-3 text-left transition ${
+        isActive
+          ? "bg-[var(--accent-soft)]"
+          : "hover:bg-[var(--accent-soft)]"
+      }`}
+      onClick={onClick}
+      type="button"
+    >
+      <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+        {label}
+      </p>
+      <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
+        {value}
+      </p>
+    </button>
+  );
+}
+
 export function MyBookingsPanel() {
   const [loadState, setLoadState] = useState<LoadState>({
     bookings: null,
     error: null,
     status: "loading",
   });
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   useEffect(() => {
     let isMounted = true;
@@ -373,6 +414,26 @@ export function MyBookingsPanel() {
     };
   }, []);
 
+  const bookings = loadState.status === "ready" ? loadState.bookings : [];
+
+  const statusCounts = useMemo(() => {
+    const counts = new Map<MyBooking["status"], number>();
+
+    for (const booking of bookings) {
+      counts.set(booking.status, (counts.get(booking.status) ?? 0) + 1);
+    }
+
+    return counts;
+  }, [bookings]);
+
+  const filteredBookings = useMemo(() => {
+    if (statusFilter === "all") {
+      return bookings;
+    }
+
+    return bookings.filter((booking) => booking.status === statusFilter);
+  }, [bookings, statusFilter]);
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
@@ -430,15 +491,37 @@ export function MyBookingsPanel() {
 
       {loadState.status === "ready" ? (
         <section className="py-6">
-          {loadState.bookings.length > 0 ? (
+          {bookings.length > 0 ? (
+            <div className="mb-5 flex divide-x divide-[var(--line)] overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">
+              <FilterItem
+                isActive={statusFilter === "all"}
+                label="ทั้งหมด"
+                onClick={() => setStatusFilter("all")}
+                value={bookings.length}
+              />
+              {statusOrder.map((status) => (
+                <FilterItem
+                  isActive={statusFilter === status}
+                  key={status}
+                  label={formatBookingStatus(status)}
+                  onClick={() => setStatusFilter(status)}
+                  value={statusCounts.get(status) ?? 0}
+                />
+              ))}
+            </div>
+          ) : null}
+
+          {filteredBookings.length > 0 ? (
             <div className="space-y-4">
-              {loadState.bookings.map((booking) => (
+              {filteredBookings.map((booking) => (
                 <BookingCard booking={booking} key={booking.id} />
               ))}
             </div>
           ) : (
             <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
-              ยังไม่มีรายการจอง เริ่มจากเลือกบริการที่ต้องการจองก่อน
+              {bookings.length > 0
+                ? "ไม่มีรายการจองในสถานะที่เลือก"
+                : "ยังไม่มีรายการจอง เริ่มจากเลือกบริการที่ต้องการจองก่อน"}
             </div>
           )}
         </section>

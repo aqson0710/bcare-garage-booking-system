@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from "react";
 import { AppNav } from "@/components/app-nav";
+import { MapPinPicker } from "@/components/map-pin-picker";
 import { checkAdminAccess } from "@/features/admin";
 import {
   createHomepageSlide,
@@ -99,6 +100,8 @@ type FooterFormState = {
   contactTitle: string;
   officeAddress: string;
   officeFax: string;
+  officeLatitude: string;
+  officeLongitude: string;
   officePhone: string;
   officeTitle: string;
   servicesContent: string;
@@ -111,7 +114,7 @@ type AppearanceFormState = {
   backgroundImageUrl: string;
 };
 
-type SettingsTab = "footer" | "slides" | "background";
+type SettingsTab = "footer" | "slides" | "background" | "location";
 
 const homepageSlidesBucket = "homepage-slides";
 
@@ -136,6 +139,8 @@ const defaultFooterFormState: FooterFormState = {
   officeAddress:
     "99/9 ถนนพระราม 9\nแขวงสวนหลวง เขตสวนหลวง\nกรุงเทพฯ 10250",
   officeFax: "โทรสาร. 02-933-1241",
+  officeLatitude: "",
+  officeLongitude: "",
   officePhone: "โทร. 02-538-8111",
   officeTitle: "สำนักงานใหญ่",
   servicesContent:
@@ -172,6 +177,12 @@ function toFooterFormState(setting: HomepageFooterSetting): FooterFormState {
     contactTitle: setting.contact_title,
     officeAddress: setting.office_address ?? "",
     officeFax: setting.office_fax ?? "",
+    officeLatitude:
+      setting.office_latitude != null ? String(setting.office_latitude) : "",
+    officeLongitude:
+      setting.office_longitude != null
+        ? String(setting.office_longitude)
+        : "",
     officePhone: setting.office_phone ?? "",
     officeTitle: setting.office_title,
     servicesContent: setting.services_content ?? "",
@@ -230,6 +241,25 @@ function validateFooterForm(formState: FooterFormState) {
 
   if (!formState.servicesTitle.trim()) {
     return "กรุณากรอกหัวข้อสินค้าและบริการ";
+  }
+
+  const trimmedLatitude = formState.officeLatitude.trim();
+  const trimmedLongitude = formState.officeLongitude.trim();
+
+  if (trimmedLatitude.length > 0) {
+    const latitude = Number(trimmedLatitude);
+
+    if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
+      return "ละติจูดต้องเป็นตัวเลขระหว่าง -90 ถึง 90";
+    }
+  }
+
+  if (trimmedLongitude.length > 0) {
+    const longitude = Number(trimmedLongitude);
+
+    if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+      return "ลองจิจูดต้องเป็นตัวเลขระหว่าง -180 ถึง 180";
+    }
   }
 
   return null;
@@ -1001,6 +1031,9 @@ function FooterSettingsForm({
                 }
                 value={formState.officeAddress}
               />
+              <span className="mt-1 block text-xs font-normal text-[var(--muted)]">
+                อยากปักหมุดตำแหน่งร้านให้ตรงจริง ไปที่แท็บ &quot;ตำแหน่งร้าน&quot; ด้านบน
+              </span>
             </label>
             <label className="text-sm font-medium text-[var(--foreground)]">
               เบอร์โทร
@@ -1113,6 +1146,120 @@ function FooterSettingsForm({
             ))}
           </div>
         </aside>
+      </div>
+    </form>
+  );
+}
+
+// Shares the same footerFormState/onPatch/onSubmit/saveState as
+// FooterSettingsForm above - it's the same database row
+// (homepage_footer_settings), just a friendlier click-to-pin UI for two
+// of its columns (office_latitude/office_longitude) instead of typing
+// raw numbers. Saving here saves the whole footer row, same as the
+// footer tab's save button.
+function LocationSettingsForm({
+  formState,
+  onPatch,
+  onSubmit,
+  saveState,
+}: {
+  formState: FooterFormState;
+  onPatch: (partial: Partial<FooterFormState>) => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  saveState: SaveState;
+}) {
+  const parsedLatitude = formState.officeLatitude.trim()
+    ? Number(formState.officeLatitude)
+    : null;
+  const parsedLongitude = formState.officeLongitude.trim()
+    ? Number(formState.officeLongitude)
+    : null;
+  const hasValidPin =
+    parsedLatitude != null &&
+    Number.isFinite(parsedLatitude) &&
+    parsedLongitude != null &&
+    Number.isFinite(parsedLongitude);
+
+  return (
+    <form
+      className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5"
+      onSubmit={onSubmit}
+    >
+      <div className="mb-4">
+        <h2 className="text-xl font-black text-[var(--foreground)]">
+          ตำแหน่งร้าน
+        </h2>
+        <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
+          คลิกบนแผนที่เพื่อปักหมุดตำแหน่งร้าน (ลากหมุดเพื่อขยับได้) —
+          หน้าแรกจะใช้ตำแหน่งนี้แทนการค้นหาจากที่อยู่ที่พิมพ์ไว้
+        </p>
+      </div>
+
+      <MapPinPicker
+        latitude={hasValidPin ? parsedLatitude : null}
+        longitude={hasValidPin ? parsedLongitude : null}
+        onPick={(latitude, longitude) =>
+          onPatch({
+            officeLatitude: latitude.toFixed(7),
+            officeLongitude: longitude.toFixed(7),
+          })
+        }
+      />
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <label className="text-sm font-medium text-[var(--foreground)]">
+          ละติจูด (Latitude)
+          <input
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm outline-none focus:border-[var(--brand)]"
+            inputMode="decimal"
+            onChange={(event) =>
+              onPatch({ officeLatitude: event.target.value })
+            }
+            placeholder="เช่น 13.7367170"
+            value={formState.officeLatitude}
+          />
+        </label>
+        <label className="text-sm font-medium text-[var(--foreground)]">
+          ลองจิจูด (Longitude)
+          <input
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm outline-none focus:border-[var(--brand)]"
+            inputMode="decimal"
+            onChange={(event) =>
+              onPatch({ officeLongitude: event.target.value })
+            }
+            placeholder="เช่น 100.5231860"
+            value={formState.officeLongitude}
+          />
+        </label>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <button
+          className="min-h-11 rounded-md bg-[var(--brand)] px-5 text-sm font-black text-[var(--foreground)] disabled:opacity-60"
+          disabled={saveState.status === "saving"}
+          type="submit"
+        >
+          {saveState.status === "saving" ? "กำลังบันทึก..." : "บันทึกตำแหน่ง"}
+        </button>
+        {hasValidPin ? (
+          <button
+            className="min-h-11 rounded-md border border-[var(--line)] px-5 text-sm font-bold text-[var(--muted)] hover:border-[var(--brand)]"
+            onClick={() =>
+              onPatch({ officeLatitude: "", officeLongitude: "" })
+            }
+            type="button"
+          >
+            ลบหมุด
+          </button>
+        ) : null}
+        {saveState.status === "success" ? (
+          <p className="text-sm font-bold text-[var(--brand)]">
+            {saveState.message}
+          </p>
+        ) : null}
+        {saveState.status === "error" ? (
+          <p className="text-sm font-bold text-red-500">{saveState.error}</p>
+        ) : null}
       </div>
     </form>
   );
@@ -1752,10 +1899,30 @@ export function AdminHomepagePanel() {
             >
               สีพื้นหลัง
             </button>
+            <button
+              className={
+                activeTab === "location"
+                  ? "min-h-11 rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--foreground)]"
+                  : "min-h-11 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-bold text-[var(--muted)] hover:border-[var(--brand)]"
+              }
+              onClick={() => setActiveTab("location")}
+              type="button"
+            >
+              ตำแหน่งร้าน
+            </button>
           </div>
 
           {activeTab === "footer" ? (
             <FooterSettingsForm
+              formState={footerFormState}
+              onPatch={patchFooterFormState}
+              onSubmit={handleFooterSave}
+              saveState={footerSaveState}
+            />
+          ) : null}
+
+          {activeTab === "location" ? (
+            <LocationSettingsForm
               formState={footerFormState}
               onPatch={patchFooterFormState}
               onSubmit={handleFooterSave}

@@ -78,6 +78,23 @@ export type AdminCustomerDetail = Profile & {
   vehicles: Vehicle[];
 };
 
+export type AdminCustomerListRoleFilter = "all" | Profile["role"];
+
+export type AdminCustomerListParams = {
+  page: number;
+  pageSize: number;
+  role: AdminCustomerListRoleFilter;
+  search: string;
+};
+
+export type AdminCustomerListResult = {
+  customers: AdminCustomerSummary[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+};
+
 export type AdminBookingStatusAction = AdminBooking["status"];
 
 export type AdminService = Service & {
@@ -248,6 +265,8 @@ export type AdminTechnicianSkillCreateInput =
 
 export type AdminBookingListStatusFilter = "all" | AdminBooking["status"];
 
+export type AdminBookingStatusCounts = Record<AdminBooking["status"], number>;
+
 // A simplified, admin-facing grouping of AdminProductOrder["status"] for the
 // order list filter tabs only - "in_progress" collapses
 // confirmed/preparing/ready_for_pickup/out_for_delivery into one tab, since
@@ -264,6 +283,19 @@ export type AdminProductOrderListStatusFilter =
 export type AdminProductOrderListPaymentFilter =
   | "all"
   | AdminProductOrder["payment_status"];
+
+export type AdminProductOrderStatusCounts = {
+  cancelled: number;
+  completed: number;
+  in_progress: number;
+  pending: number;
+};
+
+export type AdminProductOrderPaymentStatusCounts = {
+  paid: number;
+  pending: number;
+  unpaid: number;
+};
 
 export type AdminBookingListParams = {
   page: number;
@@ -295,6 +327,27 @@ export type AdminProductOrderListResult = {
   totalCount: number;
   totalPages: number;
 };
+
+export type AdminRepairJobListStatusFilter = "all" | AdminRepairJob["status"];
+
+export type AdminRepairJobListParams = {
+  page: number;
+  pageSize: number;
+  status: AdminRepairJobListStatusFilter;
+};
+
+export type AdminRepairJobListResult = {
+  page: number;
+  pageSize: number;
+  repairJobs: AdminRepairJob[];
+  totalCount: number;
+  totalPages: number;
+};
+
+export type AdminRepairJobStatusCounts = Record<
+  AdminRepairJob["status"],
+  number
+>;
 
 export type AdminReportStatusCount = {
   count: number;

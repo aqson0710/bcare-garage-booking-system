@@ -948,6 +948,36 @@ export function AdminProductsPanel() {
     });
   }, [loadState, searchInput, statusFilter]);
 
+  const statusCounts = useMemo(() => {
+    const counts = new Map<StatusFilter, number>(
+      statusFilters.map((status) => [status, 0]),
+    );
+
+    if (loadState.status !== "ready") {
+      return counts;
+    }
+
+    const normalizedSearch = searchInput.trim().toLowerCase();
+
+    for (const product of loadState.products) {
+      const matchesSearch =
+        !normalizedSearch ||
+        product.name.toLowerCase().includes(normalizedSearch) ||
+        (product.description ?? "").toLowerCase().includes(normalizedSearch) ||
+        (product.sku ?? "").toLowerCase().includes(normalizedSearch) ||
+        (product.category?.name ?? "").toLowerCase().includes(normalizedSearch);
+
+      if (!matchesSearch) {
+        continue;
+      }
+
+      counts.set("all", (counts.get("all") ?? 0) + 1);
+      counts.set(product.status, (counts.get(product.status) ?? 0) + 1);
+    }
+
+    return counts;
+  }, [loadState, searchInput]);
+
   const lowStockProducts = useMemo(() => {
     if (loadState.status !== "ready") {
       return [];
@@ -1206,20 +1236,20 @@ export function AdminProductsPanel() {
             onCreate={handleCreateProduct}
           />
 
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
-            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5">
-              <p className="text-sm font-semibold text-[var(--muted)]">
+          <div className="mt-5 flex divide-x divide-[var(--line)] overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">
+            <div className="min-w-[8rem] flex-1 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                 สินค้าทั้งหมด
               </p>
-              <p className="mt-2 text-3xl font-bold text-[var(--foreground)]">
+              <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
                 {loadState.products.length}
               </p>
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5">
-              <p className="text-sm font-semibold text-[var(--muted)]">
+            <div className="min-w-[8rem] flex-1 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                 สินค้าที่เปิดขาย
               </p>
-              <p className="mt-2 text-3xl font-bold text-[var(--foreground)]">
+              <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
                 {
                   loadState.products.filter(
                     (product) => product.status === "active",
@@ -1227,45 +1257,51 @@ export function AdminProductsPanel() {
                 }
               </p>
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5">
-              <p className="text-sm font-semibold text-[var(--muted)]">
+            <div className="min-w-[8rem] flex-1 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                 สต๊อกใกล้หมด
               </p>
-              <p className="mt-2 text-3xl font-bold text-[var(--foreground)]">
+              <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
                 {lowStockProducts.length}
               </p>
             </div>
           </div>
 
-          <div className="mt-5 flex flex-col gap-4 border-b border-[var(--line)] pb-4 lg:flex-row lg:items-end lg:justify-between">
-            <p className="text-sm font-semibold text-[var(--foreground)]">
-              {filteredProducts.length} จาก {loadState.products.length} รายการ
-            </p>
+          <div className="mt-5 flex flex-col gap-4 border-b border-[var(--line)] pb-4">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <p className="text-sm font-semibold text-[var(--foreground)]">
+                {filteredProducts.length} จาก {loadState.products.length} รายการ
+              </p>
 
-            <div className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-2xl">
               <input
-                className="min-h-10 flex-1 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                className="min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)] lg:w-80"
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="ค้นหาสินค้า SKU หรือหมวดสินค้า"
                 type="search"
                 value={searchInput}
               />
-              <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
-                {statusFilters.map((status) => (
-                  <button
-                    className={
-                      statusFilter === status
-                        ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-                        : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
-                    }
-                    key={status}
-                    onClick={() => setStatusFilter(status)}
-                    type="button"
-                  >
+            </div>
+
+            <div className="flex divide-x divide-[var(--line)] overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">
+              {statusFilters.map((status) => (
+                <button
+                  className={`min-w-[7rem] flex-1 px-4 py-3 text-left transition ${
+                    statusFilter === status
+                      ? "bg-[var(--accent-soft)]"
+                      : "hover:bg-[var(--accent-soft)]"
+                  }`}
+                  key={status}
+                  onClick={() => setStatusFilter(status)}
+                  type="button"
+                >
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                     {formatProductStatus(status)}
-                  </button>
-                ))}
-              </div>
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
+                    {statusCounts.get(status) ?? 0}
+                  </p>
+                </button>
+              ))}
             </div>
           </div>
 

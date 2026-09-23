@@ -293,6 +293,29 @@ export function CustomerNotificationsPanel() {
       (notification) => notification.source === activeFilter,
     );
   }, [activeFilter, loadState, readIds]);
+  const filterCounts = useMemo(() => {
+    const counts = new Map<NotificationFilter, number>(
+      notificationFilters.map((filter) => [filter, 0]),
+    );
+
+    if (loadState.status !== "ready") {
+      return counts;
+    }
+
+    for (const notification of loadState.notifications) {
+      counts.set("all", (counts.get("all") ?? 0) + 1);
+      counts.set(
+        notification.source,
+        (counts.get(notification.source) ?? 0) + 1,
+      );
+
+      if (!readIds.has(notification.id)) {
+        counts.set("unread", (counts.get("unread") ?? 0) + 1);
+      }
+    }
+
+    return counts;
+  }, [loadState, readIds]);
 
   function markAsRead(notificationId: string) {
     if (loadState.status !== "ready") {
@@ -388,19 +411,24 @@ export function CustomerNotificationsPanel() {
             <p className="mt-1 text-sm text-[var(--muted)]">
               ยังไม่ได้อ่าน {unreadCount} รายการ
             </p>
-            <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+            <div className="mt-4 flex divide-x divide-[var(--line)] overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--surface-muted)] shadow-sm">
               {notificationFilters.map((filter) => (
                 <button
-                  className={
+                  className={`min-w-[6.5rem] flex-1 px-4 py-3 text-left transition ${
                     activeFilter === filter
-                      ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-                      : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
-                  }
+                      ? "bg-[var(--accent-soft)]"
+                      : "hover:bg-[var(--accent-soft)]"
+                  }`}
                   key={filter}
                   onClick={() => setActiveFilter(filter)}
                   type="button"
                 >
-                  {getFilterLabel(filter)}
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                    {getFilterLabel(filter)}
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
+                    {filterCounts.get(filter) ?? 0}
+                  </p>
                 </button>
               ))}
             </div>

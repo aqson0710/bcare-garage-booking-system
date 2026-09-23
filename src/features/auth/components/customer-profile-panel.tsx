@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import {
   getCurrentProfile,
@@ -41,6 +41,7 @@ type UploadState =
   | { status: "error"; message: null; error: string };
 
 const profileImagesBucket = "profile-images";
+const maxAvatarBytes = 2 * 1024 * 1024;
 
 function getFileExtension(file: File) {
   const extension = file.name.split(".").pop()?.toLowerCase();
@@ -77,6 +78,103 @@ function getInitials(name: string, email: string | null) {
   return text.slice(0, 2).toUpperCase();
 }
 
+function formatMemberSince(dateString: string | undefined) {
+  if (!dateString) {
+    return null;
+  }
+
+  return new Date(dateString).toLocaleDateString("th-TH", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
+// Shared account-settings sidebar - just the sections this app actually
+// has (profile + the customer's own vehicles/bookings/orders/
+// notifications), styled after a familiar "account settings" layout
+// rather than inventing sections the app doesn't back.
+function AccountSidebar({
+  avatarUrl,
+  email,
+  fullName,
+  initials,
+}: {
+  avatarUrl: string;
+  email: string | null;
+  fullName: string;
+  initials: string;
+}) {
+  const shortcuts = [
+    { href: "/my-vehicles", label: "รถของฉัน" },
+    { href: "/my-bookings", label: "การจองของฉัน" },
+    { href: "/my-product-orders", label: "คำสั่งซื้อสินค้า" },
+    { href: "/notifications", label: "การแจ้งเตือน" },
+  ];
+
+  return (
+    <nav className="w-full shrink-0 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 shadow-sm lg:w-60">
+      <div className="flex items-center gap-3 border-b border-[var(--line)] pb-4">
+        {avatarUrl ? (
+          <div
+            className="h-10 w-10 shrink-0 rounded-full border border-[var(--line)] bg-cover bg-center"
+            style={{ backgroundImage: `url(${avatarUrl})` }}
+          />
+        ) : (
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--brand)] text-sm font-black text-[var(--foreground)]">
+            {initials}
+          </div>
+        )}
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold text-[var(--foreground)]">
+            {fullName.trim() || "ยังไม่ได้กรอกชื่อ"}
+          </p>
+          <p className="truncate text-xs text-[var(--muted)]">
+            {email ?? "-"}
+          </p>
+        </div>
+      </div>
+
+      <p className="mt-4 px-2 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+        บัญชีของฉัน
+      </p>
+      <div className="mt-2 flex flex-col gap-1">
+        <span className="rounded-md bg-[var(--accent-soft)] px-3 py-2 text-sm font-semibold text-[var(--brand-strong)]">
+          ข้อมูลส่วนตัว
+        </span>
+      </div>
+
+      <div className="mt-4 flex flex-col gap-1 border-t border-[var(--line)] pt-4">
+        {shortcuts.map((shortcut) => (
+          <Link
+            className="rounded-md px-3 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surface-muted)]"
+            href={shortcut.href}
+            key={shortcut.href}
+          >
+            {shortcut.label}
+          </Link>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
+function ProfileFormRow({
+  children,
+  label,
+}: {
+  children: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center">
+      <label className="w-full shrink-0 text-sm font-medium text-[var(--foreground)] sm:w-40">
+        {label}
+      </label>
+      <div className="w-full sm:flex-1">{children}</div>
+    </div>
+  );
+}
+
 export function CustomerProfilePanel() {
   const [loadState, setLoadState] = useState<LoadState>({
     email: null,
@@ -98,6 +196,7 @@ export function CustomerProfilePanel() {
     message: null,
     status: "idle",
   });
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -271,6 +370,15 @@ export function CustomerProfilePanel() {
       return;
     }
 
+    if (file.size > maxAvatarBytes) {
+      setUploadState({
+        error: "ขนาดไฟล์ต้องไม่เกิน 2MB",
+        message: null,
+        status: "error",
+      });
+      return;
+    }
+
     if (!fullName.trim() || !phoneNumber.trim()) {
       setUploadState({
         error: "กรุณากรอกชื่อและเบอร์โทรศัพท์ก่อนอัปโหลดรูปโปรไฟล์",
@@ -340,9 +448,13 @@ export function CustomerProfilePanel() {
     });
     setUploadState({
       error: null,
-      message: "อัปโหลดและบันทึกรูปโปรไฟล์เรียบร้อยแล้ว",
+      message: "อัปเดตรูปโปรไฟล์เรียบร้อยแล้ว",
       status: "uploaded",
     });
+
+    if (avatarInputRef.current) {
+      avatarInputRef.current.value = "";
+    }
   }
 
   const roleLabel =
@@ -351,31 +463,17 @@ export function CustomerProfilePanel() {
     loadState.status === "ready"
       ? getInitials(fullName, loadState.email)
       : "BC";
+  const memberSince =
+    loadState.status === "ready"
+      ? formatMemberSince(loadState.profile?.created_at)
+      : null;
+  const isUploading = uploadState.status === "uploading";
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
-        </div>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-wide text-[var(--brand)]">
-              บัญชีลูกค้า
-            </p>
-            <h1 className="mt-2 text-3xl font-bold text-[var(--foreground)]">
-              โปรไฟล์ของฉัน
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-              จัดการข้อมูลติดต่อที่ใช้กับการจองบริการ คำสั่งซื้อ และการติดตามงานซ่อม
-            </p>
-          </div>
-          <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--foreground)]"
-            href="/auth"
-          >
-            จัดการการเข้าสู่ระบบ
-          </Link>
         </div>
       </header>
 
@@ -413,178 +511,140 @@ export function CustomerProfilePanel() {
       ) : null}
 
       {loadState.status === "ready" ? (
-        <section className="grid gap-6 py-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <form
-            className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm"
-            onSubmit={handleSubmit}
-          >
-            <div className="flex flex-col gap-4 border-b border-[var(--line)] pb-5 sm:flex-row sm:items-center">
-              {avatarUrl ? (
-                <div
-                  aria-label="รูปโปรไฟล์"
-                  className="h-16 w-16 shrink-0 rounded-md border border-[var(--line)] bg-cover bg-center"
-                  role="img"
-                  style={{ backgroundImage: `url(${avatarUrl})` }}
-                />
-              ) : (
-                <div className="grid h-16 w-16 shrink-0 place-items-center rounded-md bg-[var(--brand)] text-xl font-black text-[var(--foreground)]">
-                  {initials}
-                </div>
-              )}
-              <div>
-                <p className="text-sm font-semibold text-[var(--brand)]">
-                  ข้อมูลหลักของบัญชี
-                </p>
-                <h2 className="mt-1 text-xl font-bold text-[var(--foreground)]">
-                  {fullName.trim() || "ยังไม่ได้กรอกชื่อ"}
-                </h2>
-                <p className="mt-1 break-all text-sm text-[var(--muted)]">
-                  {loadState.email ?? "-"}
-                </p>
-              </div>
+        <section className="flex flex-col gap-6 py-6 lg:flex-row lg:items-start">
+          <AccountSidebar
+            avatarUrl={avatarUrl}
+            email={loadState.email}
+            fullName={fullName}
+            initials={initials}
+          />
+
+          <div className="min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-6 shadow-sm">
+            <div className="border-b border-[var(--line)] pb-4">
+              <h1 className="text-xl font-bold text-[var(--foreground)]">
+                ข้อมูลส่วนตัว
+              </h1>
+              <p className="mt-1 text-sm text-[var(--muted)]">
+                จัดการข้อมูลติดต่อที่ใช้กับการจองบริการ คำสั่งซื้อ และงานซ่อมของคุณ
+              </p>
             </div>
 
-            <section className="mt-5 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] p-4">
-              <label className="text-sm font-medium text-[var(--foreground)]">
-                รูปโปรไฟล์
+            <form
+              className="grid gap-6 pt-2 lg:grid-cols-[minmax(0,1fr)_200px]"
+              onSubmit={handleSubmit}
+            >
+              <div>
+                <div className="divide-y divide-[var(--line)]">
+                  <ProfileFormRow label="ชื่อ-นามสกุล">
+                    <input
+                      className="min-h-11 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                      onChange={(event) => setFullName(event.target.value)}
+                      value={fullName}
+                    />
+                  </ProfileFormRow>
+
+                  <ProfileFormRow label="เบอร์โทรศัพท์">
+                    <input
+                      className="min-h-11 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+                      inputMode="tel"
+                      onChange={(event) => setPhoneNumber(event.target.value)}
+                      value={phoneNumber}
+                    />
+                  </ProfileFormRow>
+
+                  <ProfileFormRow label="อีเมล">
+                    <p className="text-sm text-[var(--foreground)]">
+                      {loadState.email ?? "-"}
+                    </p>
+                  </ProfileFormRow>
+
+                  <ProfileFormRow label="ประเภทบัญชี">
+                    <p className="text-sm text-[var(--foreground)]">
+                      {roleLabel}
+                    </p>
+                  </ProfileFormRow>
+
+                  {memberSince ? (
+                    <ProfileFormRow label="สมาชิกตั้งแต่">
+                      <p className="text-sm text-[var(--foreground)]">
+                        {memberSince}
+                      </p>
+                    </ProfileFormRow>
+                  ) : null}
+                </div>
+
+                <button
+                  className="mt-5 min-h-11 rounded-md bg-[var(--brand)] px-6 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={saveState.status === "saving"}
+                  type="submit"
+                >
+                  {saveState.status === "saving"
+                    ? "กำลังบันทึก..."
+                    : "บันทึกโปรไฟล์"}
+                </button>
+
+                {saveState.status === "success" ? (
+                  <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-[var(--brand-strong)]">
+                    {saveState.message}
+                  </div>
+                ) : null}
+
+                {saveState.status === "error" ? (
+                  <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                    {saveState.error}
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="flex flex-col items-center gap-3 self-start rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface-muted)] p-5 text-center">
+                {avatarUrl ? (
+                  <div
+                    className="h-20 w-20 rounded-full border border-[var(--line)] bg-cover bg-center"
+                    style={{ backgroundImage: `url(${avatarUrl})` }}
+                  />
+                ) : (
+                  <div className="grid h-20 w-20 place-items-center rounded-full bg-[var(--brand)] text-2xl font-black text-[var(--foreground)]">
+                    {initials}
+                  </div>
+                )}
+
+                <button
+                  className="min-h-9 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isUploading}
+                  onClick={() => avatarInputRef.current?.click()}
+                  type="button"
+                >
+                  {isUploading ? "กำลังอัปโหลด..." : "เลือกรูป"}
+                </button>
                 <input
                   accept="image/png,image/jpeg,image/webp"
-                  className="mt-2 block w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-                  disabled={uploadState.status === "uploading"}
+                  className="hidden"
+                  disabled={isUploading}
                   onChange={handleAvatarUpload}
+                  ref={avatarInputRef}
                   type="file"
                 />
-              </label>
-              <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
-                รองรับ PNG, JPG, WEBP ขนาดไม่เกิน 2MB และบันทึก URL ลงโปรไฟล์ของคุณ
-              </p>
-              {uploadState.status === "uploading" ? (
-                <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                  กำลังอัปโหลดรูปโปรไฟล์...
-                </div>
-              ) : null}
-              {uploadState.status === "uploaded" ? (
-                <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-[var(--brand-strong)]">
-                  {uploadState.message}
-                </div>
-              ) : null}
-              {uploadState.status === "error" ? (
-                <div className="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                  {uploadState.error}
-                </div>
-              ) : null}
-            </section>
 
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <label className="text-sm font-medium text-[var(--foreground)]">
-                ชื่อ-นามสกุล
-                <input
-                  className="mt-2 min-h-11 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-                  onChange={(event) => setFullName(event.target.value)}
-                  value={fullName}
-                />
-              </label>
+                <p className="text-xs leading-5 text-[var(--muted)]">
+                  ขนาดไฟล์สูงสุด 2MB
+                  <br />
+                  รองรับ .JPEG, .PNG, .WEBP
+                </p>
 
-              <label className="text-sm font-medium text-[var(--foreground)]">
-                เบอร์โทรศัพท์
-                <input
-                  className="mt-2 min-h-11 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-                  inputMode="tel"
-                  onChange={(event) => setPhoneNumber(event.target.value)}
-                  value={phoneNumber}
-                />
-              </label>
+                {uploadState.status === "uploaded" ? (
+                  <p className="text-xs font-semibold text-[var(--brand-strong)]">
+                    {uploadState.message}
+                  </p>
+                ) : null}
 
-              <label className="text-sm font-medium text-[var(--foreground)]">
-                อีเมล
-                <input
-                  className="mt-2 min-h-11 w-full rounded-md border border-[var(--line)] bg-[var(--surface-muted)] px-3 text-sm text-[var(--muted)]"
-                  readOnly
-                  value={loadState.email ?? "-"}
-                />
-              </label>
-
-              <label className="text-sm font-medium text-[var(--foreground)]">
-                ประเภทบัญชี
-                <input
-                  className="mt-2 min-h-11 w-full rounded-md border border-[var(--line)] bg-[var(--surface-muted)] px-3 text-sm text-[var(--muted)]"
-                  readOnly
-                  value={roleLabel}
-                />
-              </label>
-            </div>
-
-            <div className="mt-5 rounded-md border border-dashed border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--muted)]">
-              ข้อมูลนี้จะถูกใช้เติมข้อมูลเริ่มต้นในหน้าจองบริการและช่วยให้อู่ติดต่อกลับได้ถูกต้อง
-            </div>
-
-            <button
-              className="mt-5 min-h-11 w-full rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={saveState.status === "saving"}
-              type="submit"
-            >
-              {saveState.status === "saving"
-                ? "กำลังบันทึก..."
-                : "บันทึกโปรไฟล์"}
-            </button>
-
-            {saveState.status === "success" ? (
-              <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-[var(--brand-strong)]">
-                {saveState.message}
+                {uploadState.status === "error" ? (
+                  <p className="text-xs font-semibold text-red-700">
+                    {uploadState.error}
+                  </p>
+                ) : null}
               </div>
-            ) : null}
-
-            {saveState.status === "error" ? (
-              <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {saveState.error}
-              </div>
-            ) : null}
-          </form>
-
-          <aside className="space-y-4">
-            <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
-              <p className="text-sm font-semibold text-[var(--brand)]">
-                ใช้ข้อมูลนี้กับ
-              </p>
-              <div className="mt-4 space-y-3 text-sm leading-6 text-[var(--muted)]">
-                <p>การจองบริการและการติดต่อกลับจากอู่</p>
-                <p>คำสั่งซื้อสินค้าและหลักฐานการชำระเงิน</p>
-                <p>ประวัติรถและสถานะงานซ่อมของคุณ</p>
-              </div>
-            </section>
-
-            <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
-              <p className="text-sm font-semibold text-[var(--brand)]">
-                ทางลัดของลูกค้า
-              </p>
-              <div className="mt-4 grid gap-2">
-                <Link
-                  className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--foreground)]"
-                  href="/my-vehicles"
-                >
-                  รถของฉัน
-                </Link>
-                <Link
-                  className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--foreground)]"
-                  href="/my-bookings"
-                >
-                  การจองของฉัน
-                </Link>
-                <Link
-                  className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--foreground)]"
-                  href="/my-product-orders"
-                >
-                  คำสั่งซื้อสินค้า
-                </Link>
-                <Link
-                  className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--foreground)]"
-                  href="/notifications"
-                >
-                  การแจ้งเตือน
-                </Link>
-              </div>
-            </section>
-          </aside>
+            </form>
+          </div>
         </section>
       ) : null}
     </main>

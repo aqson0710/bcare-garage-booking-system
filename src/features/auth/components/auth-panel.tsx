@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { DiagonalWaves } from "@/components/diagonal-waves";
 import { getCurrentProfile, type ProfileRole } from "@/features/auth";
 import { useSiteLogoUrl } from "@/features/home";
 import { createClient } from "@/lib/supabase/browser";
@@ -20,7 +21,7 @@ function getPostLoginPath(role: ProfileRole | null | undefined) {
   }
 
   if (role === "technician") {
-    return "/technician/work-orders";
+    return "/technician";
   }
 
   return "/";
@@ -65,17 +66,20 @@ function EyeIcon({ open }: { open: boolean }) {
 
 // Shared full-screen backdrop for every auth-related page (login/register
 // and the password-reset page) - a dark gradient with soft brand-green
-// glow blobs instead of a plain flat background, kept out of the site's
-// normal nav/header shell so it reads as a dedicated auth screen.
+// glow blobs and a pair of slow, low-opacity waves drifting diagonally
+// across the screen, instead of a plain flat background. Kept out of the
+// site's normal nav/header shell so it reads as a dedicated auth screen.
 export function AuthShell({ children }: { children: React.ReactNode }) {
   const logoUrl = useSiteLogoUrl();
 
   return (
     <main className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[var(--background)] px-4 py-10">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-[var(--background)] via-[var(--background)] to-[var(--accent-soft)]" />
         <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-[var(--brand)]/20 blur-3xl" />
         <div className="absolute -bottom-40 -right-24 h-[28rem] w-[28rem] rounded-full bg-[var(--brand-strong)]/10 blur-3xl" />
+
+        <DiagonalWaves />
       </div>
 
       <div className="relative z-10 w-full max-w-md">

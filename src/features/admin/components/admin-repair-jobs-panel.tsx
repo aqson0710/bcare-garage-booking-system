@@ -1,35 +1,62 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import {
   checkAdminAccess,
   getAdminMechanics,
-  getAdminRepairJobs,
+  getAdminRepairJobsPage,
+  getAdminRepairJobStatusCounts,
   updateAdminRepairJobMechanic,
   type AdminAccessResult,
   type AdminMechanic,
   type AdminRepairJob,
+  type AdminRepairJobListResult,
+  type AdminRepairJobListStatusFilter,
+  type AdminRepairJobStatusCounts,
 } from "@/features/admin";
 import { createClient } from "@/lib/supabase/browser";
 
+const pageSize = 10;
+
 type LoadState =
-  | { status: "loading"; access: null; repairJobs: null; error: null }
-  | { status: "signed-out"; access: null; repairJobs: null; error: null }
+  | {
+      status: "loading";
+      access: null;
+      result: null;
+      statusCounts: null;
+      error: null;
+    }
+  | {
+      status: "signed-out";
+      access: null;
+      result: null;
+      statusCounts: null;
+      error: null;
+    }
   | {
       status: "access-denied";
       access: Extract<AdminAccessResult, { allowed: false }>;
-      repairJobs: null;
+      result: null;
+      statusCounts: null;
       error: null;
     }
   | {
       status: "ready";
       access: AdminAccessResult;
-      repairJobs: AdminRepairJob[];
+      result: AdminRepairJobListResult;
+      statusCounts: AdminRepairJobStatusCounts;
       error: null;
     }
-  | { status: "error"; access: null; repairJobs: null; error: string };
+  | {
+      status: "error";
+      access: null;
+      result: null;
+      statusCounts: null;
+      error: string;
+    };
 
 type AssignmentState =
   | { status: "idle"; repairJobId: null; error: null }
@@ -115,6 +142,90 @@ function getMechanicSkillsLabel(mechanic: AdminMechanic | null) {
 function getMechanicOptionLabel(mechanic: AdminMechanic) {
   const contact = mechanic.email ?? mechanic.phone_number;
   return `${mechanic.full_name} - ${getMechanicSkillsLabel(mechanic)} (${contact})`;
+}
+
+function clampPage(page: number, totalPages: number) {
+  if (!Number.isFinite(page)) {
+    return 1;
+  }
+
+  return Math.min(Math.max(1, Math.floor(page)), totalPages);
+}
+
+function AdminRepairJobsPaginationControls({
+  onPageChange,
+  result,
+}: {
+  onPageChange: (page: number) => void;
+  result: AdminRepairJobListResult;
+}) {
+  const inputId = `repair-job-page-jump-${result.page}-${result.totalPages}`;
+
+  function handlePageJump(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const requestedPage = Number(formData.get("page"));
+    onPageChange(clampPage(requestedPage, result.totalPages));
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 lg:flex-row lg:items-center lg:justify-between">
+      <p className="text-sm text-[var(--muted)]">
+        หน้า {result.page} จาก {result.totalPages} ({result.totalCount} รายการ)
+      </p>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex gap-2">
+          <button
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={result.page <= 1}
+            onClick={() => onPageChange(result.page - 1)}
+            type="button"
+          >
+            ก่อนหน้า
+          </button>
+          <button
+            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={result.page >= result.totalPages}
+            onClick={() => onPageChange(result.page + 1)}
+            type="button"
+          >
+            ถัดไป
+          </button>
+        </div>
+
+        <form
+          className="flex items-center gap-2"
+          key={inputId}
+          onSubmit={handlePageJump}
+        >
+          <label
+            className="whitespace-nowrap text-sm font-semibold text-[var(--muted)]"
+            htmlFor={inputId}
+          >
+            ไปหน้า
+          </label>
+          <input
+            className="min-h-10 w-24 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
+            defaultValue={result.page}
+            id={inputId}
+            inputMode="numeric"
+            max={result.totalPages}
+            min={1}
+            name="page"
+            type="number"
+          />
+          <button
+            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+            type="submit"
+          >
+            ไป
+          </button>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 function AdminRepairJobRow({
@@ -301,8 +412,9 @@ export function AdminRepairJobsPanel() {
   const [loadState, setLoadState] = useState<LoadState>({
     access: null,
     error: null,
-    repairJobs: null,
+    result: null,
     status: "loading",
+    statusCounts: null,
   });
   const [mechanics, setMechanics] = useState<AdminMechanic[]>([]);
   const [assignmentState, setAssignmentState] = useState<AssignmentState>({
@@ -310,6 +422,14 @@ export function AdminRepairJobsPanel() {
     repairJobId: null,
     status: "idle",
   });
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] =
+    useState<AdminRepairJobListStatusFilter>("all");
+
+  function handleStatusFilterChange(next: AdminRepairJobListStatusFilter) {
+    setStatusFilter(next);
+    setPage(1);
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -319,8 +439,9 @@ export function AdminRepairJobsPanel() {
       setLoadState({
         access: null,
         error: null,
-        repairJobs: null,
+        result: null,
         status: "loading",
+        statusCounts: null,
       });
 
       const {
@@ -336,8 +457,9 @@ export function AdminRepairJobsPanel() {
         setLoadState({
           access: null,
           error: sessionError.message,
-          repairJobs: null,
+          result: null,
           status: "error",
+          statusCounts: null,
         });
         return;
       }
@@ -346,8 +468,9 @@ export function AdminRepairJobsPanel() {
         setLoadState({
           access: null,
           error: null,
-          repairJobs: null,
+          result: null,
           status: "signed-out",
+          statusCounts: null,
         });
         return;
       }
@@ -362,16 +485,19 @@ export function AdminRepairJobsPanel() {
         setLoadState({
           access,
           error: null,
-          repairJobs: null,
+          result: null,
           status: "access-denied",
+          statusCounts: null,
         });
         return;
       }
 
-      const [repairJobsResult, mechanicsResult] = await Promise.all([
-        getAdminRepairJobs(supabase),
-        getAdminMechanics(supabase),
-      ]);
+      const [repairJobsResult, statusCountsResult, mechanicsResult] =
+        await Promise.all([
+          getAdminRepairJobsPage(supabase, { page, pageSize, status: statusFilter }),
+          getAdminRepairJobStatusCounts(supabase),
+          getAdminMechanics(supabase),
+        ]);
 
       if (!isMounted) {
         return;
@@ -381,8 +507,20 @@ export function AdminRepairJobsPanel() {
         setLoadState({
           access: null,
           error: repairJobsResult.error.message,
-          repairJobs: null,
+          result: null,
           status: "error",
+          statusCounts: null,
+        });
+        return;
+      }
+
+      if (statusCountsResult.error) {
+        setLoadState({
+          access: null,
+          error: statusCountsResult.error.message,
+          result: null,
+          status: "error",
+          statusCounts: null,
         });
         return;
       }
@@ -391,9 +529,23 @@ export function AdminRepairJobsPanel() {
         setLoadState({
           access: null,
           error: mechanicsResult.error.message,
-          repairJobs: null,
+          result: null,
           status: "error",
+          statusCounts: null,
         });
+        return;
+      }
+
+      if (!repairJobsResult.data) {
+        return;
+      }
+
+      if (
+        repairJobsResult.data.page < repairJobsResult.data.totalPages &&
+        repairJobsResult.data.repairJobs.length === 0 &&
+        repairJobsResult.data.totalCount > 0
+      ) {
+        setPage(clampPage(page, repairJobsResult.data.totalPages));
         return;
       }
 
@@ -402,8 +554,9 @@ export function AdminRepairJobsPanel() {
       setLoadState({
         access,
         error: null,
-        repairJobs: repairJobsResult.data ?? [],
+        result: repairJobsResult.data,
         status: "ready",
+        statusCounts: statusCountsResult.data,
       });
     }
 
@@ -419,7 +572,7 @@ export function AdminRepairJobsPanel() {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [page, statusFilter]);
 
   async function handleMechanicSave(
     repairJob: AdminRepairJob,
@@ -453,11 +606,14 @@ export function AdminRepairJobsPanel() {
 
     setLoadState({
       ...loadState,
-      repairJobs: loadState.repairJobs.map((currentRepairJob) =>
-        currentRepairJob.id === repairJob.id && data
-          ? data
-          : currentRepairJob,
-      ),
+      result: {
+        ...loadState.result,
+        repairJobs: loadState.result.repairJobs.map((currentRepairJob) =>
+          currentRepairJob.id === repairJob.id && data
+            ? data
+            : currentRepairJob,
+        ),
+      },
     });
     setAssignmentState({
       error: null,
@@ -465,22 +621,6 @@ export function AdminRepairJobsPanel() {
       status: "idle",
     });
   }
-
-  const statusCounts = useMemo(() => {
-    const counts = new Map<AdminRepairJob["status"], number>(
-      statusOrder.map((status) => [status, 0]),
-    );
-
-    if (loadState.status !== "ready") {
-      return counts;
-    }
-
-    for (const repairJob of loadState.repairJobs) {
-      counts.set(repairJob.status, (counts.get(repairJob.status) ?? 0) + 1);
-    }
-
-    return counts;
-  }, [loadState]);
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
@@ -548,33 +688,59 @@ export function AdminRepairJobsPanel() {
 
       {loadState.status === "ready" ? (
         <section className="py-6">
-          <div className="grid gap-3 border-b border-[var(--line)] pb-5 sm:grid-cols-2 lg:grid-cols-6">
-            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
+          <div className="flex divide-x divide-[var(--line)] overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">
+            <button
+              className={`min-w-[7.5rem] flex-1 px-4 py-3 text-left transition ${
+                statusFilter === "all"
+                  ? "bg-[var(--accent-soft)]"
+                  : "hover:bg-[var(--accent-soft)]"
+              }`}
+              onClick={() => handleStatusFilterChange("all")}
+              type="button"
+            >
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                 ทั้งหมด
               </p>
-              <p className="mt-2 text-2xl font-bold text-[var(--foreground)]">
-                {loadState.repairJobs.length}
+              <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
+                {Object.values(loadState.statusCounts).reduce(
+                  (sum, count) => sum + count,
+                  0,
+                )}
               </p>
-            </div>
+            </button>
             {statusOrder.map((status) => (
-              <div
-                className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4"
+              <button
+                className={`min-w-[7.5rem] flex-1 px-4 py-3 text-left transition ${
+                  statusFilter === status
+                    ? "bg-[var(--accent-soft)]"
+                    : "hover:bg-[var(--accent-soft)]"
+                }`}
                 key={status}
+                onClick={() => handleStatusFilterChange(status)}
+                type="button"
               >
                 <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                   {formatRepairJobStatus(status)}
                 </p>
-                <p className="mt-2 text-2xl font-bold text-[var(--foreground)]">
-                  {statusCounts.get(status) ?? 0}
+                <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
+                  {loadState.statusCounts[status] ?? 0}
                 </p>
-              </div>
+              </button>
             ))}
           </div>
 
-          {loadState.repairJobs.length > 0 ? (
+          {loadState.result.totalCount > 0 ? (
+            <div className="mt-5">
+              <AdminRepairJobsPaginationControls
+                onPageChange={setPage}
+                result={loadState.result}
+              />
+            </div>
+          ) : null}
+
+          {loadState.result.repairJobs.length > 0 ? (
             <div className="mt-5 space-y-4">
-              {loadState.repairJobs.map((repairJob) => (
+              {loadState.result.repairJobs.map((repairJob) => (
                 <AdminRepairJobRow
                   assignmentState={assignmentState}
                   key={`${repairJob.id}-${repairJob.status}-${repairJob.mechanic_id ?? "unassigned"}`}
@@ -586,9 +752,20 @@ export function AdminRepairJobsPanel() {
             </div>
           ) : (
             <div className="mt-5 rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
-              ยังไม่พบใบงานซ่อมในระบบ
+              {statusFilter === "all"
+                ? "ยังไม่พบใบงานซ่อมในระบบ"
+                : "ไม่พบใบงานซ่อมในสถานะที่เลือก"}
             </div>
           )}
+
+          {loadState.result.totalCount > 0 ? (
+            <div className="mt-5">
+              <AdminRepairJobsPaginationControls
+                onPageChange={setPage}
+                result={loadState.result}
+              />
+            </div>
+          ) : null}
         </section>
       ) : null}
     </main>

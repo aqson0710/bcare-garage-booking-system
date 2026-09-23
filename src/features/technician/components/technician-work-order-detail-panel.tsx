@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import {
   getTechnicianWorkOrderById,
+  reopenTechnicianWorkOrder,
   updateTechnicianWorkOrder,
   type TechnicianRepairJobStatus,
   type TechnicianWorkOrder,
@@ -187,6 +188,10 @@ export function TechnicianWorkOrderDetailPanel({
     error: null,
     status: "idle",
   });
+  const [reopenState, setReopenState] = useState<SaveState>({
+    error: null,
+    status: "idle",
+  });
   const [formState, setFormState] = useState<WorkOrderFormState>({
     diagnosis: "",
     repairNotes: "",
@@ -204,6 +209,10 @@ export function TechnicianWorkOrderDetailPanel({
         status: "loading",
       });
       setSaveState({
+        error: null,
+        status: "idle",
+      });
+      setReopenState({
         error: null,
         status: "idle",
       });
@@ -328,13 +337,70 @@ export function TechnicianWorkOrderDetailPanel({
     });
   }
 
+  async function handleReopen() {
+    if (
+      loadState.status !== "ready" ||
+      !loadState.result?.allowed ||
+      !loadState.result.workOrder
+    ) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "ต้องการเปิดงานซ่อมนี้อีกครั้งใช่หรือไม่ สถานะจะกลับไปเป็น \"กำลังซ่อม\"",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setReopenState({
+      error: null,
+      status: "saving",
+    });
+
+    const supabase = createClient();
+    const { data, error } = await reopenTechnicianWorkOrder(
+      supabase,
+      loadState.result.profile.id,
+      workOrderId,
+    );
+
+    if (error) {
+      setReopenState({
+        error: error.message,
+        status: "error",
+      });
+      return;
+    }
+
+    if (data) {
+      setFormState(getInitialFormState(data));
+      setLoadState({
+        error: null,
+        result: {
+          ...loadState.result,
+          workOrder: data,
+        },
+        status: "ready",
+      });
+    }
+
+    setReopenState({
+      error: null,
+      status: "saved",
+    });
+  }
+
   const workOrder =
     loadState.status === "ready" && loadState.result?.allowed
       ? loadState.result.workOrder
       : null;
   const isClosed =
     workOrder?.status === "completed" || workOrder?.status === "cancelled";
+  const isCompleted = workOrder?.status === "completed";
   const isSaving = saveState.status === "saving";
+  const isReopening = reopenState.status === "saving";
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 pb-8 pt-0">
@@ -533,6 +599,34 @@ export function TechnicianWorkOrderDetailPanel({
                 ) : null}
               </div>
             </div>
+
+            {isCompleted ? (
+              <div className="mt-5 flex flex-col gap-2 border-t border-[var(--line)] pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-[var(--foreground)]">
+                    กดเสร็จงานผิดใช่หรือไม่
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
+                    เปิดงานซ่อมนี้อีกครั้งเพื่อกลับไปแก้ไข สถานะจะกลับเป็น &quot;กำลังซ่อม&quot;
+                    ทำได้เฉพาะก่อนลูกค้าเริ่มดำเนินการชำระเงินเท่านั้น
+                  </p>
+                </div>
+                <button
+                  className="min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isReopening}
+                  onClick={handleReopen}
+                  type="button"
+                >
+                  {isReopening ? "กำลังเปิดงานซ่อม..." : "เปิดงานซ่อมอีกครั้ง"}
+                </button>
+              </div>
+            ) : null}
+
+            {reopenState.status === "error" ? (
+              <p className="mt-3 text-sm font-semibold text-[var(--danger)]">
+                {reopenState.error}
+              </p>
+            ) : null}
           </section>
 
           <dl className="grid gap-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 text-xs text-[var(--muted)] shadow-sm md:grid-cols-2">

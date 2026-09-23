@@ -215,7 +215,10 @@ export type Database = {
         Row: {
           id: string;
           customer_id: string;
-          vehicle_id: string;
+          // Nullable: bookings_vehicle_id_fkey is ON DELETE SET NULL so a
+          // vehicle can be deleted (per the vehicle-delete business rule)
+          // without being blocked by, or destroying, its booking history.
+          vehicle_id: string | null;
           service_id: string;
           booking_date: string;
           booking_time: string;
@@ -698,6 +701,8 @@ export type Database = {
           office_address: string | null;
           office_phone: string | null;
           office_fax: string | null;
+          office_latitude: number | null;
+          office_longitude: number | null;
           contact_title: string;
           contact_phone: string | null;
           contact_email: string | null;
@@ -716,6 +721,8 @@ export type Database = {
           office_address?: string | null;
           office_phone?: string | null;
           office_fax?: string | null;
+          office_latitude?: number | null;
+          office_longitude?: number | null;
           contact_title?: string;
           contact_phone?: string | null;
           contact_email?: string | null;
@@ -734,6 +741,8 @@ export type Database = {
           office_address?: string | null;
           office_phone?: string | null;
           office_fax?: string | null;
+          office_latitude?: number | null;
+          office_longitude?: number | null;
           contact_title?: string;
           contact_phone?: string | null;
           contact_email?: string | null;
@@ -930,7 +939,10 @@ export type Database = {
           id: string;
           booking_id: string;
           customer_id: string | null;
-          vehicle_id: string;
+          // Nullable: repair_jobs_vehicle_id_fkey is ON DELETE SET NULL so
+          // deleting a vehicle (once eligible) keeps the completed repair
+          // record instead of cascading a delete onto it.
+          vehicle_id: string | null;
           mechanic_id: string | null;
           status: RepairJobStatus;
           diagnosis: string | null;
@@ -1123,6 +1135,14 @@ export type Database = {
     } & Record<string, GenericTable>;
     Views: Record<string, GenericTable>;
     Functions: {
+      get_homepage_stats: {
+        Args: Record<string, never>;
+        Returns: {
+          trusted_customers_count: number;
+          completed_repair_jobs_count: number;
+          technician_team_count: number;
+        }[];
+      };
       apply_product_order_inventory: {
         Args: {
           target_order_id: string;
@@ -1182,6 +1202,25 @@ export type Database = {
           target_work_order_id: string;
           diagnosis_text: string | null;
           repair_notes_text: string | null;
+        };
+        Returns: {
+          id: string;
+          booking_id: string;
+          customer_id: string | null;
+          vehicle_id: string;
+          mechanic_id: string | null;
+          status: RepairJobStatus;
+          diagnosis: string | null;
+          repair_notes: string | null;
+          started_at: string | null;
+          completed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+      };
+      reopen_repair_job: {
+        Args: {
+          target_work_order_id: string;
         };
         Returns: {
           id: string;

@@ -318,27 +318,35 @@ export function AdminScheduleOverviewPanel() {
 
       {loadState.status === "ready" && metricTotals ? (
         <section className="py-6">
-          <div className="grid gap-3 md:grid-cols-4">
-            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
-              <p className="text-xs text-[var(--muted)]">รับได้รวม</p>
+          <div className="flex divide-x divide-[var(--line)] overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">
+            <div className="min-w-[7.5rem] flex-1 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                รับได้รวม
+              </p>
               <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
                 {metricTotals.maxBookings}
               </p>
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
-              <p className="text-xs text-[var(--muted)]">จองแล้ว</p>
+            <div className="min-w-[7.5rem] flex-1 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                จองแล้ว
+              </p>
               <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
                 {metricTotals.activeBookingCount}
               </p>
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
-              <p className="text-xs text-[var(--muted)]">คิวว่าง</p>
+            <div className="min-w-[7.5rem] flex-1 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                คิวว่าง
+              </p>
               <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
                 {metricTotals.availableBookingCount}
               </p>
             </div>
-            <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
-              <p className="text-xs text-[var(--muted)]">ช่วงเวลาปิดรับ</p>
+            <div className="min-w-[7.5rem] flex-1 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                ช่วงเวลาปิดรับ
+              </p>
               <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">
                 {metricTotals.closedSlotCount}
               </p>

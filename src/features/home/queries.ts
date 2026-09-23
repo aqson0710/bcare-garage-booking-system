@@ -15,6 +15,18 @@ function nullableText(value: string) {
   return trimmedValue.length > 0 ? trimmedValue : null;
 }
 
+function nullableNumber(value: string) {
+  const trimmedValue = value.trim();
+
+  if (trimmedValue.length === 0) {
+    return null;
+  }
+
+  const parsed = Number(trimmedValue);
+
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function normalizeSortOrder(value: string) {
   const sortOrder = Number(value);
 
@@ -66,6 +78,8 @@ function toFooterPayload(input: HomepageFooterSettingInput) {
     contact_title: input.contactTitle.trim() || "สอบถามข้อมูล",
     office_address: nullableText(input.officeAddress),
     office_fax: nullableText(input.officeFax),
+    office_latitude: nullableNumber(input.officeLatitude),
+    office_longitude: nullableNumber(input.officeLongitude),
     office_phone: nullableText(input.officePhone),
     office_title: input.officeTitle.trim() || "สำนักงานใหญ่",
     services_content: nullableText(input.servicesContent),
@@ -74,6 +88,34 @@ function toFooterPayload(input: HomepageFooterSettingInput) {
     status: input.status,
     updated_by: input.updatedBy,
   };
+}
+
+// Public (anon-readable) shop hours - see
+// homepage-operating-hours-public-read.sql. Kept separate from the admin
+// getAdminGarageOperatingSettings (which is authenticated/admin-only) so
+// the public homepage never depends on admin-gated RLS.
+export async function getPublicGarageOperatingDays(
+  supabase: BCareSupabaseClient,
+) {
+  return supabase
+    .from("garage_operating_days")
+    .select("*")
+    .order("weekday", { ascending: true });
+}
+
+export async function getPublicGarageClosedDates(
+  supabase: BCareSupabaseClient,
+) {
+  return supabase.from("garage_closed_dates").select("*");
+}
+
+// Real counts for the homepage's count-up stat cards, via a
+// security-definer function that returns only the three aggregates below -
+// never individual customer/technician rows. See homepage-public-stats.sql.
+export async function getPublicHomepageStats(supabase: BCareSupabaseClient) {
+  const { data, error } = await supabase.rpc("get_homepage_stats");
+
+  return { data: data?.[0] ?? null, error };
 }
 
 export async function getActiveHomepageSlides(supabase: BCareSupabaseClient) {

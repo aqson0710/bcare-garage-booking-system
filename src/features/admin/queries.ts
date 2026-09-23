@@ -7,7 +7,9 @@ import type {
   AdminBooking,
   AdminBookingListParams,
   AdminBookingStatusAction,
+  AdminBookingStatusCounts,
   AdminCustomerBooking,
+  AdminCustomerListParams,
   AdminCustomerDetail,
   AdminCustomerSummary,
   AdminGarageCapacity,
@@ -25,9 +27,13 @@ import type {
   AdminProductOrder,
   AdminProductOrderItem,
   AdminProductOrderListParams,
+  AdminProductOrderPaymentStatusCounts,
   AdminProductOrderStatusAction,
+  AdminProductOrderStatusCounts,
   AdminProductUpdateInput,
   AdminRepairJob,
+  AdminRepairJobListParams,
+  AdminRepairJobStatusCounts,
   AdminReports,
   AdminScheduleDay,
   AdminScheduleOverview,
@@ -47,8 +53,10 @@ const scheduleStartTime = "09:00";
 const scheduleEndTime = "18:00";
 const scheduleSlotIntervalMinutes = 30;
 
-function getUniqueIds(values: string[]) {
-  return Array.from(new Set(values));
+function getUniqueIds(values: (string | null | undefined)[]) {
+  return Array.from(
+    new Set(values.filter((value): value is string => Boolean(value))),
+  );
 }
 
 function normalizeSearchTerm(search: string) {
@@ -61,7 +69,14 @@ function isUuid(value: string) {
   );
 }
 
-function incrementCount(map: Map<string, number>, id: string) {
+function incrementCount(
+  map: Map<string, number>,
+  id: string | null | undefined,
+) {
+  if (!id) {
+    return;
+  }
+
   map.set(id, (map.get(id) ?? 0) + 1);
 }
 
@@ -781,7 +796,9 @@ async function attachAdminBookingDetails(
           // array, to avoid an extra query per row on a paginated list.
           payments: [],
           service: servicesById.get(booking.service_id) ?? null,
-          vehicle: vehiclesById.get(booking.vehicle_id) ?? null,
+          vehicle: booking.vehicle_id
+            ? (vehiclesById.get(booking.vehicle_id) ?? null)
+            : null,
         }) satisfies AdminBooking,
     ),
     error: null,
@@ -898,6 +915,46 @@ export async function getAdminDashboardBookingCounts(
       },
       todayCount: todayResult.count ?? 0,
     },
+    error: null,
+  };
+}
+
+export async function getAdminBookingStatusCounts(
+  supabase: BCareSupabaseClient,
+) {
+  const statuses: AdminBooking["status"][] = [
+    "pending",
+    "confirmed",
+    "cancelled",
+    "completed",
+  ];
+
+  const results = await Promise.all(
+    statuses.map((status) =>
+      supabase
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("status", status),
+    ),
+  );
+
+  const firstError = results.find((result) => result.error)?.error ?? null;
+
+  if (firstError) {
+    return {
+      data: null,
+      error: firstError,
+    };
+  }
+
+  const statusCounts = {} as AdminBookingStatusCounts;
+
+  statuses.forEach((status, index) => {
+    statusCounts[status] = results[index].count ?? 0;
+  });
+
+  return {
+    data: statusCounts,
     error: null,
   };
 }
@@ -1023,11 +1080,13 @@ export async function getAdminBookingById(
         .select("*")
         .eq("id", bookingResult.data.service_id)
         .maybeSingle(),
-      supabase
-        .from("vehicles")
-        .select("*")
-        .eq("id", bookingResult.data.vehicle_id)
-        .maybeSingle(),
+      bookingResult.data.vehicle_id
+        ? supabase
+            .from("vehicles")
+            .select("*")
+            .eq("id", bookingResult.data.vehicle_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
       supabase
         .from("booking_payments")
         .select("*")
@@ -1198,8 +1257,12 @@ async function attachAdminRepairJobDetails(
           : null,
         service: booking ? (servicesById.get(booking.service_id) ?? null) : null,
         vehicle:
-          vehiclesById.get(repairJob.vehicle_id) ??
-          (booking ? (vehiclesById.get(booking.vehicle_id) ?? null) : null),
+          (repairJob.vehicle_id
+            ? (vehiclesById.get(repairJob.vehicle_id) ?? null)
+            : null) ??
+          (booking?.vehicle_id
+            ? (vehiclesById.get(booking.vehicle_id) ?? null)
+            : null),
       } satisfies AdminRepairJob;
     }),
     error: null,
@@ -1220,6 +1283,100 @@ export async function getAdminRepairJobs(supabase: BCareSupabaseClient) {
   }
 
   return attachAdminRepairJobDetails(supabase, repairJobsResult.data ?? []);
+}
+
+export async function getAdminRepairJobsPage(
+  supabase: BCareSupabaseClient,
+  params: AdminRepairJobListParams,
+) {
+  const page = Math.max(1, params.page);
+  const pageSize = Math.max(1, params.pageSize);
+  const rangeStart = (page - 1) * pageSize;
+  const rangeEnd = rangeStart + pageSize - 1;
+
+  let query = supabase
+    .from("repair_jobs")
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false });
+
+  if (params.status !== "all") {
+    query = query.eq("status", params.status);
+  }
+
+  const repairJobsResult = await query.range(rangeStart, rangeEnd);
+
+  if (repairJobsResult.error) {
+    return {
+      data: null,
+      error: repairJobsResult.error,
+    };
+  }
+
+  const detailsResult = await attachAdminRepairJobDetails(
+    supabase,
+    repairJobsResult.data ?? [],
+  );
+
+  if (detailsResult.error) {
+    return {
+      data: null,
+      error: detailsResult.error,
+    };
+  }
+
+  const totalCount = repairJobsResult.count ?? 0;
+
+  return {
+    data: {
+      page,
+      pageSize,
+      repairJobs: detailsResult.data ?? [],
+      totalCount,
+      totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
+    },
+    error: null,
+  };
+}
+
+export async function getAdminRepairJobStatusCounts(
+  supabase: BCareSupabaseClient,
+) {
+  const statuses: AdminRepairJob["status"][] = [
+    "pending",
+    "assigned",
+    "in_progress",
+    "completed",
+    "cancelled",
+  ];
+
+  const results = await Promise.all(
+    statuses.map((status) =>
+      supabase
+        .from("repair_jobs")
+        .select("id", { count: "exact", head: true })
+        .eq("status", status),
+    ),
+  );
+
+  const firstError = results.find((result) => result.error)?.error ?? null;
+
+  if (firstError) {
+    return {
+      data: null,
+      error: firstError,
+    };
+  }
+
+  const statusCounts = {} as AdminRepairJobStatusCounts;
+
+  statuses.forEach((status, index) => {
+    statusCounts[status] = results[index].count ?? 0;
+  });
+
+  return {
+    data: statusCounts,
+    error: null,
+  };
 }
 
 export async function getAdminOpenRepairJobs(
@@ -1336,6 +1493,15 @@ export async function createAdminRepairJobFromBooking(
     };
   }
 
+  if (!bookingResult.data.vehicle_id) {
+    return {
+      data: null,
+      error: new Error(
+        "ไม่สามารถสร้างใบสั่งซ่อมได้ เพราะไม่พบรถของการจองนี้ (รถอาจถูกลบไปแล้ว)",
+      ),
+    };
+  }
+
   const repairJobResult = await supabase
     .from("repair_jobs")
     .insert({
@@ -1448,6 +1614,100 @@ export async function rejectAdminBookingPayment(
     reason,
     target_booking_payment_id: bookingPaymentId,
   });
+}
+
+export async function getAdminProductOrderStatusCounts(
+  supabase: BCareSupabaseClient,
+) {
+  const [pendingResult, inProgressResult, completedResult, cancelledResult] =
+    await Promise.all([
+      supabase
+        .from("product_orders")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+      supabase
+        .from("product_orders")
+        .select("id", { count: "exact", head: true })
+        .in("status", [
+          "confirmed",
+          "preparing",
+          "ready_for_pickup",
+          "out_for_delivery",
+        ]),
+      supabase
+        .from("product_orders")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "completed"),
+      supabase
+        .from("product_orders")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "cancelled"),
+    ]);
+
+  const firstError =
+    pendingResult.error ??
+    inProgressResult.error ??
+    completedResult.error ??
+    cancelledResult.error ??
+    null;
+
+  if (firstError) {
+    return {
+      data: null,
+      error: firstError,
+    };
+  }
+
+  return {
+    data: {
+      cancelled: cancelledResult.count ?? 0,
+      completed: completedResult.count ?? 0,
+      in_progress: inProgressResult.count ?? 0,
+      pending: pendingResult.count ?? 0,
+    } satisfies AdminProductOrderStatusCounts,
+    error: null,
+  };
+}
+
+export async function getAdminProductOrderPaymentStatusCounts(
+  supabase: BCareSupabaseClient,
+) {
+  const [unpaidResult, pendingResult, paidResult] = await Promise.all([
+    supabase
+      .from("product_orders")
+      .select("id", { count: "exact", head: true })
+      .eq("payment_status", "unpaid")
+      .neq("status", "cancelled"),
+    supabase
+      .from("product_orders")
+      .select("id", { count: "exact", head: true })
+      .eq("payment_status", "pending")
+      .neq("status", "cancelled"),
+    supabase
+      .from("product_orders")
+      .select("id", { count: "exact", head: true })
+      .eq("payment_status", "paid")
+      .neq("status", "cancelled"),
+  ]);
+
+  const firstError =
+    unpaidResult.error ?? pendingResult.error ?? paidResult.error ?? null;
+
+  if (firstError) {
+    return {
+      data: null,
+      error: firstError,
+    };
+  }
+
+  return {
+    data: {
+      paid: paidResult.count ?? 0,
+      pending: pendingResult.count ?? 0,
+      unpaid: unpaidResult.count ?? 0,
+    } satisfies AdminProductOrderPaymentStatusCounts,
+    error: null,
+  };
 }
 
 export async function getAdminProductOrdersPage(
@@ -2446,6 +2706,118 @@ export async function getAdminCustomers(supabase: BCareSupabaseClient) {
   };
 }
 
+export async function getAdminCustomersPage(
+  supabase: BCareSupabaseClient,
+  params: AdminCustomerListParams,
+) {
+  const page = Math.max(1, params.page);
+  const pageSize = Math.max(1, params.pageSize);
+  const rangeStart = (page - 1) * pageSize;
+  const rangeEnd = rangeStart + pageSize - 1;
+  const normalizedSearch = normalizeSearchTerm(params.search);
+
+  let profilesQuery = supabase
+    .from("profiles")
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false });
+
+  if (params.role !== "all") {
+    profilesQuery = profilesQuery.eq("role", params.role);
+  }
+
+  if (normalizedSearch) {
+    const searchPattern = `%${normalizedSearch}%`;
+    profilesQuery = profilesQuery.or(
+      `full_name.ilike.${searchPattern},phone_number.ilike.${searchPattern},email.ilike.${searchPattern}`,
+    );
+  }
+
+  const profilesResult = await profilesQuery.range(rangeStart, rangeEnd);
+
+  if (profilesResult.error) {
+    return {
+      data: null,
+      error: profilesResult.error,
+    };
+  }
+
+  const profiles = profilesResult.data ?? [];
+  const customerIds = profiles.map((profile) => profile.id);
+
+  const [vehiclesResult, bookingsResult] = await Promise.all([
+    customerIds.length > 0
+      ? supabase.from("vehicles").select("*").in("customer_id", customerIds)
+      : Promise.resolve({ data: [], error: null }),
+    customerIds.length > 0
+      ? supabase
+          .from("bookings")
+          .select("*")
+          .in("customer_id", customerIds)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  if (vehiclesResult.error) {
+    return {
+      data: null,
+      error: vehiclesResult.error,
+    };
+  }
+
+  if (bookingsResult.error) {
+    return {
+      data: null,
+      error: bookingsResult.error,
+    };
+  }
+
+  const vehiclesByCustomerId = new Map<string, number>();
+  const bookingsByCustomerId = new Map<string, number>();
+  const latestBookingByCustomerId = new Map<
+    string,
+    Database["public"]["Tables"]["bookings"]["Row"]
+  >();
+
+  for (const vehicle of vehiclesResult.data ?? []) {
+    vehiclesByCustomerId.set(
+      vehicle.customer_id,
+      (vehiclesByCustomerId.get(vehicle.customer_id) ?? 0) + 1,
+    );
+  }
+
+  for (const booking of bookingsResult.data ?? []) {
+    bookingsByCustomerId.set(
+      booking.customer_id,
+      (bookingsByCustomerId.get(booking.customer_id) ?? 0) + 1,
+    );
+
+    if (!latestBookingByCustomerId.has(booking.customer_id)) {
+      latestBookingByCustomerId.set(booking.customer_id, booking);
+    }
+  }
+
+  const totalCount = profilesResult.count ?? 0;
+
+  return {
+    data: {
+      customers: profiles.map(
+        (profile) =>
+          ({
+            ...profile,
+            bookingCount: bookingsByCustomerId.get(profile.id) ?? 0,
+            latestBooking: latestBookingByCustomerId.get(profile.id) ?? null,
+            vehicleCount: vehiclesByCustomerId.get(profile.id) ?? 0,
+          }) satisfies AdminCustomerSummary,
+      ),
+      page,
+      pageSize,
+      totalCount,
+      totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
+    },
+    error: null,
+  };
+}
+
 export async function getAdminCustomerById(
   supabase: BCareSupabaseClient,
   customerId: string,
@@ -2538,7 +2910,9 @@ export async function getAdminCustomerById(
           ({
             ...booking,
             service: servicesById.get(booking.service_id) ?? null,
-            vehicle: vehiclesById.get(booking.vehicle_id) ?? null,
+            vehicle: booking.vehicle_id
+              ? (vehiclesById.get(booking.vehicle_id) ?? null)
+              : null,
           }) satisfies AdminCustomerBooking,
       ),
       vehicles: vehiclesResult.data ?? [],
