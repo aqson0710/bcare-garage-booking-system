@@ -4,79 +4,23 @@
 // "ตำแหน่งร้าน" tab to set the shop's office_latitude/office_longitude
 // (see homepage-office-coordinates.sql) without typing raw numbers.
 //
-// Built on Leaflet + OpenStreetMap tiles loaded from a CDN at runtime,
-// NOT the npm "leaflet" package - this project has no shell access to the
-// user's machine to run `npm install`, and no Google Maps API key is
-// configured anywhere in the project, so a CDN script/style tag is the
-// only option that needs zero setup on the user's end. `window.L` is
-// typed as `any` on purpose: since the "leaflet" package isn't installed,
-// there's no local type declaration file to import types from.
+// Built on Leaflet + OpenStreetMap tiles loaded from a CDN at runtime (see
+// @/lib/leaflet), NOT the npm "leaflet" package - this project has no
+// shell access to the user's machine to run `npm install`, and no Google
+// Maps API key is configured anywhere in the project, so a CDN
+// script/style tag is the only option that needs zero setup on the
+// user's end. The loader (and the one `declare global` for `window.L`)
+// lives in @/lib/leaflet and is shared with the checkout page's
+// DeliveryLocationPicker - a second `declare global` for the same
+// `Window.L` property in this file fails the build with TS2687, even if
+// it's textually identical, since TypeScript checks the whole program
+// together.
 import { useEffect, useRef, useState } from "react";
-
-const LEAFLET_CSS_URL = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-const LEAFLET_JS_URL = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+import { loadLeaflet } from "@/lib/leaflet";
 
 // Bangkok - just a reasonable default center for a first-time pin, not
 // tied to any real BCare location.
 const DEFAULT_CENTER: [number, number] = [13.7563, 100.5018];
-
-declare global {
-  interface Window {
-    L?: any;
-  }
-}
-
-let leafletLoadPromise: Promise<void> | null = null;
-
-function loadLeaflet(): Promise<void> {
-  if (typeof window === "undefined") {
-    return Promise.reject(new Error("แผนที่โหลดได้เฉพาะในเบราว์เซอร์เท่านั้น"));
-  }
-
-  if (window.L) {
-    return Promise.resolve();
-  }
-
-  if (leafletLoadPromise) {
-    return leafletLoadPromise;
-  }
-
-  leafletLoadPromise = new Promise((resolve, reject) => {
-    if (!document.querySelector(`link[href="${LEAFLET_CSS_URL}"]`)) {
-      const link = document.createElement("link");
-      link.href = LEAFLET_CSS_URL;
-      link.rel = "stylesheet";
-      document.head.appendChild(link);
-    }
-
-    const existingScript = document.querySelector<HTMLScriptElement>(
-      `script[src="${LEAFLET_JS_URL}"]`,
-    );
-
-    if (existingScript) {
-      if (window.L) {
-        resolve();
-        return;
-      }
-      existingScript.addEventListener("load", () => resolve());
-      existingScript.addEventListener("error", () =>
-        reject(new Error("โหลดแผนที่ไม่สำเร็จ")),
-      );
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.async = true;
-    script.src = LEAFLET_JS_URL;
-    script.addEventListener("load", () => resolve());
-    script.addEventListener("error", () =>
-      reject(new Error("โหลดแผนที่ไม่สำเร็จ")),
-    );
-    document.head.appendChild(script);
-  });
-
-  return leafletLoadPromise;
-}
 
 export function MapPinPicker({
   latitude,
@@ -88,7 +32,12 @@ export function MapPinPicker({
   onPick: (latitude: number, longitude: number) => void;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  // Leaflet map/marker instances - no local types available since Leaflet
+  // is loaded from a CDN, not installed as an npm package (see
+  // @/lib/leaflet). Same convention as DeliveryLocationPicker.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const markerRef = useRef<any>(null);
   const onPickRef = useRef(onPick);
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">(
@@ -107,6 +56,7 @@ export function MapPinPicker({
   useEffect(() => {
     let cancelled = false;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function placeMarker(L: any, map: any, lat: number, lng: number) {
       if (markerRef.current) {
         markerRef.current.setLatLng([lat, lng]);
@@ -201,7 +151,6 @@ export function MapPinPicker({
     }
 
     map.setView([latitude, longitude], Math.max(map.getZoom(), 15));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [latitude, longitude]);
 
   if (loadState === "error") {

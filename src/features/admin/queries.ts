@@ -1256,13 +1256,19 @@ async function attachAdminRepairJobDetails(
           ? (mechanicsById.get(repairJob.mechanic_id) ?? null)
           : null,
         service: booking ? (servicesById.get(booking.service_id) ?? null) : null,
+        // Written as a chain of `??` (rather than nested ternaries each
+        // followed by `?? null`) because that nested-ternary shape trips
+        // a TS inference quirk (TS2871 "always nullish") on this
+        // compiler version - functionally identical: try the repair
+        // job's own vehicle_id first, fall back to the booking's.
         vehicle:
           (repairJob.vehicle_id
-            ? (vehiclesById.get(repairJob.vehicle_id) ?? null)
-            : null) ??
+            ? vehiclesById.get(repairJob.vehicle_id)
+            : undefined) ??
           (booking?.vehicle_id
-            ? (vehiclesById.get(booking.vehicle_id) ?? null)
-            : null),
+            ? vehiclesById.get(booking.vehicle_id)
+            : undefined) ??
+          null,
       } satisfies AdminRepairJob;
     }),
     error: null,

@@ -184,6 +184,12 @@ function CountUpStat({
     ).matches;
 
     if (prefersReducedMotion) {
+      // Intentional: `window.matchMedia` only exists client-side, so this
+      // can't be computed during render without a server/client hydration
+      // mismatch - the effect is the only safe place to read it, and
+      // setting display straight to the final value here (skipping the
+      // animation) is the whole point of respecting reduced-motion.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplay(value);
       return;
     }

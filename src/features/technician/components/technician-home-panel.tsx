@@ -338,7 +338,7 @@ export function TechnicianHomePanel() {
         </div>
         <h1 className="text-3xl font-bold text-[var(--foreground)]">
           {loadState.status === "ready"
-            ? `สวัสดี, ${loadState.data.profile.profile.full_name}`
+            ? `สวัสดี, ${loadState.data.profile.profile?.full_name ?? "ช่าง"}`
             : "หน้าแรกของช่าง"}
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -463,13 +463,13 @@ export function TechnicianHomePanel() {
                 <div>
                   <dt className="text-[var(--muted)]">ชื่อ</dt>
                   <dd className="font-semibold text-[var(--foreground)]">
-                    {loadState.data.profile.profile.full_name}
+                    {loadState.data.profile.profile?.full_name ?? "-"}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-[var(--muted)]">ความเชี่ยวชาญ</dt>
                   <dd className="font-semibold text-[var(--foreground)]">
-                    {loadState.data.profile.profile.technician_specialty ||
+                    {loadState.data.profile.profile?.technician_specialty ||
                       "-"}
                   </dd>
                 </div>

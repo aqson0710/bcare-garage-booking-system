@@ -106,7 +106,11 @@ export function useShopOpenStatus(): ShopOpenStatus {
   // server-rendered pass and the first client render agree (both show
   // nothing until "now" is known) and React doesn't complain about a
   // hydration mismatch from using `new Date()` directly during render.
+  // The initial setNow() call here is intentional, not a candidate for
+  // deriving during render - `new Date()` must NOT run during the
+  // server-rendered pass, only after mount.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNow(new Date());
     const intervalId = window.setInterval(() => setNow(new Date()), 60_000);
 

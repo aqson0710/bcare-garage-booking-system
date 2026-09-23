@@ -1,74 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { loadLeaflet } from "@/lib/leaflet";
 
-// Loaded from a CDN at runtime instead of an npm dependency, so this map
-// picker works without anyone needing to run `npm install` on the project.
-// Leaflet + OpenStreetMap tiles: free, no API key, no billing account.
-const LEAFLET_CSS_URL = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-const LEAFLET_JS_URL = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-
-// Leaflet has no official types shipped here (no npm install available),
-// so it is loaded onto `window` at runtime and accessed through this one
-// deliberately loose binding instead of scattering `any` everywhere else.
-declare global {
-  interface Window {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    L: any;
-  }
-}
+// Leaflet loader (CDN script/style tags + the one `declare global` for
+// `window.L`) now lives in @/lib/leaflet, shared with the admin
+// homepage editor's MapPinPicker - see that file's comment for why this
+// moved out of here (two separate `declare global` blocks for the same
+// `Window.L` property fail the build with TS2687).
 
 // Default map center: Bangkok, so the pin starts somewhere reasonable
 // before the customer moves it or shares their location.
 const DEFAULT_CENTER: [number, number] = [13.7563, 100.5018];
 const DEFAULT_ZOOM = 12;
 const PINNED_ZOOM = 16;
-
-let leafletLoadPromise: Promise<void> | null = null;
-
-function loadLeaflet(): Promise<void> {
-  if (typeof window === "undefined") {
-    return Promise.reject(new Error("ต้องใช้งานผ่านเบราว์เซอร์"));
-  }
-
-  if (window.L) {
-    return Promise.resolve();
-  }
-
-  if (leafletLoadPromise) {
-    return leafletLoadPromise;
-  }
-
-  leafletLoadPromise = new Promise((resolve, reject) => {
-    if (!document.querySelector(`link[href="${LEAFLET_CSS_URL}"]`)) {
-      const link = document.createElement("link");
-      link.href = LEAFLET_CSS_URL;
-      link.rel = "stylesheet";
-      document.head.appendChild(link);
-    }
-
-    const existingScript = document.querySelector<HTMLScriptElement>(
-      `script[src="${LEAFLET_JS_URL}"]`,
-    );
-
-    if (existingScript) {
-      existingScript.addEventListener("load", () => resolve());
-      existingScript.addEventListener("error", () =>
-        reject(new Error("โหลดแผนที่ไม่สำเร็จ")),
-      );
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.async = true;
-    script.onerror = () => reject(new Error("โหลดแผนที่ไม่สำเร็จ"));
-    script.onload = () => resolve();
-    script.src = LEAFLET_JS_URL;
-    document.head.appendChild(script);
-  });
-
-  return leafletLoadPromise;
-}
 
 type LoadStatus = "loading" | "ready" | "error";
 

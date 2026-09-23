@@ -291,11 +291,15 @@ export type AdminProductOrderStatusCounts = {
   pending: number;
 };
 
-export type AdminProductOrderPaymentStatusCounts = {
-  paid: number;
-  pending: number;
-  unpaid: number;
-};
+// Partial, not a full Record: getAdminProductOrderPaymentStatusCounts only
+// queries unpaid/pending/paid today, but the admin UI's filter buttons
+// cover every AdminProductOrder["payment_status"] value (including
+// partially_paid/refunded/cancelled, added later for the payment ledger),
+// so the type has to allow a status with no count yet - the UI already
+// falls back to "-" for a missing key.
+export type AdminProductOrderPaymentStatusCounts = Partial<
+  Record<AdminProductOrder["payment_status"], number>
+>;
 
 export type AdminBookingListParams = {
   page: number;
