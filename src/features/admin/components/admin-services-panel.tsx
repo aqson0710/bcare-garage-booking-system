@@ -17,6 +17,7 @@ import {
   type AdminServiceUpdateInput,
 } from "@/features/admin";
 import { createClient } from "@/lib/supabase/browser";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type LoadState =
   | {
@@ -726,11 +727,7 @@ export function AdminServicesPanel() {
       </header>
 
       {loadState.status === "loading" ? (
-        <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            กำลังโหลดบริการ...
-          </div>
-        </section>
+        <PageSkeleton label="กำลังโหลดบริการ..." variant="list" />
       ) : null}
 
       {loadState.status === "signed-out" ? (

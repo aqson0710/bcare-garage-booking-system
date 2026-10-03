@@ -7,6 +7,7 @@ import { getCurrentUserBookings } from "@/features/bookings";
 import { buildCustomerNotifications, type WebNotification } from "@/features/notifications";
 import { getCustomerProductOrders } from "@/features/products";
 import { createClient } from "@/lib/supabase/browser";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type LoadState =
   | { status: "loading"; error: null; notifications: null; userId: null }
@@ -370,11 +371,7 @@ export function CustomerNotificationsPanel() {
       </header>
 
       {loadState.status === "loading" ? (
-        <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            กำลังโหลดแจ้งเตือน...
-          </div>
-        </section>
+        <PageSkeleton label="กำลังโหลดแจ้งเตือน..." variant="list" />
       ) : null}
 
       {loadState.status === "signed-out" ? (

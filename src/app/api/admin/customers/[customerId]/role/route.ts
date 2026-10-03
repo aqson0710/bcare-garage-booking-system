@@ -122,6 +122,24 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const adminSupabase = createAdminClient();
+
+  // Current role, for the audit log entry below.
+  const previousResult = await adminSupabase
+    .from("profiles")
+    .select("role, full_name, email")
+    .eq("id", customerId)
+    .maybeSingle();
+
+  if (previousResult.error) {
+    return NextResponse.json(
+      {
+        message: previousResult.error.message,
+        ok: false,
+      },
+      { status: 500 },
+    );
+  }
+
   const updateResult = await adminSupabase
     .from("profiles")
     .update({
@@ -142,8 +160,57 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
 
+  // This update runs with the service role, so the database audit trigger
+  // can't tell which admin made it. Record it here instead.
+  if (previousResult.data && previousResult.data.role !== nextRole) {
+    await writeRoleChangeAuditLog(adminSupabase, {
+      actorId: adminCheck.userId,
+      customerId,
+      customerLabel:
+        previousResult.data.full_name?.trim() || previousResult.data.email,
+      nextRole,
+      previousRole: previousResult.data.role,
+    });
+  }
+
   return NextResponse.json({
     data: updateResult.data,
     ok: true,
   });
+}
+
+async function writeRoleChangeAuditLog(
+  adminSupabase: ReturnType<typeof createAdminClient>,
+  entry: {
+    actorId: string;
+    customerId: string;
+    customerLabel: string | null;
+    nextRole: ProfileRole;
+    previousRole: string | null;
+  },
+) {
+  const actorResult = await adminSupabase
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", entry.actorId)
+    .maybeSingle();
+
+  const { error } = await adminSupabase.from("audit_logs").insert({
+    action: "update",
+    actor_id: entry.actorId,
+    actor_name:
+      actorResult.data?.full_name?.trim() || actorResult.data?.email || null,
+    changed_fields: ["role"],
+    new_data: { role: entry.nextRole },
+    old_data: { role: entry.previousRole },
+    record_id: entry.customerId,
+    record_label: entry.customerLabel,
+    table_name: "profiles",
+  });
+
+  // The role change itself already succeeded; don't fail the request, but
+  // leave a trace in the server log.
+  if (error) {
+    console.error("Could not write role change to audit log:", error.message);
+  }
 }

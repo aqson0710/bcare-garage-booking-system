@@ -11,6 +11,7 @@ import {
   type AdminScheduleSlot,
 } from "@/features/admin";
 import { createClient } from "@/lib/supabase/browser";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type LoadState =
   | { status: "loading"; access: null; overview: null; error: null }
@@ -277,11 +278,7 @@ export function AdminScheduleOverviewPanel() {
       </header>
 
       {loadState.status === "loading" ? (
-        <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            กำลังโหลดตารางคิว...
-          </div>
-        </section>
+        <PageSkeleton label="กำลังโหลดตารางคิว..." variant="list" />
       ) : null}
 
       {loadState.status === "signed-out" ? (

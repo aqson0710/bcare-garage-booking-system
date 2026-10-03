@@ -18,6 +18,7 @@ import {
 } from "@/features/admin";
 import { createClient } from "@/lib/supabase/browser";
 import { formatBookingSlot } from "@/lib/format";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 const weekdayOptions: { label: string; value: number }[] = [
   { label: "จันทร์", value: 1 },
@@ -1288,11 +1289,7 @@ export function AdminCapacityPanel() {
       </header>
 
       {loadState.status === "loading" ? (
-        <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            กำลังโหลดช่วงเวลารับจอง...
-          </div>
-        </section>
+        <PageSkeleton label="กำลังโหลดช่วงเวลารับจอง..." variant="detail" />
       ) : null}
 
       {loadState.status === "signed-out" ? (

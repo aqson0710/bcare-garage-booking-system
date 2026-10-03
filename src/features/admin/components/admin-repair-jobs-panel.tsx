@@ -19,6 +19,7 @@ import {
 } from "@/features/admin";
 import { createClient } from "@/lib/supabase/browser";
 import { formatBookingSlot } from "@/lib/format";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 const pageSize = 10;
 
@@ -161,6 +162,15 @@ function AdminRepairJobsPaginationControls({
   result: AdminRepairJobListResult;
 }) {
   const inputId = `repair-job-page-jump-${result.page}-${result.totalPages}`;
+
+  // Only one page: show just the total, without the page navigation.
+  if (result.totalPages <= 1) {
+    return (
+      <p className="text-sm text-[var(--muted)]">
+        ทั้งหมด {result.totalCount} รายการ
+      </p>
+    );
+  }
 
   function handlePageJump(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -648,11 +658,7 @@ export function AdminRepairJobsPanel() {
       </header>
 
       {loadState.status === "loading" ? (
-        <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            กำลังโหลดใบงานซ่อม...
-          </div>
-        </section>
+        <PageSkeleton label="กำลังโหลดใบงานซ่อม..." variant="list" />
       ) : null}
 
       {loadState.status === "signed-out" ? (

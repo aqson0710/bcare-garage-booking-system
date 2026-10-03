@@ -11,6 +11,7 @@ import {
 } from "@/features/admin";
 import { createClient } from "@/lib/supabase/browser";
 import { formatBookingSlot } from "@/lib/format";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type LoadState =
   | { status: "loading"; access: null; customer: null; error: null }
@@ -215,11 +216,7 @@ export function AdminCustomerDetailPanel({ customerId }: { customerId: string })
       </header>
 
       {loadState.status === "loading" ? (
-        <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            กำลังโหลดข้อมูลลูกค้า...
-          </div>
-        </section>
+        <PageSkeleton label="กำลังโหลดข้อมูลลูกค้า..." variant="detail" />
       ) : null}
 
       {loadState.status === "signed-out" ? (

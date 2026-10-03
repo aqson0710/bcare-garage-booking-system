@@ -5,6 +5,16 @@ export type Vehicle = Database["public"]["Tables"]["vehicles"]["Row"];
 export type Booking = Database["public"]["Tables"]["bookings"]["Row"];
 export type Service = Database["public"]["Tables"]["services"]["Row"];
 export type RepairJob = Database["public"]["Tables"]["repair_jobs"]["Row"];
+export type ServiceReview =
+  Database["public"]["Tables"]["service_reviews"]["Row"];
+
+export type ServiceReviewInput = {
+  bookingId: string;
+  comment: string | null;
+  customerId: string;
+  rating: number;
+  serviceId: string;
+};
 export type BookingPayment =
   Database["public"]["Tables"]["booking_payments"]["Row"];
 

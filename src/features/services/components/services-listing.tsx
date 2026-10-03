@@ -6,11 +6,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { AppImage } from "@/components/app-image";
 import { AppNav } from "@/components/app-nav";
+import { StarRatingDisplay } from "@/components/star-rating";
 import { getCurrentProfile, type Profile } from "@/features/auth";
 import {
   createAuthenticatedBooking,
   getBookingOperatingStatus,
   getBookingSlotAvailabilities,
+  getServiceRatingSummary,
   type Booking,
   type BookingOperatingStatus,
   type BookingSlotAvailability,
@@ -22,6 +24,7 @@ import {
   type ServiceCategoryWithServices,
 } from "@/features/services";
 import { getCurrentUserVehicles, type Vehicle } from "@/features/vehicles";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type LoadState =
   | { status: "loading"; data: null; error: null }
@@ -270,10 +273,12 @@ function findSelectedService(
 function ServiceCard({
   isSelected,
   onSelect,
+  rating,
   service,
 }: {
   isSelected: boolean;
   onSelect: () => void;
+  rating?: { average: number; count: number };
   service: Service;
 }) {
   return (
@@ -299,6 +304,11 @@ function ServiceCard({
             {service.status === "active" ? "เปิดให้บริการ" : "ปิดให้บริการ"}
           </span>
         </div>
+        {rating && rating.count > 0 ? (
+          <div className="mt-2">
+            <StarRatingDisplay count={rating.count} rating={rating.average} />
+          </div>
+        ) : null}
         {service.description ? (
           <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
             {service.description}
@@ -999,6 +1009,24 @@ export function ServicesListing() {
     null,
   );
   const bookingPanelRef = useRef<HTMLElement>(null);
+  // Average star rating per service (from customer reviews).
+  const [ratingSummary, setRatingSummary] = useState<
+    Map<string, { average: number; count: number }>
+  >(() => new Map());
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getServiceRatingSummary(createClient()).then((summary) => {
+      if (isMounted) {
+        setRatingSummary(summary);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // On phones/tablets the booking form sits below every service card, so
   // after picking a service, scroll straight to it instead of leaving the
@@ -1195,11 +1223,7 @@ export function ServicesListing() {
       </header>
 
       {loadState.status === "loading" ? (
-        <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            กำลังโหลดบริการ...
-          </div>
-        </section>
+        <PageSkeleton label="กำลังโหลดบริการ..." variant="cards" />
       ) : null}
 
       {loadState.status === "error" ? (
@@ -1267,6 +1291,7 @@ export function ServicesListing() {
                           isSelected={selectedServiceId === service.id}
                           key={service.id}
                           onSelect={() => selectService(service.id)}
+                          rating={ratingSummary.get(service.id)}
                           service={service}
                         />
                       ))}

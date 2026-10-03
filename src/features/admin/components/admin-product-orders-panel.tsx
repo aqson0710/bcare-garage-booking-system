@@ -22,6 +22,7 @@ import {
 } from "@/features/admin";
 import { ProductImageThumb } from "@/features/products/components/product-image-thumb";
 import { createClient } from "@/lib/supabase/browser";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type StatusFilter = AdminProductOrderListStatusFilter;
 type PaymentFilter = AdminProductOrderListPaymentFilter;
@@ -392,6 +393,11 @@ function AdminPaginationControls({
   result: AdminProductOrderListResult;
 }) {
   const inputId = `product-order-page-jump-${placement}-${result.page}-${result.totalPages}`;
+
+  // Only one page: there is nothing to navigate, so hide the whole bar.
+  if (result.totalPages <= 1) {
+    return null;
+  }
 
   function handlePageJump(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1007,11 +1013,7 @@ export function AdminProductOrdersPanel() {
       </header>
 
       {loadState.status === "loading" ? (
-        <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            กำลังโหลดคำสั่งซื้อสินค้า...
-          </div>
-        </section>
+        <PageSkeleton label="กำลังโหลดคำสั่งซื้อสินค้า..." variant="list" />
       ) : null}
 
       {loadState.status === "signed-out" ? (

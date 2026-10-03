@@ -18,6 +18,7 @@ import {
 } from "@/features/admin";
 import { createClient } from "@/lib/supabase/browser";
 import { formatBookingSlot, statusLabel } from "@/lib/format";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type DashboardCounts = Record<AdminBooking["status"], number>;
 
@@ -1131,11 +1132,7 @@ export function AdminAccessPanel() {
       </header>
 
       {isLoading ? (
-        <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            กำลังโหลดแดชบอร์ด...
-          </div>
-        </section>
+        <PageSkeleton label="กำลังโหลดแดชบอร์ด..." variant="list" />
       ) : null}
 
       {loadState.status === "signed-out" ? (

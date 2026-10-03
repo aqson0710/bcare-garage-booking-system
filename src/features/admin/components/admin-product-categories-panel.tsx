@@ -15,6 +15,7 @@ import {
   type AdminProductCategoryUpdateInput,
 } from "@/features/admin";
 import { createClient } from "@/lib/supabase/browser";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type LoadState =
   | { status: "loading"; access: null; categories: null; error: null }
@@ -658,11 +659,7 @@ export function AdminProductCategoriesPanel() {
       </header>
 
       {loadState.status === "loading" ? (
-        <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            กำลังโหลดหมวดสินค้า...
-          </div>
-        </section>
+        <PageSkeleton label="กำลังโหลดหมวดสินค้า..." variant="list" />
       ) : null}
 
       {loadState.status === "signed-out" ? (

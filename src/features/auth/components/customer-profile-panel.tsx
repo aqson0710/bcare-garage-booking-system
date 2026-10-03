@@ -9,6 +9,7 @@ import {
   type Profile,
 } from "@/features/auth";
 import { createClient } from "@/lib/supabase/browser";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type LoadState =
   | { status: "loading"; profile: null; error: null; userId: null; email: null }
@@ -478,11 +479,7 @@ export function CustomerProfilePanel() {
       </header>
 
       {loadState.status === "loading" ? (
-        <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            กำลังโหลดโปรไฟล์...
-          </div>
-        </section>
+        <PageSkeleton label="กำลังโหลดโปรไฟล์..." variant="detail" />
       ) : null}
 
       {loadState.status === "signed-out" ? (

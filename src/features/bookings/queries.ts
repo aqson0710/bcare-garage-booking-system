@@ -8,6 +8,7 @@ import type {
   BookingSlotAvailability,
   MyBooking,
   MyBookingRepairJob,
+  ServiceReviewInput,
 } from "./types";
 
 type BCareSupabaseClient = SupabaseClient<Database>;
@@ -537,4 +538,58 @@ export async function createAuthenticatedBooking(
     } satisfies AuthenticatedBookingResult,
     error: null,
   };
+}
+
+// --- Reviews -----------------------------------------------------------------
+// One review per booking (service_reviews.booking_id is unique). Database
+// policies only allow it for the customer's own completed booking.
+
+export async function getBookingReview(
+  supabase: BCareSupabaseClient,
+  bookingId: string,
+) {
+  return supabase
+    .from("service_reviews")
+    .select("*")
+    .eq("booking_id", bookingId)
+    .maybeSingle();
+}
+
+export async function saveBookingReview(
+  supabase: BCareSupabaseClient,
+  input: ServiceReviewInput,
+) {
+  return supabase
+    .from("service_reviews")
+    .upsert(
+      {
+        booking_id: input.bookingId,
+        comment: input.comment,
+        customer_id: input.customerId,
+        rating: input.rating,
+        service_id: input.serviceId,
+      },
+      { onConflict: "booking_id" },
+    )
+    .select("*")
+    .single();
+}
+
+// Average rating and number of reviews per service (public aggregate).
+export async function getServiceRatingSummary(supabase: BCareSupabaseClient) {
+  const { data, error } = await supabase.rpc("get_service_rating_summary");
+  const summary = new Map<string, { average: number; count: number }>();
+
+  if (error || !data) {
+    return summary;
+  }
+
+  for (const row of data) {
+    summary.set(row.service_id, {
+      average: Number(row.average_rating),
+      count: Number(row.review_count),
+    });
+  }
+
+  return summary;
 }

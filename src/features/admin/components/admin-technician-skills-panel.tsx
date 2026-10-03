@@ -15,6 +15,7 @@ import {
   type AdminTechnicianSkillUpdateInput,
 } from "@/features/admin";
 import { createClient } from "@/lib/supabase/browser";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type LoadState =
   | { status: "loading"; access: null; skills: null; error: null }
@@ -607,11 +608,7 @@ export function AdminTechnicianSkillsPanel() {
       </header>
 
       {loadState.status === "loading" ? (
-        <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            กำลังโหลดทักษะช่าง...
-          </div>
-        </section>
+        <PageSkeleton label="กำลังโหลดทักษะช่าง..." variant="list" />
       ) : null}
 
       {loadState.status === "signed-out" ? (

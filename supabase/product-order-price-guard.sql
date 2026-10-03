@@ -42,7 +42,7 @@ language plpgsql
 set search_path = public
 as $$
 declare
-  v_delivery_fee constant numeric := 60;
+  v_delivery_fee constant numeric := 60; -- replaced by get_delivery_fee() in delivery-fee-setting.sql
 begin
   if public.is_trusted_product_order_writer() then
     return new;

@@ -172,6 +172,7 @@ export type AdminPaymentSettingUpdateInput = {
   bank_branch: string | null;
   bank_name: string | null;
   bank_transfer_enabled: boolean;
+  delivery_fee: number;
   payment_instructions: string | null;
   promptpay_display_name: string;
   promptpay_enabled: boolean;

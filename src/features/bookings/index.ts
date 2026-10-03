@@ -3,9 +3,12 @@ export {
   confirmBookingPickup,
   createAuthenticatedBooking,
   getBookingOperatingStatus,
+  getBookingReview,
   getBookingSlotAvailabilities,
   getCurrentUserBookingById,
   getCurrentUserBookings,
+  getServiceRatingSummary,
+  saveBookingReview,
   submitBookingPaymentSlip,
 } from "./queries";
 export type {
@@ -21,5 +24,7 @@ export type {
   Profile,
   RepairJob,
   Service,
+  ServiceReview,
+  ServiceReviewInput,
   Vehicle,
 } from "./types";

@@ -118,3 +118,11 @@ export type {
   TechnicianProfileSkill,
   TechnicianSkill,
 } from "./types";
+export { getAdminAuditActors, getAdminAuditLogsPage } from "./audit-log";
+export type {
+  AdminAuditAction,
+  AdminAuditActor,
+  AdminAuditLog,
+  AdminAuditLogFilters,
+  AdminAuditLogListResult,
+} from "./audit-log";

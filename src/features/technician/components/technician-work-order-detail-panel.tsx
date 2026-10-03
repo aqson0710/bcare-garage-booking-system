@@ -13,6 +13,7 @@ import {
 } from "@/features/technician";
 import { createClient } from "@/lib/supabase/browser";
 import { formatBookingSlot } from "@/lib/format";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type LoadState =
   | { status: "loading"; result: null; error: null }
@@ -428,11 +429,7 @@ export function TechnicianWorkOrderDetailPanel({
       </header>
 
       {loadState.status === "loading" ? (
-        <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            กำลังโหลดงานซ่อม...
-          </div>
-        </section>
+        <PageSkeleton label="กำลังโหลดงานซ่อม..." variant="detail" />
       ) : null}
 
       {loadState.status === "signed-out" ? (

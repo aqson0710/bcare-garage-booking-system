@@ -20,6 +20,8 @@ import {
 } from "@/features/products";
 import { createClient } from "@/lib/supabase/browser";
 import { formatBookingSlot } from "@/lib/format";
+import { BookingReviewCard } from "./booking-review-card";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type LoadState =
   | {
@@ -622,11 +624,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
       </header>
 
       {loadState.status === "loading" ? (
-        <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            กำลังโหลดการจอง...
-          </div>
-        </section>
+        <PageSkeleton label="กำลังโหลดการจอง..." variant="detail" />
       ) : null}
 
       {loadState.status === "signed-out" ? (
@@ -791,6 +789,8 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
               </div>
             ) : null}
           </article>
+
+          <BookingReviewCard booking={loadState.booking} />
 
           <article className="mt-5 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

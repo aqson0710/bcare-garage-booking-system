@@ -10,6 +10,7 @@ import {
 } from "@/features/products";
 import { createClient } from "@/lib/supabase/browser";
 import { ProductImageThumb } from "./product-image-thumb";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type LoadState =
   | { status: "loading"; orders: null; error: null }
@@ -422,11 +423,7 @@ export function CustomerProductOrdersPanel() {
       </header>
 
       {loadState.status === "loading" ? (
-        <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            กำลังโหลดคำสั่งซื้อ...
-          </div>
-        </section>
+        <PageSkeleton label="กำลังโหลดคำสั่งซื้อ..." variant="list" />
       ) : null}
 
       {loadState.status === "signed-out" ? (

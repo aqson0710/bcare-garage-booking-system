@@ -105,6 +105,7 @@ const adminCategories: NavCategory[] = [
       { href: "/admin/reports", label: "รายงาน" },
       { href: "/admin/homepage", label: "หน้าแรกเว็บไซต์" },
       { href: "/admin/customers", label: "ลูกค้า" },
+      { href: "/admin/audit-log", label: "ประวัติการแก้ไข" },
     ],
   },
   {

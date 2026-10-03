@@ -6,6 +6,7 @@ import { AppNav } from "@/components/app-nav";
 import { getCurrentUserBookings, type MyBooking } from "@/features/bookings";
 import { createClient } from "@/lib/supabase/browser";
 import { formatBookingSlot } from "@/lib/format";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type LoadState =
   | { status: "loading"; bookings: null; error: null }
@@ -459,11 +460,7 @@ export function MyBookingsPanel() {
       </header>
 
       {loadState.status === "loading" ? (
-        <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            กำลังโหลดรายการจอง...
-          </div>
-        </section>
+        <PageSkeleton label="กำลังโหลดรายการจอง..." variant="list" />
       ) : null}
 
       {loadState.status === "signed-out" ? (

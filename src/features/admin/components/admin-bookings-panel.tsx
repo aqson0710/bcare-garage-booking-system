@@ -29,6 +29,8 @@ import {
 } from "@/features/admin";
 import { createClient } from "@/lib/supabase/browser";
 import { formatBookingSlot } from "@/lib/format";
+import { BookingReviewSummary } from "@/features/bookings/components/booking-review-card";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type StatusFilter = AdminBookingListStatusFilter;
 
@@ -385,6 +387,11 @@ function AdminPaginationControls({
   result: AdminBookingListResult;
 }) {
   const inputId = `page-jump-${placement}-${result.page}-${result.totalPages}`;
+
+  // Only one page: there is nothing to navigate, so hide the whole bar.
+  if (result.totalPages <= 1) {
+    return null;
+  }
 
   function handlePageJump(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -924,6 +931,10 @@ function AdminBookingDetailCard({
         <div className="mt-4 rounded-md bg-[var(--surface-muted)] p-3 text-sm leading-6 text-[var(--muted)]">
           {booking.note}
         </div>
+      ) : null}
+
+      {booking.status === "completed" ? (
+        <BookingReviewSummary bookingId={booking.id} />
       ) : null}
 
       <p className="mt-4 break-all text-xs text-[var(--muted)]">
@@ -1950,11 +1961,7 @@ export function AdminBookingsPanel() {
       </header>
 
       {loadState.status === "loading" ? (
-        <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            กำลังโหลดรายการจอง...
-          </div>
-        </section>
+        <PageSkeleton label="กำลังโหลดรายการจอง..." variant="list" />
       ) : null}
 
       {loadState.status === "signed-out" ? (

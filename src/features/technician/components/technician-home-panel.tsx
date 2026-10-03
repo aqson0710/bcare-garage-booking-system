@@ -10,6 +10,7 @@ import {
   type TechnicianWorkOrder,
 } from "@/features/technician";
 import { createClient } from "@/lib/supabase/browser";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type ReadyData = {
   profile: TechnicianProfile;
@@ -347,11 +348,7 @@ export function TechnicianHomePanel() {
       </header>
 
       {loadState.status === "loading" ? (
-        <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            กำลังโหลดข้อมูล...
-          </div>
-        </section>
+        <PageSkeleton label="กำลังโหลดข้อมูล..." variant="detail" />
       ) : null}
 
       {loadState.status === "signed-out" ? (

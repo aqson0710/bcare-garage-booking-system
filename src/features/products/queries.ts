@@ -57,6 +57,21 @@ function groupProductsByCategory(
   };
 }
 
+// Current delivery fee set by the admin (payment settings page). Read through
+// the database function so checkout always matches what the order price
+// guard charges. Falls back to 60 baht if the function isn't installed yet.
+export async function getDeliveryFee(supabase: BCareSupabaseClient) {
+  const { data, error } = await supabase.rpc("get_delivery_fee");
+
+  if (error || data === null || data === undefined) {
+    return 60;
+  }
+
+  const fee = Number(data);
+
+  return Number.isFinite(fee) ? fee : 60;
+}
+
 export async function getActivePaymentSetting(supabase: BCareSupabaseClient) {
   const settingsResult = await supabase
     .from("payment_settings")

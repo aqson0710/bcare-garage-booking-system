@@ -649,6 +649,7 @@ export type Database = {
           bank_account_name: string | null;
           bank_branch: string | null;
           payment_instructions: string | null;
+          delivery_fee: number;
           created_at: string;
           updated_at: string;
           updated_by: string | null;
@@ -667,6 +668,7 @@ export type Database = {
           bank_account_name?: string | null;
           bank_branch?: string | null;
           payment_instructions?: string | null;
+          delivery_fee?: number;
           created_at?: string;
           updated_at?: string;
           updated_by?: string | null;
@@ -685,6 +687,7 @@ export type Database = {
           bank_account_name?: string | null;
           bank_branch?: string | null;
           payment_instructions?: string | null;
+          delivery_fee?: number;
           created_at?: string;
           updated_at?: string;
           updated_by?: string | null;
@@ -1054,6 +1057,72 @@ export type Database = {
         };
         Relationships: [];
       };
+      audit_logs: {
+        Row: {
+          id: number;
+          occurred_at: string;
+          actor_id: string | null;
+          actor_name: string | null;
+          action: "insert" | "update" | "delete";
+          table_name: string;
+          record_id: string | null;
+          record_label: string | null;
+          old_data: Json | null;
+          new_data: Json | null;
+          changed_fields: string[] | null;
+        };
+        // Written by the database trigger. The only insert from the app is
+        // the role-change API route (service role), which runs outside the
+        // trigger's reach. Entries are never updated.
+        Insert: {
+          id?: never;
+          occurred_at?: string;
+          actor_id?: string | null;
+          actor_name?: string | null;
+          action: "insert" | "update" | "delete";
+          table_name: string;
+          record_id?: string | null;
+          record_label?: string | null;
+          old_data?: Json | null;
+          new_data?: Json | null;
+          changed_fields?: string[] | null;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      service_reviews: {
+        Row: {
+          id: string;
+          booking_id: string;
+          customer_id: string;
+          service_id: string;
+          rating: number;
+          comment: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          booking_id: string;
+          customer_id: string;
+          service_id: string;
+          rating: number;
+          comment?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          booking_id?: string;
+          customer_id?: string;
+          service_id?: string;
+          rating?: number;
+          comment?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       services: {
         Row: {
           id: string;
@@ -1135,6 +1204,18 @@ export type Database = {
     } & Record<string, GenericTable>;
     Views: Record<string, GenericTable>;
     Functions: {
+      get_service_rating_summary: {
+        Args: Record<string, never>;
+        Returns: {
+          service_id: string;
+          average_rating: number;
+          review_count: number;
+        }[];
+      };
+      get_delivery_fee: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
       get_admin_report_summary: {
         Args: Record<string, never>;
         Returns: Json;

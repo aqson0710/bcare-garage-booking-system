@@ -15,6 +15,7 @@ import {
   type ProductCategoryWithProducts,
   type ProductWithCategory,
 } from "@/features/products";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type AuthState =
   | { status: "loading"; user: null; error: null }
@@ -752,9 +753,7 @@ export function ProductStorefront() {
             ) : null}
 
             {productsState.status === "loading" ? (
-              <div className="mt-4 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-                กำลังโหลดสินค้า...
-              </div>
+              <PageSkeleton label="กำลังโหลดสินค้า..." variant="cards" />
             ) : null}
 
             {productsState.status === "error" ? (

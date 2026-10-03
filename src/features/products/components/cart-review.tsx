@@ -13,6 +13,7 @@ import {
   type CartItemWithProduct,
 } from "@/features/products";
 import { ProductImageThumb } from "./product-image-thumb";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type AuthState =
   | { status: "loading"; user: null; error: null }
@@ -349,9 +350,7 @@ export function CartReview() {
         <section className="grid gap-6 py-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-3">
             {cartState.status === "loading" ? (
-              <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-                กำลังโหลดตะกร้า...
-              </div>
+              <PageSkeleton label="กำลังโหลดตะกร้า..." rows={3} withStats={false} />
             ) : null}
 
             {cartState.status === "error" ? (

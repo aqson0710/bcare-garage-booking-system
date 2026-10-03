@@ -15,6 +15,7 @@ import {
   type AdminPaymentSettingUpdateInput,
 } from "@/features/admin";
 import { createClient } from "@/lib/supabase/browser";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type LoadState =
   | { status: "loading"; access: null; setting: null; error: null }
@@ -51,6 +52,7 @@ type PaymentSettingsFormState = {
   bank_branch: string;
   bank_name: string;
   bank_transfer_enabled: boolean;
+  delivery_fee: string;
   payment_instructions: string;
   promptpay_display_name: string;
   promptpay_enabled: boolean;
@@ -65,6 +67,7 @@ const defaultFormState: PaymentSettingsFormState = {
   bank_branch: "สาขาทดสอบ",
   bank_name: "ธนาคารกสิกรไทย",
   bank_transfer_enabled: true,
+  delivery_fee: "60",
   payment_instructions:
     "โอนยอดให้ตรงกับคำสั่งซื้อ แล้วแนบสลิปเพื่อให้ระบบตรวจสอบ",
   promptpay_display_name: "BigO-RepairCar",
@@ -97,6 +100,7 @@ function settingToFormState(
     bank_branch: setting.bank_branch ?? "",
     bank_name: setting.bank_name ?? defaultFormState.bank_name,
     bank_transfer_enabled: setting.bank_transfer_enabled,
+    delivery_fee: String(setting.delivery_fee ?? 60),
     payment_instructions: setting.payment_instructions ?? "",
     promptpay_display_name: setting.promptpay_display_name,
     promptpay_enabled: setting.promptpay_enabled,
@@ -112,6 +116,17 @@ function toNullableText(value: string) {
 }
 
 function validatePaymentSettings(input: PaymentSettingsFormState) {
+  const deliveryFee = Number(input.delivery_fee);
+
+  if (
+    input.delivery_fee.trim() === "" ||
+    !Number.isFinite(deliveryFee) ||
+    deliveryFee < 0 ||
+    deliveryFee > 10000
+  ) {
+    return "ค่าจัดส่งต้องเป็นตัวเลข 0 - 10,000 บาท";
+  }
+
   if (!input.promptpay_enabled && !input.bank_transfer_enabled) {
     return "ต้องเปิดอย่างน้อย 1 ช่องทางชำระเงิน";
   }
@@ -513,6 +528,7 @@ export function AdminPaymentSettingsPanel() {
       bank_branch: toNullableText(formState.bank_branch),
       bank_name: toNullableText(formState.bank_name),
       bank_transfer_enabled: formState.bank_transfer_enabled,
+      delivery_fee: Number(formState.delivery_fee),
       payment_instructions: toNullableText(formState.payment_instructions),
       promptpay_display_name: formState.promptpay_display_name.trim(),
       promptpay_enabled: formState.promptpay_enabled,
@@ -573,11 +589,7 @@ export function AdminPaymentSettingsPanel() {
       </header>
 
       {loadState.status === "loading" ? (
-        <section className="grid flex-1 place-items-center py-16">
-          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--muted)] shadow-sm">
-            กำลังโหลดการตั้งค่าชำระเงิน...
-          </div>
-        </section>
+        <PageSkeleton label="กำลังโหลดการตั้งค่าชำระเงิน..." variant="detail" />
       ) : null}
 
       {loadState.status === "signed-out" ? (
@@ -754,6 +766,32 @@ export function AdminPaymentSettingsPanel() {
                     value={formState.bank_branch}
                   />
                 </div>
+              </section>
+
+              <section className="rounded-lg border border-[var(--line)] bg-[var(--surface-muted)] p-4">
+                <p className="text-sm font-semibold text-[var(--foreground)]">
+                  การจัดส่งสินค้า
+                </p>
+                <label className="mt-3 block text-sm font-semibold text-[var(--foreground)]">
+                  ค่าจัดส่งต่อคำสั่งซื้อ (บาท)
+                  <input
+                    className="mt-2 block min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)] sm:max-w-48"
+                    inputMode="decimal"
+                    max={10000}
+                    min={0}
+                    onChange={(event) =>
+                      patchFormState({ delivery_fee: event.target.value })
+                    }
+                    step="1"
+                    type="number"
+                    value={formState.delivery_fee}
+                  />
+                </label>
+                <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
+                  ใช้กับคำสั่งซื้อที่เลือก &quot;จัดส่งถึงบ้าน&quot; เท่านั้น ใส่ 0
+                  ถ้าส่งฟรี มีผลกับคำสั่งซื้อใหม่ทันทีหลังบันทึก
+                  (คำสั่งซื้อเดิมไม่เปลี่ยน)
+                </p>
               </section>
 
               <label className="text-sm font-semibold text-[var(--foreground)]">

@@ -12,9 +12,11 @@ import {
   type CartDetails,
   type CheckoutDeliveryMethod,
   type CheckoutResult,
+  getDeliveryFee,
 } from "@/features/products";
 import { DeliveryLocationPicker } from "./delivery-location-picker";
 import { ProductImageThumb } from "./product-image-thumb";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type AuthState =
   | { status: "loading"; user: null; error: null }
@@ -47,24 +49,29 @@ const currencyFormatter = new Intl.NumberFormat("th-TH", {
   style: "currency",
 });
 
-const deliveryFee = 60;
-
-const deliveryOptions: {
+function getDeliveryOptions(deliveryFee: number | null): {
   value: CheckoutDeliveryMethod;
   label: string;
   hint: string;
-}[] = [
-  {
-    hint: "ไม่มีค่าใช้จ่ายเพิ่มเติม",
-    label: "รับที่อู่ BigO-RepairCar",
-    value: "pickup",
-  },
-  {
-    hint: `เพิ่ม ${currencyFormatter.format(deliveryFee)} ต่อคำสั่งซื้อ`,
-    label: "จัดส่งถึงบ้าน",
-    value: "delivery",
-  },
-];
+}[] {
+  return [
+    {
+      hint: "ไม่มีค่าใช้จ่ายเพิ่มเติม",
+      label: "รับที่อู่ BigO-RepairCar",
+      value: "pickup",
+    },
+    {
+      hint:
+        deliveryFee === null
+          ? "กำลังโหลดค่าจัดส่ง..."
+          : deliveryFee === 0
+            ? "จัดส่งฟรี"
+            : `เพิ่ม ${currencyFormatter.format(deliveryFee)} ต่อคำสั่งซื้อ`,
+      label: "จัดส่งถึงบ้าน",
+      value: "delivery",
+    },
+  ];
+}
 
 export function CheckoutPanel() {
   const router = useRouter();
@@ -88,6 +95,22 @@ export function CheckoutPanel() {
     null,
   );
   const [note, setNote] = useState("");
+  // Delivery fee set by the admin on the payment settings page.
+  const [deliveryFee, setDeliveryFee] = useState<number | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getDeliveryFee(createClient()).then((fee) => {
+      if (isMounted) {
+        setDeliveryFee(fee);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
   const [checkoutState, setCheckoutState] = useState<CheckoutState>({
     error: null,
     result: null,
@@ -178,12 +201,13 @@ export function CheckoutPanel() {
 
   const resolvedDeliveryFee =
     deliveryMethod === "delivery" && cartState.details.itemCount > 0
-      ? deliveryFee
+      ? (deliveryFee ?? 0)
       : 0;
   const totalAmount = cartState.details.subtotal + resolvedDeliveryFee;
   const canSubmit =
     cartState.details.items.length > 0 &&
     totalAmount > 0 &&
+    !(deliveryMethod === "delivery" && deliveryFee === null) &&
     checkoutState.status !== "submitting" &&
     checkoutState.status !== "success";
 
@@ -282,9 +306,7 @@ export function CheckoutPanel() {
             onSubmit={handleSubmit}
           >
             {cartState.status === "loading" ? (
-              <div className="rounded-lg border border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm text-[var(--muted)]">
-                กำลังโหลดตะกร้า...
-              </div>
+              <PageSkeleton label="กำลังโหลดตะกร้า..." rows={2} withStats={false} />
             ) : null}
 
             {cartState.status === "error" ? (
@@ -314,7 +336,7 @@ export function CheckoutPanel() {
                 1. วิธีรับสินค้า
               </legend>
               <div className="grid gap-3 sm:grid-cols-2">
-                {deliveryOptions.map((option) => {
+                {getDeliveryOptions(deliveryFee).map((option) => {
                   const isSelected = deliveryMethod === option.value;
                   return (
                     <label
