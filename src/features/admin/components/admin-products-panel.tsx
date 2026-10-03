@@ -90,7 +90,7 @@ const currencyFormatter = new Intl.NumberFormat("th-TH", {
 
 function getStatusStyle(status: AdminProduct["status"]) {
   if (status === "active") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
   return "bg-[var(--surface-muted)] text-[var(--foreground)]";
@@ -413,19 +413,19 @@ function ProductFormFields({
       </div>
 
       {imageUploadState.status === "uploading" ? (
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-800">
+        <div className="rounded-md border border-amber-300/40 bg-amber-400/15 p-3 text-sm leading-6 text-amber-200">
           กำลังอัปโหลดรูปสินค้า...
         </div>
       ) : null}
 
       {imageUploadState.status === "uploaded" ? (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm leading-6 text-[var(--brand-strong)]">
+        <div className="rounded-md border border-emerald-300/40 bg-emerald-400/15 p-3 text-sm leading-6 text-emerald-200">
           {imageUploadState.message}
         </div>
       ) : null}
 
       {imageUploadState.status === "error" ? (
-        <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-700">
+        <div className="rounded-md border border-red-400/40 bg-red-500/15 p-3 text-sm leading-6 text-red-200">
           {imageUploadState.error}
         </div>
       ) : null}
@@ -562,7 +562,7 @@ function AddProductForm({
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <button
-            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isCreating || categories.length === 0}
             type="submit"
           >
@@ -574,7 +574,7 @@ function AddProductForm({
           ) : null}
 
           {createState.status === "created" ? (
-            <p className="text-sm font-semibold text-emerald-400">
+            <p className="text-sm font-semibold text-[var(--brand)]">
               {createState.message}
             </p>
           ) : null}
@@ -698,7 +698,7 @@ function AdminProductRow({
               {formatProductStatus(product.status)}
             </span>
             {isLowStock ? (
-              <span className="shrink-0 rounded-md bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
+              <span className="shrink-0 rounded-md bg-red-500/15 px-2 py-0.5 text-xs font-semibold text-red-200">
                 สต๊อกใกล้หมด
               </span>
             ) : null}
@@ -756,7 +756,7 @@ function AdminProductRow({
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button
-              className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
               disabled={!hasChanges || isSaving}
               type="submit"
             >
@@ -770,14 +770,14 @@ function AdminProductRow({
 
           {actionState.status === "error" &&
           actionState.productId === product.id ? (
-            <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+            <p className="rounded-md bg-red-500/15 p-3 text-sm text-red-200">
               {actionState.error}
             </p>
           ) : null}
 
           {actionState.status === "saved" &&
           actionState.productId === product.id ? (
-            <p className="rounded-md bg-emerald-50 p-3 text-sm font-semibold text-[var(--brand-strong)]">
+            <p className="rounded-md bg-emerald-400/15 p-3 text-sm font-semibold text-emerald-200">
               {actionState.message}
             </p>
           ) : null}
@@ -1144,14 +1144,14 @@ export function AdminProductsPanel() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col pb-8 pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-[var(--foreground)]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] leading-tight">
               จัดการสินค้า
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -1160,7 +1160,7 @@ export function AdminProductsPanel() {
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Link
-              className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/admin/inventory"
             >
               จัดการคลังสินค้า
@@ -1197,11 +1197,11 @@ export function AdminProductsPanel() {
 
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="max-w-lg rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             <p className="font-semibold">ต้องเข้าสู่ระบบ</p>
             <p className="mt-1">กรุณาเข้าสู่ระบบด้วยบัญชีแอดมิน</p>
             <Link
-              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/auth"
             >
               ไปที่บัญชี
@@ -1212,7 +1212,7 @@ export function AdminProductsPanel() {
 
       {loadState.status === "access-denied" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
+          <div className="max-w-lg rounded-lg border border-red-400/40 bg-red-500/15 p-5 text-sm leading-6 text-red-200">
             <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
             <p className="mt-2">{loadState.access.reason}</p>
           </div>
@@ -1221,7 +1221,7 @@ export function AdminProductsPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>

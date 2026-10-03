@@ -12,6 +12,7 @@ import {
   type TechnicianWorkOrderDetailResult,
 } from "@/features/technician";
 import { createClient } from "@/lib/supabase/browser";
+import { formatBookingSlot } from "@/lib/format";
 
 type LoadState =
   | { status: "loading"; result: null; error: null }
@@ -50,30 +51,30 @@ function formatBookingSchedule(workOrder: TechnicianWorkOrder) {
     return "-";
   }
 
-  return `${workOrder.booking.booking_date} เวลา ${workOrder.booking.booking_time.slice(
-    0,
-    5,
-  )}`;
+  return formatBookingSlot(
+    workOrder.booking.booking_date,
+    workOrder.booking.booking_time,
+  );
 }
 
 function getStatusStyle(status: TechnicianRepairJobStatus) {
   if (status === "pending") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (status === "assigned") {
-    return "bg-cyan-50 text-cyan-800";
+    return "bg-[var(--accent)]/30 text-sky-100";
   }
 
   if (status === "in_progress") {
-    return "bg-indigo-50 text-indigo-800";
+    return "bg-[var(--indigo)]/50 text-indigo-100";
   }
 
   if (status === "completed") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
-  return "bg-red-50 text-red-700";
+  return "bg-red-500/15 text-red-200";
 }
 
 function formatWorkOrderStatus(status: TechnicianRepairJobStatus) {
@@ -403,14 +404,14 @@ export function TechnicianWorkOrderDetailPanel({
   const isReopening = reopenState.status === "saving";
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 pb-8 pt-0">
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col pb-8 pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-[var(--foreground)]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] leading-tight">
               รายละเอียดงานซ่อม
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -436,11 +437,11 @@ export function TechnicianWorkOrderDetailPanel({
 
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="max-w-lg rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             <p className="font-semibold">ต้องเข้าสู่ระบบ</p>
             <p className="mt-1">กรุณาเข้าสู่ระบบด้วยบัญชีช่าง</p>
             <Link
-              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/auth"
             >
               ไปที่บัญชี
@@ -451,7 +452,7 @@ export function TechnicianWorkOrderDetailPanel({
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -459,7 +460,7 @@ export function TechnicianWorkOrderDetailPanel({
 
       {loadState.status === "ready" && !loadState.result?.allowed ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
+          <div className="max-w-lg rounded-lg border border-red-400/40 bg-red-500/15 p-5 text-sm leading-6 text-red-200">
             <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
             <p className="mt-2">{loadState.result?.reason}</p>
           </div>
@@ -470,7 +471,7 @@ export function TechnicianWorkOrderDetailPanel({
       loadState.result?.allowed &&
       !loadState.result.workOrder ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="max-w-lg rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             <p className="text-lg font-bold">ไม่พบงานซ่อม</p>
             <p className="mt-2">
               งานซ่อมนี้อาจไม่ได้ถูกมอบหมายให้บัญชีช่างที่เข้าสู่ระบบอยู่
@@ -503,7 +504,7 @@ export function TechnicianWorkOrderDetailPanel({
                   เริ่มซ่อม
                 </button>
                 <button
-                  className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={isClosed || isSaving}
                   onClick={() => handleSave("completed")}
                   type="button"
@@ -572,7 +573,7 @@ export function TechnicianWorkOrderDetailPanel({
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <button
-                  className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={isClosed || isSaving}
                   onClick={() => handleSave()}
                   type="button"
@@ -581,7 +582,7 @@ export function TechnicianWorkOrderDetailPanel({
                 </button>
 
                 {saveState.status === "saved" ? (
-                  <p className="text-sm font-semibold text-emerald-400">
+                  <p className="text-sm font-semibold text-[var(--brand)]">
                     อัปเดตงานซ่อมเรียบร้อยแล้ว
                   </p>
                 ) : null}

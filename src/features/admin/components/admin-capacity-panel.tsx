@@ -17,6 +17,7 @@ import {
   type AdminGarageCapacityInput,
 } from "@/features/admin";
 import { createClient } from "@/lib/supabase/browser";
+import { formatBookingSlot } from "@/lib/format";
 
 const weekdayOptions: { label: string; value: number }[] = [
   { label: "จันทร์", value: 1 },
@@ -120,7 +121,7 @@ function getSlotKey(date: string, time: string) {
 
 function getStatusStyle(status: AdminGarageCapacity["status"]) {
   if (status === "open") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
   return "bg-[var(--surface-muted)] text-[var(--foreground)]";
@@ -333,7 +334,7 @@ function AddCapacityForm({
           กำหนดว่าอู่รับจองได้กี่คิวในแต่ละวันและเวลา
         </p>
         {initialDate ? (
-          <p className="mt-2 text-sm font-semibold text-emerald-400">
+          <p className="mt-2 text-sm font-semibold text-[var(--brand)]">
             เติมวันที่ {initialDate}{" "}
             {initialTime ? `เวลา ${initialTime} ` : ""}
             ที่เลือกจากตารางคิวให้แล้ว ตรวจสอบแล้วกดเพิ่มช่วงเวลาได้เลย
@@ -357,7 +358,7 @@ function AddCapacityForm({
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <button
-            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isCreating}
             type="submit"
           >
@@ -369,7 +370,7 @@ function AddCapacityForm({
           ) : null}
 
           {createState.status === "created" ? (
-            <p className="text-sm font-semibold text-emerald-400">
+            <p className="text-sm font-semibold text-[var(--brand)]">
               {createState.message}
             </p>
           ) : null}
@@ -499,7 +500,7 @@ function BulkCapacityForm({
                 <button
                   className={
                     selectedWeekdays.includes(option.value)
-                      ? "min-h-9 rounded-md bg-[var(--brand)] px-3 text-xs font-semibold text-white"
+                      ? "min-h-9 rounded-md bg-[var(--brand)] px-3 text-xs font-semibold text-[var(--on-brand)]"
                       : "min-h-9 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-xs font-semibold text-[var(--muted)]"
                   }
                   key={option.value}
@@ -596,7 +597,7 @@ function BulkCapacityForm({
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button
-              className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
               disabled={
                 isCreating ||
                 previewCount === 0 ||
@@ -614,7 +615,7 @@ function BulkCapacityForm({
             ) : null}
 
             {bulkCreateState.status === "created" ? (
-              <p className="text-sm font-semibold text-emerald-400">
+              <p className="text-sm font-semibold text-[var(--brand)]">
                 {bulkCreateState.message}
               </p>
             ) : null}
@@ -707,7 +708,7 @@ function AdminCapacityRow({
             </button>
           </div>
           <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">
-            วันที่ {capacity.booking_date} เวลา {normalizeTime(capacity.booking_time)}
+            วันที่ {formatBookingSlot(capacity.booking_date, capacity.booking_time)}
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
             {capacity.note ?? "-"}
@@ -753,7 +754,7 @@ function AdminCapacityRow({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-3">
             <button
-              className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
               disabled={!hasChanges || isSaving}
               type="submit"
             >
@@ -761,8 +762,8 @@ function AdminCapacityRow({
             </button>
 
             {isConfirmingDelete ? (
-              <div className="flex flex-wrap items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2">
-                <span className="text-sm font-semibold text-red-700">
+              <div className="flex flex-wrap items-center gap-2 rounded-md border border-red-400/40 bg-red-500/15 px-3 py-2">
+                <span className="text-sm font-semibold text-red-200">
                   ยืนยันลบช่วงเวลานี้?
                 </span>
                 <button
@@ -784,7 +785,7 @@ function AdminCapacityRow({
               </div>
             ) : (
               <button
-                className="min-h-10 rounded-md border border-red-200 bg-[var(--surface)] px-4 text-sm font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-h-10 rounded-md border border-red-400/40 bg-[var(--surface)] px-4 text-sm font-semibold text-red-200 disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isSaving}
                 onClick={() => setIsConfirmingDelete(true)}
                 type="button"
@@ -801,7 +802,7 @@ function AdminCapacityRow({
 
           {actionState.status === "saved" &&
           actionState.capacityId === capacity.id ? (
-            <p className="text-sm font-semibold text-emerald-400">
+            <p className="text-sm font-semibold text-[var(--brand)]">
               {actionState.message}
             </p>
           ) : null}
@@ -1255,14 +1256,14 @@ export function AdminCapacityPanel() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col pb-8 pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-[var(--foreground)]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] leading-tight">
               จัดการคิวรับงาน
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -1296,11 +1297,11 @@ export function AdminCapacityPanel() {
 
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="max-w-lg rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             <p className="font-semibold">ต้องเข้าสู่ระบบก่อน</p>
             <p className="mt-1">กรุณาเข้าสู่ระบบด้วยบัญชี admin</p>
             <Link
-              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/auth"
             >
               ไปหน้าบัญชี
@@ -1311,7 +1312,7 @@ export function AdminCapacityPanel() {
 
       {loadState.status === "access-denied" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
+          <div className="max-w-lg rounded-lg border border-red-400/40 bg-red-500/15 p-5 text-sm leading-6 text-red-200">
             <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
             <p className="mt-2">{loadState.access.reason}</p>
           </div>
@@ -1320,7 +1321,7 @@ export function AdminCapacityPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm leading-6 text-[var(--danger)] shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm leading-6 text-[var(--danger)] shadow-sm">
             {getCapacityErrorMessage(loadState.error)}
           </div>
         </section>

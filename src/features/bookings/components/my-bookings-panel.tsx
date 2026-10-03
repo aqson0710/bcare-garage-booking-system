@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import { getCurrentUserBookings, type MyBooking } from "@/features/bookings";
 import { createClient } from "@/lib/supabase/browser";
+import { formatBookingSlot } from "@/lib/format";
 
 type LoadState =
   | { status: "loading"; bookings: null; error: null }
@@ -33,15 +34,15 @@ function formatDuration(minutes: number) {
 
 function getStatusStyle(status: MyBooking["status"]) {
   if (status === "pending") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (status === "confirmed") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
   if (status === "cancelled") {
-    return "bg-red-50 text-red-700";
+    return "bg-red-500/15 text-red-200";
   }
 
   return "bg-[var(--surface-muted)] text-[var(--foreground)]";
@@ -69,22 +70,22 @@ function formatBookingStatus(status: MyBooking["status"]) {
 
 function getRepairJobStatusStyle(status: NonNullable<MyBooking["repairJob"]>["status"]) {
   if (status === "pending") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (status === "assigned") {
-    return "bg-cyan-50 text-cyan-800";
+    return "bg-[var(--accent)]/30 text-sky-100";
   }
 
   if (status === "in_progress") {
-    return "bg-indigo-50 text-indigo-800";
+    return "bg-[var(--indigo)]/50 text-indigo-100";
   }
 
   if (status === "completed") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
-  return "bg-red-50 text-red-700";
+  return "bg-red-500/15 text-red-200";
 }
 
 function formatRepairJobStatus(status: NonNullable<MyBooking["repairJob"]>["status"]) {
@@ -113,19 +114,19 @@ function formatRepairJobStatus(status: NonNullable<MyBooking["repairJob"]>["stat
 
 function getBookingPaymentStatusStyle(status: MyBooking["payment_status"]) {
   if (status === "paid") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
   if (status === "pending_review") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (status === "rejected") {
-    return "bg-red-50 text-red-700";
+    return "bg-red-500/15 text-red-200";
   }
 
   if (status === "awaiting_payment") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   return "bg-[var(--surface-muted)] text-[var(--foreground)]";
@@ -151,10 +152,6 @@ function formatBookingPaymentStatus(status: MyBooking["payment_status"]) {
   return "ยังไม่ต้องชำระเงิน";
 }
 
-function formatTime(time: string) {
-  return time.slice(0, 5);
-}
-
 function BookingCard({ booking }: { booking: MyBooking }) {
   return (
     <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
@@ -164,7 +161,7 @@ function BookingCard({ booking }: { booking: MyBooking }) {
             {booking.service?.name ?? "ไม่พบบริการ"}
           </p>
           <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">
-            {booking.booking_date} เวลา {formatTime(booking.booking_time)}
+            {formatBookingSlot(booking.booking_date, booking.booking_time)}
           </h2>
         </div>
         <span
@@ -273,7 +270,7 @@ function BookingCard({ booking }: { booking: MyBooking }) {
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
-          className="inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+          className="inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
           href={`/my-bookings/${booking.id}`}
         >
           ดูรายละเอียด
@@ -438,14 +435,14 @@ export function MyBookingsPanel() {
   }, [bookings, statusFilter]);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 pb-8 pt-0">
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col pb-8 pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-[var(--foreground)]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] leading-tight">
               การจองของฉัน
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -453,7 +450,7 @@ export function MyBookingsPanel() {
             </p>
           </div>
           <Link
-            className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+            className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
             href="/services"
           >
             จองบริการใหม่
@@ -471,11 +468,11 @@ export function MyBookingsPanel() {
 
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="max-w-lg rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             <p className="font-semibold">ต้องเข้าสู่ระบบก่อน</p>
             <p className="mt-1">เข้าสู่ระบบก่อนดูรายการจองของคุณ</p>
             <Link
-              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/auth"
             >
               ไปที่หน้าบัญชี
@@ -486,7 +483,7 @@ export function MyBookingsPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>

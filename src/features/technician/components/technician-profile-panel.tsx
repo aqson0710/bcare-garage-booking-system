@@ -98,7 +98,7 @@ function TechnicianAccountSidebar({
             style={{ backgroundImage: `url(${avatarUrl})` }}
           />
         ) : (
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--brand)] text-sm font-black text-[var(--foreground)]">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--brand)] text-sm font-black text-[var(--on-brand)]">
             {initials}
           </div>
         )}
@@ -475,7 +475,7 @@ export function TechnicianProfilePanel() {
   const isUploading = uploadState.status === "uploading";
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col pb-8 pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
@@ -492,11 +492,11 @@ export function TechnicianProfilePanel() {
 
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="max-w-lg rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             <p className="font-semibold">ต้องเข้าสู่ระบบ</p>
             <p className="mt-1">กรุณาเข้าสู่ระบบด้วยบัญชีช่าง</p>
             <Link
-              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/auth"
             >
               ไปที่บัญชี
@@ -507,7 +507,7 @@ export function TechnicianProfilePanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -515,7 +515,7 @@ export function TechnicianProfilePanel() {
 
       {loadState.status === "ready" && !loadState.profile.allowed ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
+          <div className="max-w-lg rounded-lg border border-red-400/40 bg-red-500/15 p-5 text-sm leading-6 text-red-200">
             <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
             <p className="mt-2">{loadState.profile.reason}</p>
           </div>
@@ -623,7 +623,7 @@ export function TechnicianProfilePanel() {
                       ))}
                     </div>
                   ) : (
-                    <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                    <div className="mt-4 rounded-md border border-amber-300/40 bg-amber-400/15 p-4 text-sm text-amber-200">
                       ยังไม่มีทักษะช่างที่เปิดใช้งาน
                     </div>
                   )}
@@ -643,7 +643,7 @@ export function TechnicianProfilePanel() {
                 </section>
 
                 <button
-                  className="mt-5 min-h-11 rounded-md bg-[var(--brand)] px-6 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  className="mt-5 min-h-11 rounded-md bg-[var(--brand)] px-6 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={saveState.status === "saving"}
                   type="submit"
                 >
@@ -653,13 +653,13 @@ export function TechnicianProfilePanel() {
                 </button>
 
                 {saveState.status === "success" ? (
-                  <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-[var(--brand-strong)]">
+                  <div className="mt-4 rounded-md border border-emerald-300/40 bg-emerald-400/15 p-3 text-sm text-emerald-200">
                     {saveState.message}
                   </div>
                 ) : null}
 
                 {saveState.status === "error" ? (
-                  <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  <div className="mt-4 rounded-md border border-red-400/40 bg-red-500/15 p-3 text-sm text-red-200">
                     {saveState.error}
                   </div>
                 ) : null}
@@ -672,7 +672,7 @@ export function TechnicianProfilePanel() {
                     style={{ backgroundImage: `url(${avatarUrl})` }}
                   />
                 ) : (
-                  <div className="grid h-20 w-20 place-items-center rounded-full bg-[var(--brand)] text-2xl font-black text-[var(--foreground)]">
+                  <div className="grid h-20 w-20 place-items-center rounded-full bg-[var(--brand)] text-2xl font-black text-[var(--on-brand)]">
                     {initials}
                   </div>
                 )}
@@ -707,7 +707,7 @@ export function TechnicianProfilePanel() {
                 ) : null}
 
                 {uploadState.status === "error" ? (
-                  <p className="text-xs font-semibold text-red-700">
+                  <p className="text-xs font-semibold text-red-200">
                     {uploadState.error}
                   </p>
                 ) : null}

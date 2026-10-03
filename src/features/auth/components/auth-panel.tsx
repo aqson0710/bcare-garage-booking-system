@@ -77,8 +77,8 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
     <main className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[var(--background)] px-4 py-10">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-[var(--background)] via-[var(--background)] to-[var(--accent-soft)]" />
-        <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-[var(--brand)]/20 blur-3xl" />
-        <div className="absolute -bottom-40 -right-24 h-[28rem] w-[28rem] rounded-full bg-[var(--brand-strong)]/10 blur-3xl" />
+        <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-[var(--accent)]/30 blur-3xl" />
+        <div className="absolute -bottom-40 -right-24 h-[28rem] w-[28rem] rounded-full bg-[var(--indigo)]/40 blur-3xl" />
 
         <DiagonalWaves />
       </div>
@@ -259,7 +259,7 @@ export function AuthPanel() {
           <button
             className={
               mode === "login"
-                ? "min-h-9 rounded-md bg-[var(--brand)] text-sm font-semibold text-white"
+                ? "min-h-9 rounded-md bg-[var(--brand)] text-sm font-semibold text-[var(--on-brand)]"
                 : "min-h-9 rounded-md text-sm font-semibold text-[var(--muted)] hover:text-[var(--foreground)]"
             }
             onClick={() => resetForm("login")}
@@ -270,7 +270,7 @@ export function AuthPanel() {
           <button
             className={
               mode === "register"
-                ? "min-h-9 rounded-md bg-[var(--brand)] text-sm font-semibold text-white"
+                ? "min-h-9 rounded-md bg-[var(--brand)] text-sm font-semibold text-[var(--on-brand)]"
                 : "min-h-9 rounded-md text-sm font-semibold text-[var(--muted)] hover:text-[var(--foreground)]"
             }
             onClick={() => resetForm("register")}
@@ -362,7 +362,7 @@ export function AuthPanel() {
               <p
                 className={
                   passwordsMatch
-                    ? "mt-1.5 text-xs font-medium text-emerald-400"
+                    ? "mt-1.5 text-xs font-medium text-[var(--brand)]"
                     : "mt-1.5 text-xs font-medium text-[var(--danger)]"
                 }
               >
@@ -396,7 +396,7 @@ export function AuthPanel() {
         ) : null}
 
         <button
-          className="mt-6 min-h-11 w-full rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-6 min-h-11 w-full rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--on-brand)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
           disabled={isSubmitting}
           type="submit"
         >
@@ -423,8 +423,8 @@ export function AuthPanel() {
           <div
             className={
               message.tone === "error"
-                ? "mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
-                : "mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-[var(--brand-strong)]"
+                ? "mt-4 rounded-lg border border-red-400/40 bg-red-500/15 p-4 text-sm text-red-200"
+                : "mt-4 rounded-lg border border-emerald-300/40 bg-emerald-400/15 p-4 text-sm text-emerald-200"
             }
           >
             {message.text}

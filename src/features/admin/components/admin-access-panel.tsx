@@ -17,6 +17,7 @@ import {
   type AdminRepairJob,
 } from "@/features/admin";
 import { createClient } from "@/lib/supabase/browser";
+import { formatBookingSlot, statusLabel } from "@/lib/format";
 
 type DashboardCounts = Record<AdminBooking["status"], number>;
 
@@ -136,10 +137,6 @@ function isToday(value: string) {
   return getDateKey(value) === getTodayDateKey();
 }
 
-function formatTime(time: string) {
-  return time.slice(0, 5);
-}
-
 function formatDateTime(value: string | null) {
   if (!value) {
     return "-";
@@ -163,15 +160,15 @@ function incrementNamedCount(map: Map<string, number>, label: string, value = 1)
 
 function getStatusStyle(status: AdminBooking["status"]) {
   if (status === "pending") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (status === "confirmed") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
   if (status === "cancelled") {
-    return "bg-red-50 text-red-700";
+    return "bg-red-500/15 text-red-200";
   }
 
   return "bg-[var(--surface-muted)] text-[var(--foreground)]";
@@ -179,7 +176,7 @@ function getStatusStyle(status: AdminBooking["status"]) {
 
 function getProductOrderStatusStyle(status: AdminProductOrder["status"]) {
   if (status === "pending") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (
@@ -188,30 +185,30 @@ function getProductOrderStatusStyle(status: AdminProductOrder["status"]) {
     status === "ready_for_pickup" ||
     status === "out_for_delivery"
   ) {
-    return "bg-cyan-50 text-cyan-800";
+    return "bg-[var(--accent)]/30 text-sky-100";
   }
 
   if (status === "completed") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
-  return "bg-red-50 text-red-700";
+  return "bg-red-500/15 text-red-200";
 }
 
 function getRepairJobStatusStyle(status: AdminRepairJob["status"]) {
   if (status === "pending" || status === "assigned") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (status === "in_progress") {
-    return "bg-cyan-50 text-cyan-800";
+    return "bg-[var(--accent)]/30 text-sky-100";
   }
 
   if (status === "completed") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
-  return "bg-red-50 text-red-700";
+  return "bg-red-500/15 text-red-200";
 }
 
 function getDashboardCounts(bookings: AdminBooking[]) {
@@ -270,10 +267,10 @@ function SignalCard({
   value: number | string;
 }) {
   const toneClass = {
-    danger: "border-red-200 bg-red-50 text-red-800",
+    danger: "border-red-400/40 bg-red-500/15 text-red-200",
     neutral: "border-[var(--line)] bg-[var(--surface)] text-[var(--foreground)]",
-    success: "border-emerald-200 bg-emerald-50 text-[var(--brand-strong)]",
-    warning: "border-amber-200 bg-amber-50 text-amber-800",
+    success: "border-emerald-300/40 bg-emerald-400/15 text-emerald-200",
+    warning: "border-amber-300/40 bg-amber-400/15 text-amber-200",
   }[tone];
 
   return (
@@ -300,8 +297,8 @@ function AlertRow({
 }) {
   const toneClass =
     tone === "danger"
-      ? "border-red-200 bg-red-50 text-red-800"
-      : "border-amber-200 bg-amber-50 text-amber-800";
+      ? "border-red-400/40 bg-red-500/15 text-red-200"
+      : "border-amber-300/40 bg-amber-400/15 text-amber-200";
 
   return (
     <div
@@ -478,11 +475,11 @@ function RecentBookingRow({ booking }: { booking: AdminBooking }) {
                 booking.status,
               )}`}
             >
-              {booking.status}
+              {statusLabel("booking", booking.status)}
             </span>
           </div>
           <h2 className="mt-2 text-lg font-bold text-[var(--foreground)]">
-            {booking.booking_date} at {formatTime(booking.booking_time)}
+            {formatBookingSlot(booking.booking_date, booking.booking_time)}
           </h2>
           <p className="mt-2 text-sm text-[var(--muted)]">
             {booking.customer?.full_name ?? "-"} /{" "}
@@ -514,14 +511,15 @@ function ProductOrderQueueRow({ order }: { order: AdminProductOrder }) {
                 order.status,
               )}`}
             >
-              {order.status}
+              {statusLabel("productOrder", order.status)}
             </span>
           </div>
           <h2 className="mt-2 text-lg font-bold text-[var(--foreground)]">
             {currencyFormatter.format(order.total_amount)}
           </h2>
           <p className="mt-2 text-sm text-[var(--muted)]">
-            {order.customer?.full_name ?? "-"} / {order.payment_status}
+            {order.customer?.full_name ?? "-"} /{" "}
+            {statusLabel("productPayment", order.payment_status)}
           </p>
           <p className="mt-1 text-xs text-[var(--muted)]">
             สร้างเมื่อ {formatDateTime(order.created_at)}
@@ -545,14 +543,14 @@ function RepairJobQueueRow({ repairJob }: { repairJob: AdminRepairJob }) {
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-semibold text-[var(--brand)]">
-              {repairJob.service?.name ?? "Repair job"}
+              {repairJob.service?.name ?? "งานซ่อม"}
             </p>
             <span
               className={`rounded-md px-2.5 py-1 text-xs font-semibold ${getRepairJobStatusStyle(
                 repairJob.status,
               )}`}
             >
-              {repairJob.status}
+              {statusLabel("repairJob", repairJob.status)}
             </span>
           </div>
           <h2 className="mt-2 text-lg font-bold text-[var(--foreground)]">
@@ -811,14 +809,6 @@ export function AdminAccessPanel() {
     return loadState.bookingCounts ?? getDashboardCounts(loadState.bookings ?? []);
   }, [loadState]);
 
-  const recentBookings = useMemo(() => {
-    if (loadState.status !== "ready" || !loadState.bookings) {
-      return [];
-    }
-
-    return loadState.bookings.slice(0, 5);
-  }, [loadState]);
-
   const todayBookings = useMemo(() => {
     if (loadState.status !== "ready" || !loadState.bookings) {
       return [];
@@ -827,14 +817,6 @@ export function AdminAccessPanel() {
     return loadState.bookings.filter((booking) =>
       isToday(booking.booking_date),
     );
-  }, [loadState]);
-
-  const pendingBookings = useMemo(() => {
-    if (loadState.status !== "ready" || !loadState.bookings) {
-      return [];
-    }
-
-    return loadState.bookings.filter((booking) => booking.status === "pending");
   }, [loadState]);
 
   const pendingProductOrders = useMemo(() => {
@@ -847,21 +829,6 @@ export function AdminAccessPanel() {
         order.status !== "cancelled" &&
         (order.payment_status === "unpaid" ||
           order.payment_status === "pending"),
-    );
-  }, [loadState]);
-
-  const activeProductOrders = useMemo(() => {
-    if (loadState.status !== "ready" || !loadState.productOrders) {
-      return [];
-    }
-
-    return loadState.productOrders.filter(
-      (order) =>
-        order.status === "pending" ||
-        order.status === "confirmed" ||
-        order.status === "preparing" ||
-        order.status === "ready_for_pickup" ||
-        order.status === "out_for_delivery",
     );
   }, [loadState]);
 
@@ -886,16 +853,6 @@ export function AdminAccessPanel() {
     return loadState.products
       .filter((product) => product.stock_quantity <= lowStockThreshold)
       .sort((a, b) => a.stock_quantity - b.stock_quantity);
-  }, [loadState]);
-
-  const paidProductRevenue = useMemo(() => {
-    if (loadState.status !== "ready" || !loadState.productOrders) {
-      return 0;
-    }
-
-    return loadState.productOrders
-      .filter((order) => order.payment_status === "paid")
-      .reduce((total, order) => total + order.total_amount, 0);
   }, [loadState]);
 
   const todayScheduleBookings = useMemo(() => {
@@ -1053,10 +1010,10 @@ export function AdminAccessPanel() {
 
   const bookingStatusBreakdown = useMemo<BreakdownRow[]>(
     () => [
-      { label: "pending", value: counts.pending },
-      { label: "confirmed", value: counts.confirmed },
-      { label: "completed", value: counts.completed },
-      { label: "cancelled", value: counts.cancelled },
+      { label: statusLabel("booking", "pending"), value: counts.pending },
+      { label: statusLabel("booking", "confirmed"), value: counts.confirmed },
+      { label: statusLabel("booking", "completed"), value: counts.completed },
+      { label: statusLabel("booking", "cancelled"), value: counts.cancelled },
     ],
     [counts],
   );
@@ -1069,7 +1026,7 @@ export function AdminAccessPanel() {
     const statusMap = new Map<string, number>();
 
     for (const order of loadState.productOrders) {
-      incrementNamedCount(statusMap, order.status);
+      incrementNamedCount(statusMap, statusLabel("productOrder", order.status));
     }
 
     return Array.from(statusMap.entries())
@@ -1085,7 +1042,7 @@ export function AdminAccessPanel() {
     const statusMap = new Map<string, number>();
 
     for (const order of loadState.productOrders) {
-      incrementNamedCount(statusMap, order.payment_status);
+      incrementNamedCount(statusMap, statusLabel("productPayment", order.payment_status));
     }
 
     return Array.from(statusMap.entries())
@@ -1101,7 +1058,7 @@ export function AdminAccessPanel() {
     const serviceMap = new Map<string, number>();
 
     for (const booking of loadState.bookings) {
-      incrementNamedCount(serviceMap, booking.service?.name ?? "Unknown service");
+      incrementNamedCount(serviceMap, booking.service?.name ?? "ไม่ระบุบริการ");
     }
 
     return Array.from(serviceMap.entries())
@@ -1136,14 +1093,14 @@ export function AdminAccessPanel() {
   const isLoading = loadState.status === "loading";
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 pb-6 pt-0 sm:px-6 sm:pb-8 sm:pt-0">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col pb-6 pt-0 sm:pb-8 sm:pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-[var(--foreground)]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] leading-tight">
               แดชบอร์ดผู้ดูแลระบบ
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -1164,7 +1121,7 @@ export function AdminAccessPanel() {
               {isLoading ? "กำลังรีเฟรช..." : "รีเฟรช"}
             </button>
             <Link
-              className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/admin/bookings"
             >
               เปิดรายการจอง
@@ -1183,11 +1140,11 @@ export function AdminAccessPanel() {
 
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="max-w-lg rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             <p className="font-semibold">ต้องเข้าสู่ระบบ</p>
             <p className="mt-1">กรุณาเข้าสู่ระบบก่อนเข้าแดชบอร์ดแอดมิน</p>
             <Link
-              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/auth"
             >
               ไปที่บัญชี
@@ -1198,7 +1155,7 @@ export function AdminAccessPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -1208,91 +1165,6 @@ export function AdminAccessPanel() {
         <section className="py-6">
           {loadState.access.allowed ? (
             <div className="space-y-6">
-              <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <DashboardCard
-                  count={todayBookingCount}
-                  href="/admin/bookings"
-                  label="งานจองวันนี้"
-                  note="งานจองบริการที่อยู่ในวันนี้"
-                />
-                <DashboardCard
-                  count={counts.pending}
-                  href="/admin/bookings?status=pending"
-                  label="การจองรอยืนยัน"
-                  note="คำขอจองที่ยังรอ admin จัดการ"
-                />
-                <DashboardCard
-                  count={pendingProductOrders.length}
-                  href="/admin/product-orders?paymentStatus=pending"
-                  label="คิวตรวจชำระเงิน"
-                  note="ออเดอร์สินค้าที่ยังรอตรวจ/รอจ่าย"
-                />
-                <DashboardCard
-                  count={lowStockProducts.length}
-                  href="/admin/inventory-review"
-                  label="สต๊อกใกล้หมด"
-                  note={`สินค้าเหลือไม่เกิน ${lowStockThreshold} ชิ้น`}
-                />
-              </section>
-
-              <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <DashboardCard
-                  count={activeProductOrders.length}
-                  href="/admin/product-orders"
-                  label="ออเดอร์สินค้าที่เปิดอยู่"
-                  note="ออเดอร์ที่ยังไม่ปิดงาน"
-                />
-                <DashboardCard
-                  count={openRepairJobs.length}
-                  href="/admin/repair-jobs"
-                  label="งานซ่อมที่ยังเปิดอยู่"
-                  note="งานซ่อมที่ยังไม่เสร็จ"
-                />
-                <DashboardCard
-                  count={currencyFormatter.format(paidProductRevenue)}
-                  href="/admin/product-orders?paymentStatus=paid"
-                  label="ยอดขายสินค้าที่ชำระแล้ว"
-                  note={`จาก ${dashboardOrderPageSize} ออเดอร์ล่าสุด`}
-                />
-                <DashboardCard
-                  count={loadState.products?.length ?? 0}
-                  href="/admin/products"
-                  label="สินค้า"
-                  note="จำนวนสินค้าที่อยู่ในระบบ"
-                />
-              </section>
-
-              <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <SignalCard
-                  label="ชำระวันนี้"
-                  note="ยอดจากออเดอร์สินค้าที่มี payment paid วันนี้"
-                  tone={todayPaidProductRevenue > 0 ? "success" : "neutral"}
-                  value={currencyFormatter.format(todayPaidProductRevenue)}
-                />
-                <SignalCard
-                  label="ชำระเดือนนี้"
-                  note="ยอดเดือนนี้จากรายการที่ชำระแล้วใน 100 ออเดอร์ล่าสุด"
-                  tone={monthPaidProductRevenue > 0 ? "success" : "neutral"}
-                  value={currencyFormatter.format(monthPaidProductRevenue)}
-                />
-                <SignalCard
-                  label="ตรวจสลิป"
-                  note="สลิปที่ลูกค้าส่งมาแล้วและรอ admin ตรวจ"
-                  tone={
-                    paymentsWaitingVerification.length > 0
-                      ? "warning"
-                      : "success"
-                  }
-                  value={paymentsWaitingVerification.length}
-                />
-                <SignalCard
-                  label="พร้อมจัดการออเดอร์"
-                  note="ออเดอร์ที่จ่ายแล้วและยังต้องจัดส่ง/รับสินค้า"
-                  tone={ordersReadyToFulfill.length > 0 ? "warning" : "neutral"}
-                  value={ordersReadyToFulfill.length}
-                />
-              </section>
-
               <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
@@ -1348,38 +1220,211 @@ export function AdminAccessPanel() {
                   paymentsWaitingVerification.length === 0 &&
                   lowStockProducts.length === 0 &&
                   unassignedRepairJobs.length === 0 ? (
-                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-[var(--brand-strong)]">
+                    <div className="rounded-lg border border-emerald-300/40 bg-emerald-400/15 p-4 text-sm leading-6 text-emerald-200">
                       ตอนนี้ยังไม่มีงานเร่งด่วนใน dashboard
                     </div>
                   ) : null}
                 </div>
               </section>
 
-              <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <Link
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-center text-sm font-semibold text-[var(--foreground)] shadow-sm hover:border-[var(--brand)]"
-                  href="/admin/product-orders"
-                >
-                  ออเดอร์สินค้า
-                </Link>
-                <Link
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-center text-sm font-semibold text-[var(--foreground)] shadow-sm hover:border-[var(--brand)]"
-                  href="/admin/repair-jobs"
-                >
-                  งานซ่อม
-                </Link>
-                <Link
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-center text-sm font-semibold text-[var(--foreground)] shadow-sm hover:border-[var(--brand)]"
+              <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <DashboardCard
+                  count={todayBookingCount}
+                  href="/admin/bookings"
+                  label="งานจองวันนี้"
+                  note="งานจองบริการที่อยู่ในวันนี้"
+                />
+                <DashboardCard
+                  count={counts.pending}
+                  href="/admin/bookings?status=pending"
+                  label="การจองรอยืนยัน"
+                  note="คำขอจองที่ยังรอแอดมินยืนยัน"
+                />
+                <DashboardCard
+                  count={paymentsWaitingVerification.length}
+                  href="/admin/product-orders?paymentStatus=pending"
+                  label="สลิปรอตรวจ"
+                  note="ลูกค้าส่งหลักฐานการชำระเงินแล้ว"
+                />
+                <DashboardCard
+                  count={lowStockProducts.length}
                   href="/admin/inventory-review"
-                >
-                  ตรวจสต๊อก
-                </Link>
-                <Link
-                  className="min-h-12 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-center text-sm font-semibold text-[var(--foreground)] shadow-sm hover:border-[var(--brand)]"
-                  href="/admin/payment-settings"
-                >
-                  ตั้งค่าชำระเงิน
-                </Link>
+                  label="สต๊อกใกล้หมด"
+                  note={`สินค้าเหลือไม่เกิน ${lowStockThreshold} ชิ้น`}
+                />
+              </section>
+
+              <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <SignalCard
+                  label="ยอดชำระวันนี้"
+                  note="ยอดออเดอร์สินค้าที่ชำระแล้ววันนี้"
+                  tone={todayPaidProductRevenue > 0 ? "success" : "neutral"}
+                  value={currencyFormatter.format(todayPaidProductRevenue)}
+                />
+                <SignalCard
+                  label="ยอดชำระเดือนนี้"
+                  note={`จาก ${dashboardOrderPageSize} ออเดอร์ล่าสุด`}
+                  tone={monthPaidProductRevenue > 0 ? "success" : "neutral"}
+                  value={currencyFormatter.format(monthPaidProductRevenue)}
+                />
+                <SignalCard
+                  label="ออเดอร์รอจัดส่ง/รับสินค้า"
+                  note="จ่ายเงินแล้ว รอเตรียมหรือส่งสินค้า"
+                  tone={ordersReadyToFulfill.length > 0 ? "warning" : "neutral"}
+                  value={ordersReadyToFulfill.length}
+                />
+                <SignalCard
+                  label="งานซ่อมที่ยังเปิดอยู่"
+                  note="งานซ่อมที่ยังไม่เสร็จ"
+                  tone="neutral"
+                  value={openRepairJobs.length}
+                />
+              </section>
+
+              <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+                <div className="space-y-6">
+                  <section>
+                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h2 className="text-xl font-bold text-[var(--foreground)]">
+                          ตารางงานวันนี้
+                        </h2>
+                        <p className="mt-1 text-sm text-[var(--muted)]">
+                          งานวันนี้ที่รอยืนยันหรือยืนยันแล้ว
+                        </p>
+                      </div>
+                      <Link
+                        className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                        href="/admin/bookings"
+                      >
+                        ดูรายการปฏิทิน
+                      </Link>
+                    </div>
+                    {todayScheduleBookings.length > 0 ? (
+                      <div className="space-y-3">
+                        {todayScheduleBookings.map((booking) => (
+                          <RecentBookingRow booking={booking} key={booking.id} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
+                        วันนี้ยังไม่มีงานจองที่ต้องจัดการ
+                      </div>
+                    )}
+                  </section>
+
+                  <section>
+                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h2 className="text-xl font-bold text-[var(--foreground)]">
+                          คิวออเดอร์สินค้า
+                        </h2>
+                        <p className="mt-1 text-sm text-[var(--muted)]">
+                          ออเดอร์สินค้าที่เกี่ยวกับการชำระเงินหรือรอจัดการ
+                        </p>
+                      </div>
+                      <Link
+                        className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                        href="/admin/product-orders"
+                      >
+                        ดูออเดอร์
+                      </Link>
+                    </div>
+                    {pendingProductOrders.length > 0 ? (
+                      <div className="space-y-3">
+                        {pendingProductOrders.slice(0, 5).map((order) => (
+                          <ProductOrderQueueRow key={order.id} order={order} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
+                        ไม่มีออเดอร์สินค้ารอชำระเงินตอนนี้
+                      </div>
+                    )}
+                  </section>
+
+                </div>
+
+                <aside className="space-y-4">
+                  <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
+                    <p className="text-sm font-semibold text-[var(--brand)]">
+                      สต๊อกใกล้หมด
+                    </p>
+                    <div className="mt-4 space-y-3">
+                      {lowStockProducts.slice(0, 5).map((product) => (
+                        <LowStockRow key={product.id} product={product} />
+                      ))}
+                      {lowStockProducts.length === 0 ? (
+                        <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--muted)]">
+                          สต๊อกยังไม่มีรายการใกล้หมด
+                        </div>
+                      ) : null}
+                    </div>
+                  </section>
+
+                  <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
+                    <p className="text-sm font-semibold text-[var(--brand)]">
+                      งานซ่อม
+                    </p>
+                    <div className="mt-4 space-y-3">
+                      {openRepairJobs.slice(0, 3).map((repairJob) => (
+                        <RepairJobQueueRow
+                          key={repairJob.id}
+                          repairJob={repairJob}
+                        />
+                      ))}
+                      {openRepairJobs.length === 0 ? (
+                        <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--muted)]">
+                          ยังไม่มีงานซ่อมค้างอยู่
+                        </div>
+                      ) : null}
+                    </div>
+                  </section>
+
+                  <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
+                    <p className="text-sm font-semibold text-[var(--brand)]">
+                      ลิงก์ลัด
+                    </p>
+                    <div className="mt-4 grid gap-3">
+                      <Link
+                        className="block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
+                        href="/admin/bookings"
+                      >
+                        จัดการการจอง
+                      </Link>
+                      <Link
+                        className="block min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                        href="/admin/product-orders"
+                      >
+                        ออเดอร์สินค้า
+                      </Link>
+                      <Link
+                        className="block min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                        href="/admin/repair-jobs"
+                      >
+                        งานซ่อม
+                      </Link>
+                      <Link
+                        className="block min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                        href="/admin/inventory"
+                      >
+                        คลังสินค้า
+                      </Link>
+                      <Link
+                        className="block min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                        href="/admin/payment-settings"
+                      >
+                        ตั้งค่าชำระเงิน
+                      </Link>
+                      <Link
+                        className="block min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+                        href="/admin/reports"
+                      >
+                        รายงาน
+                      </Link>
+                    </div>
+                  </section>
+                </aside>
               </section>
 
               <section className="grid gap-4 xl:grid-cols-2">
@@ -1533,216 +1578,9 @@ export function AdminAccessPanel() {
                   />
                 </section>
               </section>
-
-              <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-                <div className="space-y-6">
-                  <section>
-                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <h2 className="text-xl font-bold text-[var(--foreground)]">
-                          ตารางงานวันนี้
-                        </h2>
-                        <p className="mt-1 text-sm text-[var(--muted)]">
-                          งานวันนี้ที่ยัง pending หรือ confirmed
-                        </p>
-                      </div>
-                      <Link
-                        className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
-                        href="/admin/bookings"
-                      >
-                        ดูรายการปฏิทิน
-                      </Link>
-                    </div>
-                    {todayScheduleBookings.length > 0 ? (
-                      <div className="space-y-3">
-                        {todayScheduleBookings.map((booking) => (
-                          <RecentBookingRow booking={booking} key={booking.id} />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
-                        วันนี้ยังไม่มีงานจองที่ต้องจัดการ
-                      </div>
-                    )}
-                  </section>
-
-                  <section>
-                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <h2 className="text-xl font-bold text-[var(--foreground)]">
-                          คิวการจอง
-                        </h2>
-                        <p className="mt-1 text-sm text-[var(--muted)]">
-                          งานจองที่ควรตรวจและยืนยันก่อน
-                        </p>
-                      </div>
-                      <Link
-                        className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
-                        href="/admin/bookings?status=pending"
-                      >
-                        ดูคิว
-                      </Link>
-                    </div>
-                    {pendingBookings.length > 0 ? (
-                      <div className="space-y-3">
-                        {pendingBookings.slice(0, 5).map((booking) => (
-                          <RecentBookingRow booking={booking} key={booking.id} />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
-                        {counts.pending > 0
-                          ? "มีการจองที่รอยืนยันอยู่ในระบบ กดดูคิวเพื่อดูรายการทั้งหมด"
-                          : "ไม่มีการจองรอยืนยันตอนนี้"}
-                      </div>
-                    )}
-                  </section>
-
-                  <section>
-                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <h2 className="text-xl font-bold text-[var(--foreground)]">
-                          คิวออเดอร์สินค้า
-                        </h2>
-                        <p className="mt-1 text-sm text-[var(--muted)]">
-                          ออเดอร์สินค้าที่เกี่ยวกับการชำระเงินหรือรอจัดการ
-                        </p>
-                      </div>
-                      <Link
-                        className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
-                        href="/admin/product-orders"
-                      >
-                        ดูออเดอร์
-                      </Link>
-                    </div>
-                    {pendingProductOrders.length > 0 ? (
-                      <div className="space-y-3">
-                        {pendingProductOrders.slice(0, 5).map((order) => (
-                          <ProductOrderQueueRow key={order.id} order={order} />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
-                        ไม่มีออเดอร์สินค้ารอชำระเงินตอนนี้
-                      </div>
-                    )}
-                  </section>
-
-                  <section>
-                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <h2 className="text-xl font-bold text-[var(--foreground)]">
-                          การจองล่าสุด
-                        </h2>
-                        <p className="mt-1 text-sm text-[var(--muted)]">
-                          รายการจองล่าสุดทั้งหมด
-                        </p>
-                      </div>
-                      <Link
-                        className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
-                        href="/admin/bookings"
-                      >
-                        ดูทั้งหมด
-                      </Link>
-                    </div>
-                    {recentBookings.length > 0 ? (
-                      <div className="space-y-3">
-                        {recentBookings.map((booking) => (
-                          <RecentBookingRow booking={booking} key={booking.id} />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
-                        ยังไม่มีรายการจอง
-                      </div>
-                    )}
-                  </section>
-                </div>
-
-                <aside className="space-y-4">
-                  <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
-                    <p className="text-sm font-semibold text-[var(--brand)]">
-                      สต๊อกใกล้หมด
-                    </p>
-                    <div className="mt-4 space-y-3">
-                      {lowStockProducts.slice(0, 5).map((product) => (
-                        <LowStockRow key={product.id} product={product} />
-                      ))}
-                      {lowStockProducts.length === 0 ? (
-                        <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--muted)]">
-                          สต๊อกยังไม่มีรายการใกล้หมด
-                        </div>
-                      ) : null}
-                    </div>
-                  </section>
-
-                  <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
-                    <p className="text-sm font-semibold text-[var(--brand)]">
-                      งานซ่อม
-                    </p>
-                    <div className="mt-4 space-y-3">
-                      {openRepairJobs.slice(0, 3).map((repairJob) => (
-                        <RepairJobQueueRow
-                          key={repairJob.id}
-                          repairJob={repairJob}
-                        />
-                      ))}
-                      {openRepairJobs.length === 0 ? (
-                        <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface-muted)] p-4 text-sm leading-6 text-[var(--muted)]">
-                          ยังไม่มีงานซ่อมค้างอยู่
-                        </div>
-                      ) : null}
-                    </div>
-                  </section>
-
-                  <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
-                    <p className="text-sm font-semibold text-[var(--brand)]">
-                      ลิงก์ลัด
-                    </p>
-                    <div className="mt-4 grid gap-3">
-                      <Link
-                        className="block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
-                        href="/admin/bookings"
-                      >
-                        จัดการการจอง
-                      </Link>
-                      <Link
-                        className="block min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
-                        href="/admin/product-orders"
-                      >
-                        ออเดอร์สินค้า
-                      </Link>
-                      <Link
-                        className="block min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
-                        href="/admin/repair-jobs"
-                      >
-                        งานซ่อม
-                      </Link>
-                      <Link
-                        className="block min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
-                        href="/admin/inventory"
-                      >
-                        คลังสินค้า
-                      </Link>
-                      <Link
-                        className="block min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
-                        href="/admin/payment-settings"
-                      >
-                        ตั้งค่าชำระเงิน
-                      </Link>
-                      <Link
-                        className="block min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
-                        href="/admin/reports"
-                      >
-                        รายงาน
-                      </Link>
-                    </div>
-                  </section>
-                </aside>
-              </section>
             </div>
           ) : (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
+            <div className="rounded-lg border border-red-400/40 bg-red-500/15 p-5 text-sm leading-6 text-red-200">
               <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
               <p className="mt-2">{loadState.access.reason}</p>
               {loadState.access.profile ? (
@@ -1751,7 +1589,7 @@ export function AdminAccessPanel() {
                 </p>
               ) : null}
               <Link
-                className="mt-5 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+                className="mt-5 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
                 href="/auth"
               >
                 ไปที่บัญชี

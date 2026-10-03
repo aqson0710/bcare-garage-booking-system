@@ -108,7 +108,7 @@ export function CustomerBookingReceiptPanel({
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
           <p className="font-semibold">ต้องเข้าสู่ระบบก่อนดูเอกสารการจอง</p>
           <Link
-            className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+            className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
             href="/auth"
           >
             ไปที่หน้าบัญชี
@@ -126,7 +126,7 @@ export function CustomerBookingReceiptPanel({
             ไม่พบเอกสารของการจองนี้
           </p>
           <Link
-            className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+            className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
             href="/my-bookings"
           >
             กลับไปการจองของฉัน

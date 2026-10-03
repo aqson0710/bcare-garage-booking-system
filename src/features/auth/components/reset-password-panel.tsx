@@ -202,7 +202,7 @@ export function ResetPasswordPanel() {
               <p
                 className={
                   passwordsMatch
-                    ? "mt-1.5 text-xs font-medium text-emerald-400"
+                    ? "mt-1.5 text-xs font-medium text-[var(--brand)]"
                     : "mt-1.5 text-xs font-medium text-[var(--danger)]"
                 }
               >
@@ -214,7 +214,7 @@ export function ResetPasswordPanel() {
           </div>
 
           <button
-            className="mt-6 min-h-11 w-full rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-6 min-h-11 w-full rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--on-brand)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isSubmitting}
             type="submit"
           >
@@ -227,8 +227,8 @@ export function ResetPasswordPanel() {
         <div
           className={
             message.tone === "error"
-              ? "mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
-              : "mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-[var(--brand-strong)]"
+              ? "mt-4 rounded-lg border border-red-400/40 bg-red-500/15 p-4 text-sm text-red-200"
+              : "mt-4 rounded-lg border border-emerald-300/40 bg-emerald-400/15 p-4 text-sm text-emerald-200"
           }
         >
           {message.text}

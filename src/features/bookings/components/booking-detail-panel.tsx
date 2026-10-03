@@ -19,6 +19,7 @@ import {
   type PaymentSetting,
 } from "@/features/products";
 import { createClient } from "@/lib/supabase/browser";
+import { formatBookingSlot } from "@/lib/format";
 
 type LoadState =
   | {
@@ -93,21 +94,17 @@ function formatDuration(minutes: number) {
     : `${hours} ชม.`;
 }
 
-function formatTime(time: string) {
-  return time.slice(0, 5);
-}
-
 function getStatusStyle(status: MyBooking["status"]) {
   if (status === "pending") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (status === "confirmed") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
   if (status === "cancelled") {
-    return "bg-red-50 text-red-700";
+    return "bg-red-500/15 text-red-200";
   }
 
   return "bg-[var(--surface-muted)] text-[var(--foreground)]";
@@ -153,22 +150,22 @@ function formatRepairJobStatus(
 
 function getRepairJobStatusStyle(status: NonNullable<MyBooking["repairJob"]>["status"]) {
   if (status === "pending") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (status === "assigned") {
-    return "bg-cyan-50 text-cyan-800";
+    return "bg-[var(--accent)]/30 text-sky-100";
   }
 
   if (status === "in_progress") {
-    return "bg-indigo-50 text-indigo-800";
+    return "bg-[var(--indigo)]/50 text-indigo-100";
   }
 
   if (status === "completed") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
-  return "bg-red-50 text-red-700";
+  return "bg-red-500/15 text-red-200";
 }
 
 function getCancelButtonLabel(
@@ -192,7 +189,7 @@ function getCancelButtonLabel(
 
 function getCancelButtonClass(bookingStatus: MyBooking["status"]) {
   if (bookingStatus === "pending") {
-    return "min-h-10 rounded-md border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-60";
+    return "min-h-10 rounded-md border border-red-400/40 bg-red-500/15 px-4 text-sm font-semibold text-red-200 disabled:cursor-not-allowed disabled:opacity-60";
   }
 
   return "min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] px-4 text-sm font-semibold text-[var(--muted)] disabled:cursor-not-allowed";
@@ -254,19 +251,19 @@ function formatBookingPaymentStatus(status: MyBooking["payment_status"]) {
 
 function getBookingPaymentStatusStyle(status: MyBooking["payment_status"]) {
   if (status === "paid") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
   if (status === "pending_review") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (status === "rejected") {
-    return "bg-red-50 text-red-700";
+    return "bg-red-500/15 text-red-200";
   }
 
   if (status === "awaiting_payment") {
-    return "bg-cyan-50 text-cyan-800";
+    return "bg-[var(--accent)]/30 text-sky-100";
   }
 
   return "bg-[var(--surface-muted)] text-[var(--foreground)]";
@@ -601,14 +598,14 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 pb-8 pt-0">
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col pb-8 pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-[var(--foreground)]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] leading-tight">
               รายละเอียดการจอง
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -634,11 +631,11 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
 
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="max-w-lg rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             <p className="font-semibold">ต้องเข้าสู่ระบบก่อน</p>
             <p className="mt-1">เข้าสู่ระบบก่อนดูรายละเอียดการจองนี้</p>
             <Link
-              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/auth"
             >
               ไปที่หน้าบัญชี
@@ -657,7 +654,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
               การจองนี้อาจไม่มีอยู่ หรือไม่ได้เชื่อมกับบัญชีที่เข้าสู่ระบบอยู่
             </p>
             <Link
-              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/my-bookings"
             >
               กลับไปการจองของฉัน
@@ -668,7 +665,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -683,8 +680,10 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
                   {loadState.booking.service?.name ?? "ไม่พบบริการ"}
                 </p>
                 <h2 className="mt-2 text-2xl font-bold text-[var(--foreground)]">
-                  {loadState.booking.booking_date} เวลา{" "}
-                  {formatTime(loadState.booking.booking_time)}
+                  {formatBookingSlot(
+                    loadState.booking.booking_date,
+                    loadState.booking.booking_time,
+                  )}
                 </h2>
               </div>
               <span
@@ -787,7 +786,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
             </div>
 
             {cancelState.status === "error" ? (
-              <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              <div className="mt-4 rounded-md border border-red-400/40 bg-red-500/15 p-3 text-sm text-red-200">
                 {cancelState.error}
               </div>
             ) : null}
@@ -909,7 +908,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
 
               {loadState.booking.payment_status === "rejected" &&
               loadState.booking.latestPayment?.rejected_reason ? (
-                <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-700">
+                <div className="mt-4 rounded-md border border-red-400/40 bg-red-500/15 p-3 text-sm leading-6 text-red-200">
                   <p className="font-semibold">สลิปไม่ผ่าน</p>
                   <p className="mt-1">
                     {loadState.booking.latestPayment.rejected_reason}
@@ -918,13 +917,13 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
               ) : null}
 
               {loadState.booking.payment_status === "pending_review" ? (
-                <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-800">
+                <div className="mt-4 rounded-md border border-amber-300/40 bg-amber-400/15 p-3 text-sm leading-6 text-amber-200">
                   ส่งสลิปแล้ว กรุณารอแอดมินตรวจสอบและยืนยันการชำระเงิน
                 </div>
               ) : null}
 
               {loadState.booking.payment_status === "paid" ? (
-                <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm leading-6 text-[var(--brand-strong)]">
+                <div className="mt-4 rounded-md border border-emerald-300/40 bg-emerald-400/15 p-3 text-sm leading-6 text-emerald-200">
                   แอดมินตรวจสอบและยืนยันการชำระเงินแล้ว
                 </div>
               ) : null}
@@ -1028,7 +1027,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
                       </dl>
                     )}
                     {loadState.paymentSetting?.payment_instructions ? (
-                      <p className="mt-3 text-xs leading-5 text-amber-400">
+                      <p className="mt-3 text-xs leading-5 text-amber-300">
                         {loadState.paymentSetting.payment_instructions}
                       </p>
                     ) : null}
@@ -1051,7 +1050,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
                   </p>
 
                   <button
-                    className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={
                       paymentSubmitState.status === "submitting" ||
                       paymentSubmitState.status === "verifying"
@@ -1071,7 +1070,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
                     </p>
                   ) : null}
                   {paymentSubmitState.status === "success" ? (
-                    <p className="text-sm font-semibold text-emerald-400">
+                    <p className="text-sm font-semibold text-[var(--brand)]">
                       ตรวจสลิปแล้ว หากยังรอตรวจอยู่แอดมินจะตรวจสอบให้อีกครั้ง
                     </p>
                   ) : null}
@@ -1088,7 +1087,7 @@ export function BookingDetailPanel({ bookingId }: { bookingId: string }) {
                   ) : (
                     <>
                       <button
-                        className="flex min-h-10 w-full items-center justify-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                        className="flex min-h-10 w-full items-center justify-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                         disabled={pickupState.status === "confirming"}
                         onClick={handleConfirmPickup}
                         type="button"

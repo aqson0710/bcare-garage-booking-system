@@ -232,12 +232,12 @@ export function CheckoutPanel() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-5 pb-6 pt-0 sm:px-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col pb-6 pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
-        <h1 className="text-3xl font-bold leading-tight text-[var(--foreground)]">
+        <h1 className="text-2xl sm:text-3xl font-bold leading-tight text-[var(--foreground)]">
           ยืนยันคำสั่งซื้อ
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -255,10 +255,10 @@ export function CheckoutPanel() {
 
       {authState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="max-w-xl rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             <p className="font-semibold">ต้องเข้าสู่ระบบก่อน checkout</p>
             <Link
-              className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+              className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
               href="/auth"
             >
               ไปที่หน้าบัญชี
@@ -269,7 +269,7 @@ export function CheckoutPanel() {
 
       {authState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {authState.error}
           </div>
         </section>
@@ -288,7 +288,7 @@ export function CheckoutPanel() {
             ) : null}
 
             {cartState.status === "error" ? (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">
+              <div className="rounded-lg border border-red-400/40 bg-red-500/15 p-4 text-sm leading-6 text-red-200">
                 {cartState.error}
               </div>
             ) : null}
@@ -301,7 +301,7 @@ export function CheckoutPanel() {
                   ตะกร้าว่างอยู่
                 </p>
                 <Link
-                  className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+                  className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
                   href="/products"
                 >
                   ไปเลือกสินค้า
@@ -383,19 +383,19 @@ export function CheckoutPanel() {
             </fieldset>
 
             {checkoutState.status === "error" ? (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">
+              <div className="rounded-lg border border-red-400/40 bg-red-500/15 p-4 text-sm leading-6 text-red-200">
                 {checkoutState.error}
               </div>
             ) : null}
 
             {cartState.details.items.length > 0 && totalAmount <= 0 ? (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">
+              <div className="rounded-lg border border-red-400/40 bg-red-500/15 p-4 text-sm leading-6 text-red-200">
                 ยอดรวมคำสั่งซื้อนี้เป็น 0 บาท กรุณาให้แอดมินตั้งราคาสินค้าก่อนสร้างคำสั่งซื้อ
               </div>
             ) : null}
 
             {checkoutState.status === "success" ? (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-[var(--brand-strong)]">
+              <div className="rounded-lg border border-emerald-300/40 bg-emerald-400/15 p-4 text-sm leading-6 text-emerald-200">
                 <p className="font-semibold">สร้างคำสั่งซื้อแล้ว</p>
                 <p className="mt-2">
                   เลขคำสั่งซื้อ: {checkoutState.result.order.order_number}
@@ -410,7 +410,7 @@ export function CheckoutPanel() {
             ) : null}
 
             <button
-              className="min-h-11 w-full rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="min-h-11 w-full rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
               disabled={!canSubmit}
               type="submit"
             >

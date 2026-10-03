@@ -18,6 +18,7 @@ import {
   type AdminRepairJobStatusCounts,
 } from "@/features/admin";
 import { createClient } from "@/lib/supabase/browser";
+import { formatBookingSlot } from "@/lib/format";
 
 const pageSize = 10;
 
@@ -84,27 +85,27 @@ function formatBookingSchedule(booking: AdminRepairJob["booking"]) {
     return "-";
   }
 
-  return `${booking.booking_date} เวลา ${booking.booking_time.slice(0, 5)}`;
+  return formatBookingSlot(booking.booking_date, booking.booking_time);
 }
 
 function getStatusStyle(status: AdminRepairJob["status"]) {
   if (status === "pending") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (status === "assigned") {
-    return "bg-cyan-50 text-cyan-800";
+    return "bg-[var(--accent)]/30 text-sky-100";
   }
 
   if (status === "in_progress") {
-    return "bg-indigo-50 text-indigo-800";
+    return "bg-[var(--indigo)]/50 text-indigo-100";
   }
 
   if (status === "completed") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
-  return "bg-red-50 text-red-700";
+  return "bg-red-500/15 text-red-200";
 }
 
 function formatRepairJobStatus(status: AdminRepairJob["status"]) {
@@ -217,7 +218,7 @@ function AdminRepairJobsPaginationControls({
             type="number"
           />
           <button
-            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
             type="submit"
           >
             ไป
@@ -346,7 +347,7 @@ function AdminRepairJobRow({
           </label>
 
           <button
-            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={!canSave}
             onClick={() =>
               onMechanicSave(repairJob, selectedMechanicId || null)
@@ -358,7 +359,7 @@ function AdminRepairJobRow({
         </div>
 
         {mechanics.length === 0 ? (
-          <p className="mt-2 text-xs font-semibold text-amber-400">
+          <p className="mt-2 text-xs font-semibold text-amber-300">
             ยังไม่พบโปรไฟล์ช่างในระบบ
           </p>
         ) : null}
@@ -623,14 +624,14 @@ export function AdminRepairJobsPanel() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col pb-8 pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-[var(--foreground)]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] leading-tight">
               ใบงานซ่อมหลังบ้าน
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -656,11 +657,11 @@ export function AdminRepairJobsPanel() {
 
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="max-w-lg rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             <p className="font-semibold">ต้องเข้าสู่ระบบก่อน</p>
             <p className="mt-1">เข้าสู่ระบบด้วยบัญชี admin</p>
             <Link
-              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/auth"
             >
               ไปที่หน้าบัญชี
@@ -671,7 +672,7 @@ export function AdminRepairJobsPanel() {
 
       {loadState.status === "access-denied" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
+          <div className="max-w-lg rounded-lg border border-red-400/40 bg-red-500/15 p-5 text-sm leading-6 text-red-200">
             <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
             <p className="mt-2">{loadState.access.reason}</p>
           </div>
@@ -680,7 +681,7 @@ export function AdminRepairJobsPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>

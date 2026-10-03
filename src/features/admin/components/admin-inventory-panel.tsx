@@ -93,10 +93,10 @@ function getMovementDelta(movement: AdminInventoryMovement) {
 
 function getMovementStyle(movementType: MovementType) {
   if (stockIncreasingMovements.includes(movementType)) {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
-  return "bg-amber-50 text-amber-800";
+  return "bg-amber-400/15 text-amber-200";
 }
 
 function formatMovementType(movementType: MovementType) {
@@ -251,8 +251,8 @@ function MovementForm({
             <p
               className={
                 isStockIncreasing
-                  ? "mt-1.5 text-xs font-medium text-emerald-400"
-                  : "mt-1.5 text-xs font-medium text-amber-400"
+                  ? "mt-1.5 text-xs font-medium text-[var(--brand)]"
+                  : "mt-1.5 text-xs font-medium text-amber-300"
               }
             >
               {isStockIncreasing
@@ -316,7 +316,7 @@ function MovementForm({
           </div>
 
           <button
-            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isSaving || products.length === 0}
             type="submit"
           >
@@ -325,13 +325,13 @@ function MovementForm({
         </div>
 
         {createState.status === "error" ? (
-          <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+          <p className="rounded-md bg-red-500/15 p-3 text-sm text-red-200">
             {createState.error}
           </p>
         ) : null}
 
         {createState.status === "saved" ? (
-          <p className="rounded-md bg-emerald-50 p-3 text-sm font-semibold text-[var(--brand-strong)]">
+          <p className="rounded-md bg-emerald-400/15 p-3 text-sm font-semibold text-emerald-200">
             {createState.message}
           </p>
         ) : null}
@@ -377,8 +377,8 @@ function MovementRow({ movement }: { movement: AdminInventoryMovement }) {
       <td
         className={
           delta >= 0
-            ? "px-4 py-3 font-semibold text-emerald-400"
-            : "px-4 py-3 font-semibold text-amber-400"
+            ? "px-4 py-3 font-semibold text-[var(--brand)]"
+            : "px-4 py-3 font-semibold text-amber-300"
         }
       >
         {delta >= 0 ? "+" : ""}
@@ -582,14 +582,14 @@ export function AdminInventoryPanel() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col pb-8 pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-[var(--foreground)]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] leading-tight">
               จัดการคลังสินค้า
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -598,7 +598,7 @@ export function AdminInventoryPanel() {
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Link
-              className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/admin/inventory-review"
             >
               ตรวจสต๊อก
@@ -623,11 +623,11 @@ export function AdminInventoryPanel() {
 
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="max-w-lg rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             <p className="font-semibold">ต้องเข้าสู่ระบบ</p>
             <p className="mt-1">กรุณาเข้าสู่ระบบด้วยบัญชีแอดมิน</p>
             <Link
-              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/auth"
             >
               ไปที่บัญชี
@@ -638,7 +638,7 @@ export function AdminInventoryPanel() {
 
       {loadState.status === "access-denied" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
+          <div className="max-w-lg rounded-lg border border-red-400/40 bg-red-500/15 p-5 text-sm leading-6 text-red-200">
             <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
             <p className="mt-2">{loadState.access.reason}</p>
           </div>
@@ -647,7 +647,7 @@ export function AdminInventoryPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -683,10 +683,10 @@ export function AdminInventoryPanel() {
               className="min-w-[8rem] flex-1 px-4 py-3 transition hover:bg-[var(--accent-soft)]"
               href="/admin/inventory-review?filter=low"
             >
-              <p className="text-xs font-semibold uppercase tracking-wide text-amber-400">
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-300">
                 สต๊อกใกล้หมด
               </p>
-              <p className="mt-1 text-2xl font-bold text-amber-400">
+              <p className="mt-1 text-2xl font-bold text-amber-300">
                 {stockSummary.lowStockCount}
               </p>
             </Link>

@@ -51,7 +51,7 @@ function toSlidePayload(input: HomepageSlideInput) {
 
 function toAppearancePayload(input: HomepageAppearanceSettingInput) {
   return {
-    background_color: input.backgroundColor.trim() || "#0a0d0b",
+    background_color: input.backgroundColor.trim() || "#060B4A",
     background_image_url: nullableText(input.backgroundImageUrl),
     setting_key: "default",
     updated_by: input.updatedBy,
@@ -72,7 +72,7 @@ function toLogoPayload(input: HomepageLogoSettingInput) {
 
 function toFooterPayload(input: HomepageFooterSettingInput) {
   return {
-    background_color: input.backgroundColor.trim() || "#C81010",
+    background_color: input.backgroundColor.trim() || "#111FA2",
     contact_email: nullableText(input.contactEmail),
     contact_phone: nullableText(input.contactPhone),
     contact_title: input.contactTitle.trim() || "สอบถามข้อมูล",

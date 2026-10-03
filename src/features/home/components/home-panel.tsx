@@ -336,7 +336,7 @@ function HeroCarousel({ slides }: { slides: HomepageSlide[] }) {
 
   if (!activeSlide) {
     return (
-      <div className="flex min-h-[500px] flex-col justify-end rounded-lg border border-[var(--line)] bg-[#242424] p-6 text-white md:p-8">
+      <div className="flex min-h-[500px] flex-col justify-end rounded-lg border border-[var(--line)] bg-[var(--surface)] p-6 text-white md:p-8">
         <p className="text-sm font-bold text-[var(--brand)]">
           ระบบอู่ซ่อมรถออนไลน์
         </p>
@@ -348,7 +348,7 @@ function HeroCarousel({ slides }: { slides: HomepageSlide[] }) {
         </p>
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <Link
-            className="inline-flex min-h-11 items-center rounded-md bg-[var(--brand)] px-5 text-sm font-black text-[var(--foreground)]"
+            className="inline-flex min-h-11 items-center rounded-md bg-[var(--brand)] px-5 text-sm font-black text-[var(--on-brand)]"
             href="/services"
           >
             จองบริการ
@@ -366,7 +366,7 @@ function HeroCarousel({ slides }: { slides: HomepageSlide[] }) {
   }
 
   return (
-    <section className="relative min-h-[500px] overflow-hidden rounded-lg border border-[var(--line)] bg-[#242424] text-white">
+    <section className="relative min-h-[500px] overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--surface)] text-white">
       <AppImage
         alt={activeSlide.title}
         className="object-cover"
@@ -393,7 +393,7 @@ function HeroCarousel({ slides }: { slides: HomepageSlide[] }) {
         ) : null}
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <Link
-            className="inline-flex min-h-11 items-center rounded-md bg-[var(--brand)] px-5 text-sm font-black text-[var(--foreground)]"
+            className="inline-flex min-h-11 items-center rounded-md bg-[var(--brand)] px-5 text-sm font-black text-[var(--on-brand)]"
             href={activeSlide.primary_href}
           >
             {activeSlide.primary_label}
@@ -487,7 +487,7 @@ function HomepageFooter({
 
   return (
     <footer
-      className="relative left-1/2 right-1/2 mt-10 w-screen -translate-x-1/2 text-white"
+      className="relative left-1/2 right-1/2 mt-10 w-screen -translate-x-1/2 border-t-4 border-[var(--brand)] text-white"
       style={{ backgroundColor: footer.background_color }}
     >
       <div className="mx-auto grid max-w-5xl gap-10 px-6 py-12 md:grid-cols-[1fr_0.9fr]">
@@ -668,7 +668,7 @@ export function HomePanel() {
           <div aria-hidden="true" className="absolute inset-0 bg-black/55" />
         </>
       ) : null}
-      <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-col px-6 pt-0">
+      <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-col pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
@@ -686,7 +686,7 @@ export function HomePanel() {
       ) : null}
 
       {homeState.status === "error" ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">
+        <div className="rounded-lg border border-amber-300/40 bg-amber-400/15 p-4 text-sm leading-6 text-amber-200">
           โหลดข้อมูลบางส่วนไม่สำเร็จ: {homeState.error}
         </div>
       ) : null}
@@ -806,7 +806,7 @@ export function HomePanel() {
         </div>
       </Reveal>
 
-      <Reveal className="relative overflow-hidden rounded-lg border border-[var(--line)] bg-[#141815] py-14 text-center text-white">
+      <Reveal className="relative overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--surface)] py-14 text-center text-white">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
           <DiagonalWaves />
         </div>
@@ -819,7 +819,7 @@ export function HomePanel() {
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Link
-              className="inline-flex min-h-11 items-center rounded-md bg-[var(--brand)] px-6 text-sm font-black text-[var(--foreground)]"
+              className="inline-flex min-h-11 items-center rounded-md bg-[var(--brand)] px-6 text-sm font-black text-[var(--on-brand)]"
               href="/services"
             >
               จองบริการ

@@ -257,8 +257,8 @@ function getViewerLabel(viewer: ViewerState) {
 
 function getLinkClassName(isActive: boolean) {
   return isActive
-    ? "inline-flex min-h-10 shrink-0 items-center rounded-full bg-[var(--brand)] px-4 text-sm font-bold text-white shadow-sm"
-    : "inline-flex min-h-10 shrink-0 items-center rounded-full px-4 text-sm font-bold text-[var(--muted)] hover:bg-[var(--accent-soft)] hover:text-emerald-400";
+    ? "inline-flex min-h-10 shrink-0 items-center rounded-full bg-[var(--brand)] px-4 text-sm font-bold text-[var(--on-brand)] shadow-sm"
+    : "inline-flex min-h-10 shrink-0 items-center rounded-full px-4 text-sm font-bold text-[var(--muted)] hover:bg-[var(--accent-soft)] hover:text-[var(--brand)]";
 }
 
 function BellIcon() {
@@ -606,7 +606,7 @@ export function AppNav() {
               ) : null}
               BCare
             </Link>
-            <span className="inline-flex min-h-8 items-center rounded-full border border-[var(--line)] bg-[var(--accent-soft)] px-3 text-xs font-bold text-emerald-400">
+            <span className="inline-flex min-h-8 items-center rounded-full border border-[var(--line)] bg-[var(--accent-soft)] px-3 text-xs font-bold text-[var(--brand)]">
               {viewerLabel}
             </span>
           </div>
@@ -796,7 +796,7 @@ export function AppNav() {
                                   aria-current={isActive ? "page" : undefined}
                                   className={
                                     isActive
-                                      ? "block px-8 py-2.5 text-sm font-bold text-emerald-400 bg-[var(--accent-soft)]"
+                                      ? "block px-8 py-2.5 text-sm font-bold text-[var(--brand)] bg-[var(--accent-soft)]"
                                       : "block px-8 py-2.5 text-sm font-semibold text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)]"
                                   }
                                   href={link.href}
@@ -860,7 +860,7 @@ export function AppNav() {
               key={group.label}
               open={hasActiveLink}
             >
-              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-center gap-3 px-4 text-sm font-bold text-[var(--foreground)] hover:text-emerald-400 [&::-webkit-details-marker]:hidden">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-center gap-3 px-4 text-sm font-bold text-[var(--foreground)] hover:text-[var(--brand)] [&::-webkit-details-marker]:hidden">
                 <span>{group.label}</span>
                 <span className="transition-transform group-open:rotate-180">
                   <ChevronIcon />

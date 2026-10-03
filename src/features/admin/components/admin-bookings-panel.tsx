@@ -28,6 +28,7 @@ import {
   type AdminRepairJob,
 } from "@/features/admin";
 import { createClient } from "@/lib/supabase/browser";
+import { formatBookingSlot } from "@/lib/format";
 
 type StatusFilter = AdminBookingListStatusFilter;
 
@@ -95,10 +96,6 @@ const currencyFormatter = new Intl.NumberFormat("th-TH", {
   style: "currency",
 });
 
-function formatTime(time: string) {
-  return time.slice(0, 5);
-}
-
 function parseStatusFilter(status: string | null): StatusFilter {
   if (
     status === "pending" ||
@@ -124,15 +121,15 @@ function parsePage(page: string | null) {
 
 function getStatusStyle(status: AdminBooking["status"]) {
   if (status === "pending") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (status === "confirmed") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
   if (status === "cancelled") {
-    return "bg-red-50 text-red-700";
+    return "bg-red-500/15 text-red-200";
   }
 
   return "bg-[var(--surface-muted)] text-[var(--foreground)]";
@@ -160,19 +157,19 @@ function formatBookingStatus(status: StatusFilter | AdminBooking["status"]) {
 
 function getBookingPaymentStatusStyle(status: AdminBooking["payment_status"]) {
   if (status === "paid") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
   if (status === "pending_review") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (status === "rejected") {
-    return "bg-red-50 text-red-700";
+    return "bg-red-500/15 text-red-200";
   }
 
   if (status === "awaiting_payment") {
-    return "bg-cyan-50 text-cyan-800";
+    return "bg-[var(--accent)]/30 text-sky-100";
   }
 
   return "bg-[var(--surface-muted)] text-[var(--foreground)]";
@@ -285,12 +282,12 @@ function getAdminActions(
       {
         label: "ยืนยันการจอง",
         status: "confirmed",
-        tone: "bg-[var(--brand)] text-white",
+        tone: "bg-[var(--brand)] text-[var(--on-brand)]",
       },
       {
         label: "ยกเลิก",
         status: "cancelled",
-        tone: "border border-red-200 bg-red-50 text-red-700",
+        tone: "border border-red-400/40 bg-red-500/15 text-red-200",
       },
     ];
   }
@@ -300,12 +297,12 @@ function getAdminActions(
       {
         label: "ทำเครื่องหมายเสร็จสิ้น",
         status: "completed",
-        tone: "bg-[var(--brand)] text-white",
+        tone: "bg-[var(--brand)] text-[var(--on-brand)]",
       },
       {
         label: "ยกเลิก",
         status: "cancelled",
-        tone: "border border-red-200 bg-red-50 text-red-700",
+        tone: "border border-red-400/40 bg-red-500/15 text-red-200",
       },
     ];
   }
@@ -335,22 +332,22 @@ function formatRepairJobStatus(status: AdminRepairJob["status"]) {
 
 function getRepairJobStatusStyle(status: AdminRepairJob["status"]) {
   if (status === "pending") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (status === "assigned") {
-    return "bg-cyan-50 text-cyan-800";
+    return "bg-[var(--accent)]/30 text-sky-100";
   }
 
   if (status === "in_progress") {
-    return "bg-indigo-50 text-indigo-800";
+    return "bg-[var(--indigo)]/50 text-indigo-100";
   }
 
   if (status === "completed") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
-  return "bg-red-50 text-red-700";
+  return "bg-red-500/15 text-red-200";
 }
 
 function getMechanicSkillsLabel(mechanic: AdminMechanic | null) {
@@ -445,7 +442,7 @@ function AdminPaginationControls({
             type="number"
           />
           <button
-            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
             type="submit"
           >
             ไป
@@ -479,7 +476,7 @@ function AdminBookingSummaryRow({
             {booking.service?.name ?? "ไม่พบบริการ"}
           </p>
           <p className="text-xs text-[var(--muted)]">
-            {booking.booking_date} เวลา {formatTime(booking.booking_time)}
+            {formatBookingSlot(booking.booking_date, booking.booking_time)}
           </p>
         </div>
 
@@ -877,7 +874,7 @@ function AdminBookingDetailCard({
           ) : null}
         </div>
         <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">
-          {booking.booking_date} เวลา {formatTime(booking.booking_time)}
+          {formatBookingSlot(booking.booking_date, booking.booking_time)}
         </h2>
       </div>
 
@@ -965,7 +962,7 @@ function AdminBookingDetailCard({
                 ยกเลิกการแก้ไข
               </button>
               <button
-                className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={!canSaveStatus}
                 onClick={() => onStatusChange(booking, selectedStatus)}
                 type="button"
@@ -1039,12 +1036,12 @@ function AdminBookingDetailCard({
               สร้างใบงานซ่อมจากการจองที่ยืนยันแล้ว เพื่อให้ช่างติดตามงานต่อได้
             </p>
             {booking.status !== "confirmed" ? (
-              <p className="mt-2 text-sm font-semibold text-amber-400">
+              <p className="mt-2 text-sm font-semibold text-amber-300">
                 ต้องยืนยันการจองก่อนสร้างใบงานซ่อม
               </p>
             ) : null}
             <button
-              className="mt-3 min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-3 min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
               disabled={
                 booking.status !== "confirmed" ||
                 workOrderActionState.status === "creating"
@@ -1103,7 +1100,7 @@ function AdminBookingDetailCard({
             </label>
 
             <button
-              className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
               disabled={!canSaveMechanic}
               onClick={() =>
                 onAssignMechanic(repairJob, selectedMechanicId || null)
@@ -1114,7 +1111,7 @@ function AdminBookingDetailCard({
             </button>
 
             {repairJobState.mechanics.length === 0 ? (
-              <p className="text-xs font-semibold text-amber-400">
+              <p className="text-xs font-semibold text-amber-300">
                 ยังไม่พบโปรไฟล์ช่างในระบบ
               </p>
             ) : null}
@@ -1153,19 +1150,19 @@ function AdminBookingDetailCard({
           </div>
 
           {signedUrlError ? (
-            <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-800">
+            <div className="mt-4 rounded-md border border-amber-300/40 bg-amber-400/15 p-3 text-sm leading-6 text-amber-200">
               เปิด signed slip link ไม่สำเร็จ: {signedUrlError}
             </div>
           ) : null}
 
           {paymentActionState.status === "success" ? (
-            <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm leading-6 text-[var(--brand-strong)]">
+            <div className="mt-4 rounded-md border border-emerald-300/40 bg-emerald-400/15 p-3 text-sm leading-6 text-emerald-200">
               {paymentActionState.message}
             </div>
           ) : null}
 
           {paymentActionState.status === "error" ? (
-            <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-700">
+            <div className="mt-4 rounded-md border border-red-400/40 bg-red-500/15 p-3 text-sm leading-6 text-red-200">
               {paymentActionState.error}
             </div>
           ) : null}
@@ -1194,10 +1191,10 @@ function AdminBookingDetailCard({
                       <span
                         className={`w-fit rounded-md px-2.5 py-1 text-xs font-semibold ${
                           payment.payment_status === "paid"
-                            ? "bg-emerald-50 text-[var(--brand-strong)]"
+                            ? "bg-emerald-400/15 text-emerald-200"
                             : payment.payment_status === "rejected"
-                              ? "bg-red-50 text-red-700"
-                              : "bg-amber-50 text-amber-800"
+                              ? "bg-red-500/15 text-red-200"
+                              : "bg-amber-400/15 text-amber-200"
                         }`}
                       >
                         {payment.payment_status === "paid"
@@ -1255,7 +1252,7 @@ function AdminBookingDetailCard({
 
                     {signedSlipUrls[payment.id] ? (
                       <a
-                        className="mt-3 inline-flex min-h-9 items-center rounded-md bg-[var(--brand)] px-3 text-sm font-semibold text-white"
+                        className="mt-3 inline-flex min-h-9 items-center rounded-md bg-[var(--brand)] px-3 text-sm font-semibold text-[var(--on-brand)]"
                         href={signedSlipUrls[payment.id]}
                         rel="noreferrer"
                         target="_blank"
@@ -1270,7 +1267,7 @@ function AdminBookingDetailCard({
 
                     <div className="mt-4 flex flex-wrap gap-2">
                       <button
-                        className="min-h-10 rounded-md border border-cyan-200 bg-cyan-50 px-4 text-sm font-semibold text-cyan-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="min-h-10 rounded-md border border-[var(--accent)] bg-[var(--accent)]/30 px-4 text-sm font-semibold text-sky-100 disabled:cursor-not-allowed disabled:opacity-60"
                         disabled={!canVerifyWithSlipOk || isUpdatingPayment}
                         onClick={() => handleVerifyWithSlipOk(payment.id)}
                         type="button"
@@ -1278,7 +1275,7 @@ function AdminBookingDetailCard({
                         {isUpdatingPayment ? "กำลังตรวจ..." : "ตรวจด้วย SlipOK"}
                       </button>
                       <button
-                        className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
                         disabled={!canApprove || isUpdatingPayment}
                         onClick={() => handleApprovePayment(payment.id)}
                         type="button"
@@ -1286,7 +1283,7 @@ function AdminBookingDetailCard({
                         {isUpdatingPayment ? "กำลังบันทึก..." : "อนุมัติชำระเงิน"}
                       </button>
                       <button
-                        className="min-h-10 rounded-md border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="min-h-10 rounded-md border border-red-400/40 bg-red-500/15 px-4 text-sm font-semibold text-red-200 disabled:cursor-not-allowed disabled:opacity-60"
                         disabled={!canReject || isUpdatingPayment}
                         onClick={() => {
                           setRejectingPaymentId(payment.id);
@@ -1371,7 +1368,7 @@ function AdminBookingDetailCard({
           ) : null}
         </div>
         <button
-          className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand)] px-5 text-sm font-semibold text-white"
+          className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand)] px-5 text-sm font-semibold text-[var(--on-brand)]"
           onClick={onClose}
           type="button"
         >
@@ -1929,14 +1926,14 @@ export function AdminBookingsPanel() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col pb-8 pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-[var(--foreground)]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] leading-tight">
               รายการจองทั้งหมด
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -1962,11 +1959,11 @@ export function AdminBookingsPanel() {
 
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="max-w-lg rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             <p className="font-semibold">ต้องเข้าสู่ระบบก่อน</p>
             <p className="mt-1">เข้าสู่ระบบด้วยบัญชี admin</p>
             <Link
-              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/auth"
             >
               ไปที่หน้าบัญชี
@@ -1977,7 +1974,7 @@ export function AdminBookingsPanel() {
 
       {loadState.status === "access-denied" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
+          <div className="max-w-lg rounded-lg border border-red-400/40 bg-red-500/15 p-5 text-sm leading-6 text-red-200">
             <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
             <p className="mt-2">{loadState.access.reason}</p>
           </div>
@@ -1986,7 +1983,7 @@ export function AdminBookingsPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -2018,7 +2015,7 @@ export function AdminBookingsPanel() {
                   value={searchInput}
                 />
                 <button
-                  className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+                  className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
                   type="submit"
                 >
                   ค้นหา

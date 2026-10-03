@@ -14,6 +14,7 @@ import {
 } from "@/features/admin";
 import type { ProfileRole } from "@/features/auth";
 import { createClient } from "@/lib/supabase/browser";
+import { formatBookingSlot } from "@/lib/format";
 
 const pageSize = 10;
 
@@ -134,7 +135,7 @@ function AdminCustomersPaginationControls({
             type="number"
           />
           <button
-            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
             type="submit"
           >
             ไป
@@ -250,7 +251,7 @@ function CustomerCard({
               {customer.email ?? "ไม่มีอีเมล"}
             </span>
             {isCurrentAdmin ? (
-              <span className="rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
+              <span className="rounded-md bg-amber-400/15 px-2.5 py-1 text-xs font-semibold text-amber-200">
                 บัญชีที่ใช้งานอยู่
               </span>
             ) : null}
@@ -291,13 +292,13 @@ function CustomerCard({
       </div>
 
       {roleState.status === "success" ? (
-        <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-[var(--brand-strong)]">
+        <div className="mt-4 rounded-md border border-emerald-300/40 bg-emerald-400/15 p-3 text-sm text-emerald-200">
           {roleState.message}
         </div>
       ) : null}
 
       {roleState.status === "error" ? (
-        <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="mt-4 rounded-md border border-red-400/40 bg-red-500/15 p-3 text-sm text-red-200">
           {roleState.error}
         </div>
       ) : null}
@@ -319,10 +320,10 @@ function CustomerCard({
           <dt className="text-[var(--muted)]">การจองล่าสุด</dt>
           <dd className="mt-1 font-semibold text-[var(--foreground)]">
             {customer.latestBooking
-              ? `${customer.latestBooking.booking_date} ${customer.latestBooking.booking_time.slice(
-                  0,
-                  5,
-                )}`
+              ? formatBookingSlot(
+                  customer.latestBooking.booking_date,
+                  customer.latestBooking.booking_time,
+                )
               : "-"}
           </dd>
           {customer.latestBooking ? (
@@ -501,14 +502,14 @@ export function AdminCustomersPanel() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col pb-8 pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-[var(--foreground)]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] leading-tight">
               รายชื่อผู้ใช้
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -534,11 +535,11 @@ export function AdminCustomersPanel() {
 
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="max-w-lg rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             <p className="font-semibold">ต้องเข้าสู่ระบบ</p>
             <p className="mt-1">กรุณาเข้าสู่ระบบด้วยบัญชีแอดมิน</p>
             <Link
-              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/auth"
             >
               ไปที่บัญชี
@@ -549,7 +550,7 @@ export function AdminCustomersPanel() {
 
       {loadState.status === "access-denied" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
+          <div className="max-w-lg rounded-lg border border-red-400/40 bg-red-500/15 p-5 text-sm leading-6 text-red-200">
             <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
             <p className="mt-2">{loadState.access.reason}</p>
           </div>
@@ -558,7 +559,7 @@ export function AdminCustomersPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -607,7 +608,7 @@ export function AdminCustomersPanel() {
                 />
               </label>
               <button
-                className="mt-2 min-h-10 self-end rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white sm:mt-0"
+                className="mt-2 min-h-10 self-end rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] sm:mt-0"
                 type="submit"
               >
                 ค้นหา

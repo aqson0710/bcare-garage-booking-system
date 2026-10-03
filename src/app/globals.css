@@ -1,29 +1,35 @@
 @import "tailwindcss";
 
 /*
- * Design tokens - dark "black / green / gray" palette used by every page
- * (admin and customer): a near-black page background, dark charcoal
- * card surfaces one step lighter than the page, a green brand/accent
- * color for primary actions and links, and gray text tones for body
- * copy and secondary/muted text. Printed documents (receipts) are kept
- * on their own light, black-on-white styling in the @media print block
- * below and in the receipt/document components themselves, since a
- * printed page should stay light regardless of the on-screen theme.
+ * Design tokens - dark royal-blue palette used by every page (admin and
+ * customer), built from the shop's 4 brand colors:
+ *   #111FA2 royal navy  - raised surfaces (inputs, tiles); cards and the page
+ *                         background are darker shades of the same blue
+ *   #5478FF bright blue - decoration only (waves, glows, selected tints);
+ *                         too light for small white text
+ *   #53CBF3 sky blue    - informational accents (safe as text on dark)
+ *   #FFDE42 yellow      - primary actions, links and highlights
+ * Text on a yellow fill uses --on-brand (dark navy), never white.
+ * All text/background pairs below meet WCAG AA contrast (most AAA).
+ * Printed documents (receipts) keep their own light, black-on-white
+ * styling in the @media print block below and in the receipt components.
  */
 :root {
   color-scheme: dark;
-  --background: #0a0d0b;
-  --foreground: #eef1ee;
-  --muted: #93a39a;
-  --line: #2a332d;
-  --surface: #141815;
-  --surface-muted: #1f2521;
-  --brand: #16a34a;
-  --brand-strong: #26664a;
-  --accent: #16a34a;
-  --accent-soft: #123321;
-  --success: #22c55e;
-  --danger: #f87171;
+  --background: #060b4a;
+  --foreground: #f4f6ff;
+  --muted: #bac4f7;
+  --line: #2c3fc2;
+  --surface: #0b1675;
+  --surface-muted: #111fa2;
+  --brand: #ffde42;
+  --on-brand: #0a1270;
+  --brand-strong: #ffe97a;
+  --accent: #53cbf3;
+  --accent-soft: #1a2ab8;
+  --indigo: #5478ff;
+  --success: #4ade80;
+  --danger: #fca5a5;
 }
 
 * {
@@ -57,6 +63,16 @@ select {
 
 [class*="hover:border-[var(--brand)]"]:hover {
   border-color: var(--brand);
+}
+
+/*
+ * Text on a yellow brand fill is always navy, even when the element only
+ * inherits white text from its parent (e.g. hero buttons, active nav tab).
+ * Unlayered, so it wins over Tailwind's text-* utilities.
+ */
+.bg-\[var\(--brand\)\],
+[class*="hover:bg-[var(--brand)]"]:hover {
+  color: var(--on-brand);
 }
 
 /*

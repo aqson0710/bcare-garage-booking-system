@@ -132,7 +132,7 @@ const emptyFormState: SlideFormState = {
 };
 
 const defaultFooterFormState: FooterFormState = {
-  backgroundColor: "#C81010",
+  backgroundColor: "#111FA2",
   contactEmail: "Email : bcare.service@example.com",
   contactPhone: "02-538-8111 หรือศูนย์บริการใกล้บ้าน",
   contactTitle: "สอบถามข้อมูล",
@@ -150,7 +150,7 @@ const defaultFooterFormState: FooterFormState = {
 };
 
 const defaultAppearanceFormState: AppearanceFormState = {
-  backgroundColor: "#0a0d0b",
+  backgroundColor: "#060B4A",
   backgroundImageUrl: "",
 };
 
@@ -267,7 +267,7 @@ function validateFooterForm(formState: FooterFormState) {
 
 function validateAppearanceForm(formState: AppearanceFormState) {
   if (!/^#[0-9a-fA-F]{6}$/.test(formState.backgroundColor.trim())) {
-    return "กรุณาเลือกสีให้ถูกต้อง เช่น #0A0D0B";
+    return "กรุณาเลือกสีให้ถูกต้อง เช่น #111FA2";
   }
 
   return null;
@@ -794,19 +794,19 @@ function LogoSettingsCard({
       </div>
 
       <button
-        className="mt-5 min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-5 min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
         disabled={disabled}
         type="submit"
       >
         {saveState.status === "saving" ? "กำลังบันทึก..." : "บันทึกโลโก้"}
       </button>
       {saveState.status === "success" ? (
-        <p className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-[var(--success)]">
+        <p className="mt-3 rounded-md border border-emerald-300/40 bg-emerald-400/15 px-3 py-2 text-sm text-[var(--success)]">
           {saveState.message}
         </p>
       ) : null}
       {saveState.status === "error" ? (
-        <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mt-3 rounded-md border border-red-400/40 bg-red-500/15 px-3 py-2 text-sm text-red-200">
           {saveState.error}
         </p>
       ) : null}
@@ -909,14 +909,14 @@ function AdminSlideCard({
             <SlideFormFields formState={formState} onPatch={patchFormState} />
             <div className="mt-5 flex flex-wrap gap-2">
               <button
-                className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={saveState.status === "saving"}
                 type="submit"
               >
                 {saveState.status === "saving" ? "กำลังบันทึก..." : "บันทึก"}
               </button>
               <button
-                className="min-h-10 rounded-md border border-red-200 bg-[var(--surface)] px-4 text-sm font-bold text-[var(--danger)]"
+                className="min-h-10 rounded-md border border-red-400/40 bg-[var(--surface)] px-4 text-sm font-bold text-[var(--danger)]"
                 onClick={handleDelete}
                 type="button"
               >
@@ -924,12 +924,12 @@ function AdminSlideCard({
               </button>
             </div>
             {saveState.status === "success" ? (
-              <p className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-[var(--success)]">
+              <p className="mt-3 rounded-md border border-emerald-300/40 bg-emerald-400/15 px-3 py-2 text-sm text-[var(--success)]">
                 {saveState.message}
               </p>
             ) : null}
             {saveState.status === "error" ? (
-              <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              <p className="mt-3 rounded-md border border-red-400/40 bg-red-500/15 px-3 py-2 text-sm text-red-200">
                 {saveState.error}
               </p>
             ) : null}
@@ -1106,19 +1106,19 @@ function FooterSettingsForm({
           </div>
 
           <button
-            className="mt-5 min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-5 min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={saveState.status === "saving"}
             type="submit"
           >
             {saveState.status === "saving" ? "กำลังบันทึก..." : "บันทึกแถบล่าง"}
           </button>
           {saveState.status === "success" ? (
-            <p className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-[var(--success)]">
+            <p className="mt-3 rounded-md border border-emerald-300/40 bg-emerald-400/15 px-3 py-2 text-sm text-[var(--success)]">
               {saveState.message}
             </p>
           ) : null}
           {saveState.status === "error" ? (
-            <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <p className="mt-3 rounded-md border border-red-400/40 bg-red-500/15 px-3 py-2 text-sm text-red-200">
               {saveState.error}
             </p>
           ) : null}
@@ -1235,7 +1235,7 @@ function LocationSettingsForm({
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <button
-          className="min-h-11 rounded-md bg-[var(--brand)] px-5 text-sm font-black text-[var(--foreground)] disabled:opacity-60"
+          className="min-h-11 rounded-md bg-[var(--brand)] px-5 text-sm font-black text-[var(--on-brand)] disabled:opacity-60"
           disabled={saveState.status === "saving"}
           type="submit"
         >
@@ -1346,19 +1346,19 @@ function AppearanceSettingsForm({
           </div>
 
           <button
-            className="mt-5 min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-5 min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={saveState.status === "saving"}
             type="submit"
           >
             {saveState.status === "saving" ? "กำลังบันทึก..." : "บันทึกพื้นหลัง"}
           </button>
           {saveState.status === "success" ? (
-            <p className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-[var(--success)]">
+            <p className="mt-3 rounded-md border border-emerald-300/40 bg-emerald-400/15 px-3 py-2 text-sm text-[var(--success)]">
               {saveState.message}
             </p>
           ) : null}
           {saveState.status === "error" ? (
-            <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <p className="mt-3 rounded-md border border-red-400/40 bg-red-500/15 px-3 py-2 text-sm text-red-200">
               {saveState.error}
             </p>
           ) : null}
@@ -1823,14 +1823,14 @@ export function AdminHomepagePanel() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-10 pt-0">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col pb-10 pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
         <div>
           <p className="text-sm font-bold text-[var(--brand)]">Admin</p>
-          <h1 className="mt-2 text-3xl font-black text-[var(--foreground)]">
+          <h1 className="mt-2 text-2xl sm:text-3xl font-bold text-[var(--foreground)] leading-tight">
             ตั้งค่าหน้าแรก
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -1849,7 +1849,7 @@ export function AdminHomepagePanel() {
 
       {loadState.status === "signed-out" || loadState.status === "denied" ? (
         <section className="py-8">
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             กรุณาเข้าสู่ระบบด้วยบัญชี admin ก่อนจัดการหน้าแรก
           </div>
         </section>
@@ -1857,7 +1857,7 @@ export function AdminHomepagePanel() {
 
       {loadState.status === "error" ? (
         <section className="py-8">
-          <div className="rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
+          <div className="rounded-lg border border-red-400/40 bg-red-500/15 p-5 text-sm leading-6 text-red-200">
             {loadState.error}
           </div>
         </section>
@@ -1869,7 +1869,7 @@ export function AdminHomepagePanel() {
             <button
               className={
                 activeTab === "footer"
-                  ? "min-h-11 rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--foreground)]"
+                  ? "min-h-11 rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--on-brand)]"
                   : "min-h-11 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-bold text-[var(--muted)] hover:border-[var(--brand)]"
               }
               onClick={() => setActiveTab("footer")}
@@ -1880,7 +1880,7 @@ export function AdminHomepagePanel() {
             <button
               className={
                 activeTab === "slides"
-                  ? "min-h-11 rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--foreground)]"
+                  ? "min-h-11 rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--on-brand)]"
                   : "min-h-11 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-bold text-[var(--muted)] hover:border-[var(--brand)]"
               }
               onClick={() => setActiveTab("slides")}
@@ -1891,7 +1891,7 @@ export function AdminHomepagePanel() {
             <button
               className={
                 activeTab === "background"
-                  ? "min-h-11 rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--foreground)]"
+                  ? "min-h-11 rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--on-brand)]"
                   : "min-h-11 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-bold text-[var(--muted)] hover:border-[var(--brand)]"
               }
               onClick={() => setActiveTab("background")}
@@ -1902,7 +1902,7 @@ export function AdminHomepagePanel() {
             <button
               className={
                 activeTab === "location"
-                  ? "min-h-11 rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--foreground)]"
+                  ? "min-h-11 rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--on-brand)]"
                   : "min-h-11 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-bold text-[var(--muted)] hover:border-[var(--brand)]"
               }
               onClick={() => setActiveTab("location")}
@@ -1984,7 +1984,7 @@ export function AdminHomepagePanel() {
                       onPatch={patchNewFormState}
                     />
                     <button
-                      className="mt-5 min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="mt-5 min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-bold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
                       disabled={createState.status === "saving"}
                       type="submit"
                     >
@@ -1993,12 +1993,12 @@ export function AdminHomepagePanel() {
                         : "เพิ่มสไลด์"}
                     </button>
                     {createState.status === "success" ? (
-                      <p className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-[var(--success)]">
+                      <p className="mt-3 rounded-md border border-emerald-300/40 bg-emerald-400/15 px-3 py-2 text-sm text-[var(--success)]">
                         {createState.message}
                       </p>
                     ) : null}
                     {createState.status === "error" ? (
-                      <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                      <p className="mt-3 rounded-md border border-red-400/40 bg-red-500/15 px-3 py-2 text-sm text-red-200">
                         {createState.error}
                       </p>
                     ) : null}

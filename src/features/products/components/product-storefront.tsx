@@ -108,7 +108,7 @@ function ProductCard({
           src={product.image_url}
         />
         {isOutOfStock ? (
-          <span className="absolute left-3 top-3 rounded-full bg-[var(--foreground)]/90 px-2.5 py-1 text-xs font-semibold text-white">
+          <span className="absolute left-3 top-3 rounded-full bg-red-600 px-2.5 py-1 text-xs font-semibold text-white shadow">
             สินค้าหมด
           </span>
         ) : null}
@@ -134,7 +134,7 @@ function ProductCard({
             {currencyFormatter.format(product.unit_price)}
           </p>
           <button
-            className="flex min-h-9 w-full items-center justify-center rounded-md bg-[var(--brand)] px-2 text-xs font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-10 sm:text-sm"
+            className="flex min-h-9 w-full items-center justify-center rounded-md bg-[var(--brand)] px-2 text-xs font-semibold text-[var(--on-brand)] transition-opacity disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-10 sm:text-sm"
             disabled={isOutOfStock || isAdding}
             onClick={() => onAddToCart(product)}
             type="button"
@@ -175,7 +175,7 @@ function SortTabButton({
     <button
       className={
         active
-          ? "min-h-9 rounded-md bg-[var(--brand)] px-3 text-sm font-semibold text-white"
+          ? "min-h-9 rounded-md bg-[var(--brand)] px-3 text-sm font-semibold text-[var(--on-brand)]"
           : "min-h-9 rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm font-semibold text-[var(--foreground)] hover:border-[var(--brand)]"
       }
       onClick={onClick}
@@ -500,12 +500,12 @@ export function ProductStorefront() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-5 pb-24 pt-0 sm:px-8 sm:pb-6">
+    <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col pb-24 pt-0 sm:pb-6 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
-        <h1 className="text-3xl font-bold leading-tight text-[var(--foreground)]">
+        <h1 className="text-2xl sm:text-3xl font-bold leading-tight text-[var(--foreground)]">
           สินค้าสำหรับ BigO-RepairCar
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -523,13 +523,13 @@ export function ProductStorefront() {
 
       {authState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="max-w-xl rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             <p className="font-semibold">ต้องเข้าสู่ระบบก่อนดูหน้าร้าน</p>
             <p className="mt-2">
               ตอนนี้ระบบสินค้าใช้ข้อมูลลูกค้าจากบัญชีของคุณ เพื่อแยกตะกร้าและคำสั่งซื้อให้ถูกคน
             </p>
             <Link
-              className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+              className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
               href="/auth"
             >
               ไปที่หน้าบัญชี
@@ -540,7 +540,7 @@ export function ProductStorefront() {
 
       {authState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {authState.error}
           </div>
         </section>
@@ -556,7 +556,7 @@ export function ProductStorefront() {
             >
               ตัวกรอง
               {hasActiveFilters ? (
-                <span className="rounded-full bg-[var(--brand)] px-2 py-0.5 text-xs font-bold text-white">
+                <span className="rounded-full bg-[var(--brand)] px-2 py-0.5 text-xs font-bold text-[var(--on-brand)]">
                   กำลังใช้งาน
                 </span>
               ) : null}
@@ -642,7 +642,7 @@ export function ProductStorefront() {
                     />
                   </div>
                   <button
-                    className="min-h-9 w-full rounded-md bg-[var(--brand)] text-sm font-semibold text-white"
+                    className="min-h-9 w-full rounded-md bg-[var(--brand)] text-sm font-semibold text-[var(--on-brand)]"
                     onClick={applyPriceRange}
                     type="button"
                   >
@@ -666,7 +666,7 @@ export function ProductStorefront() {
                 href="/cart"
               >
                 ตะกร้า
-                <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--brand)] px-1.5 text-xs font-bold text-white">
+                <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--brand)] px-1.5 text-xs font-bold text-[var(--on-brand)]">
                   {cartState.summary.itemCount}
                 </span>
               </Link>
@@ -740,13 +740,13 @@ export function ProductStorefront() {
             </div>
 
             {addToCartState.status === "error" ? (
-              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-700">
+              <div className="mt-4 rounded-lg border border-red-400/40 bg-red-500/15 p-3 text-sm leading-6 text-red-200">
                 {addToCartState.message}
               </div>
             ) : null}
 
             {cartState.status === "error" ? (
-              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-700">
+              <div className="mt-4 rounded-lg border border-red-400/40 bg-red-500/15 p-3 text-sm leading-6 text-red-200">
                 {cartState.error}
               </div>
             ) : null}
@@ -758,7 +758,7 @@ export function ProductStorefront() {
             ) : null}
 
             {productsState.status === "error" ? (
-              <div className="mt-4 rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
+              <div className="mt-4 rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
                 {productsState.error}
               </div>
             ) : null}
@@ -815,7 +815,7 @@ export function ProductStorefront() {
 
       {authState.status === "ready" && cartState.summary.itemCount > 0 ? (
         <Link
-          className="fixed inset-x-5 bottom-5 z-20 flex min-h-12 items-center justify-center gap-2 rounded-full bg-[var(--brand)] px-5 text-sm font-semibold text-white shadow-lg sm:hidden"
+          className="fixed inset-x-5 bottom-5 z-20 flex min-h-12 items-center justify-center gap-2 rounded-full bg-[var(--brand)] px-5 text-sm font-semibold text-[var(--on-brand)] shadow-lg sm:hidden"
           href="/cart"
         >
           ไปที่ตะกร้า · {cartState.summary.itemCount} ชิ้น

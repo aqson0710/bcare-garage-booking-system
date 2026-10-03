@@ -164,7 +164,7 @@ export function AdminBookingReceiptPanel({ bookingId }: { bookingId: string }) {
             กรุณาเข้าสู่ระบบด้วยบัญชี admin ก่อนดูเอกสารการจอง
           </p>
           <Link
-            className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+            className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
             href="/auth"
           >
             ไปที่หน้าบัญชี
@@ -193,7 +193,7 @@ export function AdminBookingReceiptPanel({ bookingId }: { bookingId: string }) {
             ไม่พบเอกสารของการจองนี้
           </p>
           <Link
-            className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+            className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
             href="/admin/bookings"
           >
             กลับไป booking admin

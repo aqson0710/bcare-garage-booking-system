@@ -56,22 +56,22 @@ function formatShortDate(dateString: string) {
 
 function getStatusStyle(status: TechnicianWorkOrder["status"]) {
   if (status === "pending") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (status === "assigned") {
-    return "bg-cyan-50 text-cyan-800";
+    return "bg-[var(--accent)]/30 text-sky-100";
   }
 
   if (status === "in_progress") {
-    return "bg-indigo-50 text-indigo-800";
+    return "bg-[var(--indigo)]/50 text-indigo-100";
   }
 
   if (status === "completed") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
-  return "bg-red-50 text-red-700";
+  return "bg-red-500/15 text-red-200";
 }
 
 function formatWorkOrderStatus(status: TechnicianWorkOrder["status"]) {
@@ -331,7 +331,7 @@ export function TechnicianHomePanel() {
   }, [loadState, todayDateString]);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col pb-8 pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
@@ -356,11 +356,11 @@ export function TechnicianHomePanel() {
 
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="max-w-lg rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             <p className="font-semibold">ต้องเข้าสู่ระบบ</p>
             <p className="mt-1">กรุณาเข้าสู่ระบบด้วยบัญชีช่าง</p>
             <Link
-              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/auth"
             >
               ไปที่บัญชี
@@ -371,7 +371,7 @@ export function TechnicianHomePanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -390,8 +390,8 @@ export function TechnicianHomePanel() {
           </div>
 
           {grouped.inProgress.length > 0 ? (
-            <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
-              <p className="text-sm font-bold text-indigo-900">
+            <div className="rounded-lg border border-indigo-300/40 bg-[var(--indigo)]/50 p-4">
+              <p className="text-sm font-bold text-indigo-100">
                 มีงานที่กำลังทำค้างอยู่ - กลับไปทำต่อได้เลย
               </p>
               <div className="mt-3 space-y-3">
@@ -480,7 +480,7 @@ export function TechnicianHomePanel() {
                       ? getSelectedSkillNames(loadState.data.profile).map(
                           (skillName) => (
                             <span
-                              className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-xs font-semibold text-emerald-400"
+                              className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--brand)]"
                               key={skillName}
                             >
                               {skillName}

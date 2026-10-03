@@ -333,13 +333,13 @@ function VehicleCard({
             </label>
 
             {uploadState.status === "uploaded" ? (
-              <p className="mt-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs leading-5 text-[var(--brand-strong)]">
+              <p className="mt-2 rounded-md border border-emerald-300/40 bg-emerald-400/15 px-3 py-2 text-xs leading-5 text-emerald-200">
                 {uploadState.message}
               </p>
             ) : null}
 
             {uploadState.status === "error" ? (
-              <p className="mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs leading-5 text-red-700">
+              <p className="mt-2 rounded-md border border-red-400/40 bg-red-500/15 px-3 py-2 text-xs leading-5 text-red-200">
                 {uploadState.error}
               </p>
             ) : null}
@@ -376,7 +376,7 @@ function VehicleCard({
                     ยกเลิก
                   </button>
                   <button
-                    className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={cardState.status === "saving"}
                     type="submit"
                   >
@@ -401,7 +401,7 @@ function VehicleCard({
                   แก้ไข
                 </button>
                 <button
-                  className="min-h-10 rounded-md border border-red-200 bg-[var(--surface)] px-4 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="min-h-10 rounded-md border border-red-400/40 bg-[var(--surface)] px-4 text-sm font-semibold text-red-200 hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={isDeleting}
                   onClick={handleDelete}
                   type="button"
@@ -484,19 +484,19 @@ function VehicleCard({
         </div>
 
         {cardState.status === "saved" ? (
-          <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-[var(--brand-strong)]">
+          <div className="mt-4 rounded-md border border-emerald-300/40 bg-emerald-400/15 p-3 text-sm text-emerald-200">
             {cardState.message}
           </div>
         ) : null}
 
         {cardState.status === "error" ? (
-          <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="mt-4 rounded-md border border-red-400/40 bg-red-500/15 p-3 text-sm text-red-200">
             {cardState.error}
           </div>
         ) : null}
 
         {deleteState.status === "error" ? (
-          <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="mt-4 rounded-md border border-red-400/40 bg-red-500/15 p-3 text-sm text-red-200">
             {deleteState.error}
           </div>
         ) : null}
@@ -624,14 +624,14 @@ export function MyVehiclesPanel() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 pb-8 pt-0">
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col pb-8 pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-[var(--foreground)]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] leading-tight">
               รถของฉัน
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -639,7 +639,7 @@ export function MyVehiclesPanel() {
             </p>
           </div>
           <Link
-            className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+            className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
             href="/services"
           >
             จองบริการใหม่
@@ -657,11 +657,11 @@ export function MyVehiclesPanel() {
 
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="max-w-lg rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             <p className="font-semibold">ต้องเข้าสู่ระบบ</p>
             <p className="mt-1">กรุณาเข้าสู่ระบบก่อนดูข้อมูลรถของคุณ</p>
             <Link
-              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/auth"
             >
               ไปที่บัญชี
@@ -672,7 +672,7 @@ export function MyVehiclesPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>

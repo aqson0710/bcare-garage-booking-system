@@ -201,7 +201,7 @@ function PaymentPreview({ formState }: { formState: PaymentSettingsFormState }) 
       </p>
 
       {formState.status !== "active" ? (
-        <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-800">
+        <div className="mt-4 rounded-md border border-amber-300/40 bg-amber-400/15 p-3 text-sm leading-6 text-amber-200">
           ตั้งค่านี้ยัง inactive ลูกค้าจะไม่เห็นข้อมูลชุดนี้
         </div>
       ) : null}
@@ -269,7 +269,7 @@ function PaymentPreview({ formState }: { formState: PaymentSettingsFormState }) 
       ) : null}
 
       {formState.payment_instructions.trim() ? (
-        <div className="mt-4 rounded-md bg-amber-50 p-3 text-sm leading-6 text-amber-800">
+        <div className="mt-4 rounded-md bg-amber-400/15 p-3 text-sm leading-6 text-amber-200">
           {formState.payment_instructions}
         </div>
       ) : null}
@@ -549,14 +549,14 @@ export function AdminPaymentSettingsPanel() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col pb-8 pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-[var(--foreground)]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] leading-tight">
               ตั้งค่าการชำระเงิน
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -582,11 +582,11 @@ export function AdminPaymentSettingsPanel() {
 
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="max-w-lg rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             <p className="font-semibold">ต้องเข้าสู่ระบบก่อน</p>
             <p className="mt-1">กรุณาเข้าสู่ระบบด้วยบัญชี admin</p>
             <Link
-              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/auth"
             >
               ไปที่หน้าบัญชี
@@ -597,7 +597,7 @@ export function AdminPaymentSettingsPanel() {
 
       {loadState.status === "access-denied" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
+          <div className="max-w-lg rounded-lg border border-red-400/40 bg-red-500/15 p-5 text-sm leading-6 text-red-200">
             <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าหน้านี้</p>
             <p className="mt-2">{loadState.access.reason}</p>
           </div>
@@ -606,7 +606,7 @@ export function AdminPaymentSettingsPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm leading-6 text-[var(--danger)] shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm leading-6 text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -695,19 +695,19 @@ export function AdminPaymentSettingsPanel() {
                   </label>
 
                   {uploadState.status === "uploading" ? (
-                    <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-800">
+                    <div className="rounded-md border border-amber-300/40 bg-amber-400/15 p-3 text-sm leading-6 text-amber-200">
                       กำลังอัปโหลด QR...
                     </div>
                   ) : null}
 
                   {uploadState.status === "uploaded" ? (
-                    <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm leading-6 text-[var(--brand-strong)]">
+                    <div className="rounded-md border border-emerald-300/40 bg-emerald-400/15 p-3 text-sm leading-6 text-emerald-200">
                       {uploadState.message}
                     </div>
                   ) : null}
 
                   {uploadState.status === "error" ? (
-                    <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-700">
+                    <div className="rounded-md border border-red-400/40 bg-red-500/15 p-3 text-sm leading-6 text-red-200">
                       {uploadState.error}
                     </div>
                   ) : null}
@@ -770,26 +770,26 @@ export function AdminPaymentSettingsPanel() {
               </label>
 
               {saveState.status === "error" ? (
-                <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-700">
+                <div className="rounded-md border border-red-400/40 bg-red-500/15 p-3 text-sm leading-6 text-red-200">
                   {saveState.error}
                 </div>
               ) : null}
 
               {saveState.status === "saved" ? (
-                <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm leading-6 text-[var(--brand-strong)]">
+                <div className="rounded-md border border-emerald-300/40 bg-emerald-400/15 p-3 text-sm leading-6 text-emerald-200">
                   {saveState.message}
                 </div>
               ) : null}
 
               {uploadState.status === "uploaded" &&
               saveState.status !== "saved" ? (
-                <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-800">
+                <div className="rounded-md border border-amber-300/40 bg-amber-400/15 p-3 text-sm leading-6 text-amber-200">
                   อัปโหลด QR แล้ว แต่ยังต้องกดบันทึกการตั้งค่าชำระเงินก่อน ลูกค้าถึงจะเห็นรูปใหม่
                 </div>
               ) : null}
 
               <button
-                className="min-h-11 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-h-11 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={saveState.status === "saving"}
                 type="submit"
               >

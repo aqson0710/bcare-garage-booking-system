@@ -25,7 +25,7 @@ export function DiagonalWaves({ className = "" }: { className?: string }) {
       >
         <path
           d="M0,150 C150,80 450,220 600,150 C750,80 1050,220 1200,150 C1350,80 1650,220 1800,150 C1950,80 2250,220 2400,150 L2400,300 L0,300 Z"
-          fill="var(--accent-soft)"
+          fill="var(--indigo)"
           fillOpacity="0.55"
         />
       </svg>
@@ -37,8 +37,8 @@ export function DiagonalWaves({ className = "" }: { className?: string }) {
       >
         <path
           d="M0,190 C200,130 400,250 600,190 C800,130 1000,250 1200,190 C1400,130 1600,250 1800,190 C2000,130 2200,250 2400,190 L2400,300 L0,300 Z"
-          fill="var(--brand-strong)"
-          fillOpacity="0.35"
+          fill="var(--accent)"
+          fillOpacity="0.45"
         />
       </svg>
     </div>

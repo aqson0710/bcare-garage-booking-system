@@ -143,7 +143,7 @@ function getPaymentDisplaySettings(
 
 function getOrderStatusStyle(status: ProductOrderWithItems["status"]) {
   if (status === "pending") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (
@@ -152,31 +152,31 @@ function getOrderStatusStyle(status: ProductOrderWithItems["status"]) {
     status === "ready_for_pickup" ||
     status === "out_for_delivery"
   ) {
-    return "bg-cyan-50 text-cyan-800";
+    return "bg-[var(--accent)]/30 text-sky-100";
   }
 
   if (status === "completed") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
-  return "bg-red-50 text-red-700";
+  return "bg-red-500/15 text-red-200";
 }
 
 function getPaymentStatusStyle(status: ProductOrderWithItems["payment_status"]) {
   if (status === "paid") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
   if (status === "pending" || status === "partially_paid") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (status === "refunded") {
-    return "bg-cyan-50 text-cyan-800";
+    return "bg-[var(--accent)]/30 text-sky-100";
   }
 
   if (status === "cancelled") {
-    return "bg-red-50 text-red-700";
+    return "bg-red-500/15 text-red-200";
   }
 
   return "bg-[var(--surface-muted)] text-[var(--foreground)]";
@@ -184,15 +184,15 @@ function getPaymentStatusStyle(status: ProductOrderWithItems["payment_status"]) 
 
 function getVerificationStatusStyle(status: ProductPayment["verification_status"]) {
   if (status === "verified") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
   if (status === "submitted") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (status === "rejected" || status === "failed") {
-    return "bg-red-50 text-red-700";
+    return "bg-red-500/15 text-red-200";
   }
 
   return "bg-[var(--surface-muted)] text-[var(--foreground)]";
@@ -323,7 +323,7 @@ function getPaymentNotice(
     return {
       message: "คำสั่งซื้อนี้ถูกยกเลิกแล้ว จึงไม่สามารถส่งสลิปเพิ่มได้",
       title: "ออเดอร์ถูกยกเลิก",
-      tone: "border-red-200 bg-red-50 text-red-700",
+      tone: "border-red-400/40 bg-red-500/15 text-red-200",
     };
   }
 
@@ -339,7 +339,7 @@ function getPaymentNotice(
           ? "SlipOK ตรวจสลิปผ่านแล้ว ระบบอัปเดตออเดอร์เป็นชำระเงินแล้ว"
           : "แอดมินตรวจหลักฐานและยืนยันการชำระเงินแล้ว",
       title: "ชำระเงินแล้ว",
-      tone: "border-emerald-200 bg-emerald-50 text-[var(--brand-strong)]",
+      tone: "border-emerald-300/40 bg-emerald-400/15 text-emerald-200",
     };
   }
 
@@ -354,7 +354,7 @@ function getPaymentNotice(
         ? `${verifierLabel} ตรวจไม่ผ่าน: ${latestPayment.rejected_reason}`
         : `${verifierLabel} ตรวจไม่ผ่าน สามารถส่งสลิปใหม่ได้`,
       title: "สลิปไม่ผ่าน",
-      tone: "border-red-200 bg-red-50 text-red-700",
+      tone: "border-red-400/40 bg-red-500/15 text-red-200",
     };
   }
 
@@ -365,7 +365,7 @@ function getPaymentNotice(
           ? "ระบบบันทึกสลิปแล้ว รอการตรวจจาก SlipOK หรือแอดมิน"
           : "ระบบบันทึกสลิปแล้ว กรุณารอแอดมินตรวจและอนุมัติ",
       title: "ส่งสลิปแล้ว รอตรวจ",
-      tone: "border-amber-200 bg-amber-50 text-amber-800",
+      tone: "border-amber-300/40 bg-amber-400/15 text-amber-200",
     };
   }
 
@@ -442,7 +442,7 @@ function PaymentInstructionPanel({
                 value={currencyFormatter.format(amount)}
               />
               {displaySettings.instructions ? (
-                <p className="text-xs leading-5 text-amber-400">
+                <p className="text-xs leading-5 text-amber-300">
                   {displaySettings.instructions}
                 </p>
               ) : null}
@@ -479,7 +479,7 @@ function PaymentInstructionPanel({
               value={currencyFormatter.format(amount)}
             />
             {displaySettings.instructions ? (
-              <p className="text-xs leading-5 text-amber-400">
+              <p className="text-xs leading-5 text-amber-300">
                 {displaySettings.instructions}
               </p>
             ) : null}
@@ -702,13 +702,13 @@ function PaymentSlipUploadPanel({
       </div>
 
       {!hasPaymentMethod ? (
-        <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-700">
+        <div className="mt-4 rounded-md border border-red-400/40 bg-red-500/15 p-3 text-sm leading-6 text-red-200">
           ยังไม่มีช่องทางชำระเงินที่เปิดใช้งาน กรุณาติดต่ออู่ก่อนส่งสลิป
         </div>
       ) : null}
 
       {!hasPayableAmount ? (
-        <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-700">
+        <div className="mt-4 rounded-md border border-red-400/40 bg-red-500/15 p-3 text-sm leading-6 text-red-200">
           ยอดรวมของออเดอร์นี้เป็น 0 บาท จึงยังไม่สามารถส่งสลิปได้ กรุณาให้แอดมินตรวจราคาสินค้าหรือสร้างออเดอร์ใหม่หลังตั้งราคาสินค้า
         </div>
       ) : null}
@@ -826,25 +826,25 @@ function PaymentSlipUploadPanel({
           </label>
 
           {submitState.status === "error" ? (
-            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-700">
+            <div className="rounded-md border border-red-400/40 bg-red-500/15 p-3 text-sm leading-6 text-red-200">
               {submitState.error}
             </div>
           ) : null}
 
           {submitState.status === "verifying" ? (
-            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-800">
+            <div className="rounded-md border border-amber-300/40 bg-amber-400/15 p-3 text-sm leading-6 text-amber-200">
               กำลังตรวจสลิปอัตโนมัติ...
             </div>
           ) : null}
 
           {submitState.status === "success" ? (
-            <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm leading-6 text-[var(--brand-strong)]">
+            <div className="rounded-md border border-emerald-300/40 bg-emerald-400/15 p-3 text-sm leading-6 text-emerald-200">
               บันทึกหลักฐานการชำระเงินแล้ว
             </div>
           ) : null}
 
           <button
-            className="min-h-11 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="min-h-11 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={
               submitState.status === "submitting" ||
               submitState.status === "verifying"
@@ -1041,14 +1041,14 @@ export function CustomerProductOrderDetailPanel({
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 pb-8 pt-0">
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col pb-8 pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-[var(--foreground)]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] leading-tight">
               รายละเอียดคำสั่งซื้อสินค้า
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -1081,10 +1081,10 @@ export function CustomerProductOrderDetailPanel({
 
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="max-w-lg rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             <p className="font-semibold">ต้องเข้าสู่ระบบก่อนดูคำสั่งซื้อ</p>
             <Link
-              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/auth"
             >
               ไปที่หน้าบัญชี
@@ -1103,7 +1103,7 @@ export function CustomerProductOrderDetailPanel({
               ออเดอร์นี้อาจไม่มีอยู่ หรือไม่ได้เป็นของบัญชีที่เข้าสู่ระบบอยู่
             </p>
             <Link
-              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/my-product-orders"
             >
               กลับไปคำสั่งซื้อ
@@ -1114,7 +1114,7 @@ export function CustomerProductOrderDetailPanel({
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -1152,7 +1152,7 @@ export function CustomerProductOrderDetailPanel({
               </div>
 
               {loadState.order.status === "cancelled" ? (
-                <div className="mt-5 rounded-md border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">
+                <div className="mt-5 rounded-md border border-red-400/40 bg-red-500/15 p-4 text-sm leading-6 text-red-200">
                   <p className="font-semibold">คำสั่งซื้อนี้ถูกยกเลิกแล้ว</p>
                   <p className="mt-1">
                     รายการสินค้านี้จะไม่ถูกจัดเตรียมหรือจัดส่ง หากมีข้อสงสัยเรื่องการชำระเงิน กรุณาติดต่ออู่
@@ -1282,16 +1282,16 @@ export function CustomerProductOrderDetailPanel({
               {loadState.order.amountPaid != null &&
               loadState.order.amountPaid > 0 &&
               loadState.order.payment_status !== "paid" ? (
-                <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5">
+                <div className="rounded-md border border-amber-300/40 bg-amber-400/15 px-3 py-2.5">
                   <div className="flex items-center justify-between gap-3 text-xs">
-                    <span className="text-amber-800">ยอดที่จ่ายแล้ว</span>
-                    <span className="font-semibold text-amber-800">
+                    <span className="text-amber-200">ยอดที่จ่ายแล้ว</span>
+                    <span className="font-semibold text-amber-200">
                       {currencyFormatter.format(loadState.order.amountPaid)}
                     </span>
                   </div>
                   <div className="mt-1.5 flex items-center justify-between gap-3 text-xs">
-                    <span className="text-amber-800">ยอดคงเหลือ</span>
-                    <span className="font-semibold text-amber-800">
+                    <span className="text-amber-200">ยอดคงเหลือ</span>
+                    <span className="font-semibold text-amber-200">
                       {currencyFormatter.format(
                         loadState.order.amountRemaining ??
                           loadState.order.total_amount,
@@ -1341,7 +1341,7 @@ export function CustomerProductOrderDetailPanel({
             {loadState.order.status === "pending" ? (
               <div className="mt-5 border-t border-[var(--line)] pt-5">
                 <button
-                  className="flex min-h-10 w-full items-center justify-center rounded-md border border-red-200 bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--danger)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex min-h-10 w-full items-center justify-center rounded-md border border-red-400/40 bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--danger)] disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={cancelState.status === "cancelling"}
                   onClick={handleCancel}
                   type="button"
@@ -1354,7 +1354,7 @@ export function CustomerProductOrderDetailPanel({
                   ยกเลิกได้เฉพาะตอนที่ออเดอร์ยังรอดำเนินการและยังไม่ชำระเงินเท่านั้น
                 </p>
                 {cancelState.status === "error" ? (
-                  <p className="mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs leading-5 text-red-700">
+                  <p className="mt-2 rounded-md border border-red-400/40 bg-red-500/15 px-3 py-2 text-xs leading-5 text-red-200">
                     {cancelState.error}
                   </p>
                 ) : null}

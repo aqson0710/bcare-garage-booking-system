@@ -301,12 +301,12 @@ export function CartReview() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-5 pb-6 pt-0 sm:px-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col pb-6 pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
-        <h1 className="text-3xl font-bold leading-tight text-[var(--foreground)]">
+        <h1 className="text-2xl sm:text-3xl font-bold leading-tight text-[var(--foreground)]">
           ตะกร้าสินค้า
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -324,11 +324,11 @@ export function CartReview() {
 
       {authState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="max-w-xl rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             <p className="font-semibold">ต้องเข้าสู่ระบบก่อนดูตะกร้า</p>
             <p className="mt-2">ระบบจะแยกตะกร้าตามบัญชีลูกค้าแต่ละคน</p>
             <Link
-              className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+              className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
               href="/auth"
             >
               ไปที่หน้าบัญชี
@@ -339,7 +339,7 @@ export function CartReview() {
 
       {authState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {authState.error}
           </div>
         </section>
@@ -355,13 +355,13 @@ export function CartReview() {
             ) : null}
 
             {cartState.status === "error" ? (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">
+              <div className="rounded-lg border border-red-400/40 bg-red-500/15 p-4 text-sm leading-6 text-red-200">
                 {cartState.error}
               </div>
             ) : null}
 
             {actionState.status === "error" ? (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">
+              <div className="rounded-lg border border-red-400/40 bg-red-500/15 p-4 text-sm leading-6 text-red-200">
                 {actionState.message}
               </div>
             ) : null}
@@ -383,7 +383,7 @@ export function CartReview() {
                 </p>
                 <p className="mt-2">กลับไปเลือกสินค้าจากหน้าร้านก่อน</p>
                 <Link
-                  className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+                  className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
                   href="/products"
                 >
                   ไปเลือกสินค้า
@@ -412,7 +412,7 @@ export function CartReview() {
             <Link
               className={
                 cartState.details.items.length > 0
-                  ? "mt-5 flex min-h-11 w-full items-center justify-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+                  ? "mt-5 flex min-h-11 w-full items-center justify-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
                   : "pointer-events-none mt-5 flex min-h-11 w-full items-center justify-center rounded-md border border-[var(--line)] bg-[var(--surface-muted)] px-4 text-sm font-semibold text-[var(--muted)]"
               }
               href="/checkout"

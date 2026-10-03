@@ -137,7 +137,7 @@ export function AdminProductOrderReceiptPanel({
             กรุณาเข้าสู่ระบบด้วยบัญชี admin ก่อนดูใบเสร็จ
           </p>
           <Link
-            className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+            className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
             href="/auth"
           >
             ไปที่หน้าบัญชี
@@ -166,7 +166,7 @@ export function AdminProductOrderReceiptPanel({
             ไม่พบใบเสร็จของคำสั่งซื้อนี้
           </p>
           <Link
-            className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+            className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
             href="/admin/product-orders"
           >
             กลับไปออเดอร์สินค้า

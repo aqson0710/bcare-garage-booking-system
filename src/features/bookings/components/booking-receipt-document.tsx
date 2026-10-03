@@ -130,7 +130,7 @@ export function BookingReceiptDocument({
           กลับไปหน้ารายละเอียด
         </a>
         <button
-          className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+          className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
           onClick={() => window.print()}
           type="button"
         >

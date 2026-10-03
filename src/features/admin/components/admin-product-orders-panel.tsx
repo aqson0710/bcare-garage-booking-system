@@ -141,7 +141,7 @@ function clampPage(page: number, totalPages: number) {
 
 function getOrderStatusStyle(status: AdminProductOrder["status"]) {
   if (status === "pending") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (
@@ -150,31 +150,31 @@ function getOrderStatusStyle(status: AdminProductOrder["status"]) {
     status === "ready_for_pickup" ||
     status === "out_for_delivery"
   ) {
-    return "bg-cyan-50 text-cyan-800";
+    return "bg-[var(--accent)]/30 text-sky-100";
   }
 
   if (status === "completed") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
-  return "bg-red-50 text-red-700";
+  return "bg-red-500/15 text-red-200";
 }
 
 function getPaymentStatusStyle(status: AdminProductOrder["payment_status"]) {
   if (status === "paid") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
   if (status === "pending" || status === "partially_paid") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (status === "refunded") {
-    return "bg-cyan-50 text-cyan-800";
+    return "bg-[var(--accent)]/30 text-sky-100";
   }
 
   if (status === "cancelled") {
-    return "bg-red-50 text-red-700";
+    return "bg-red-500/15 text-red-200";
   }
 
   return "bg-[var(--surface-muted)] text-[var(--foreground)]";
@@ -236,15 +236,15 @@ function getVerificationStatusStyle(
   status: AdminProductOrder["payments"][number]["verification_status"],
 ) {
   if (status === "verified") {
-    return "bg-emerald-50 text-[var(--brand-strong)]";
+    return "bg-emerald-400/15 text-emerald-200";
   }
 
   if (status === "submitted") {
-    return "bg-amber-50 text-amber-800";
+    return "bg-amber-400/15 text-amber-200";
   }
 
   if (status === "rejected" || status === "failed") {
-    return "bg-red-50 text-red-700";
+    return "bg-red-500/15 text-red-200";
   }
 
   return "bg-[var(--surface-muted)] text-[var(--foreground)]";
@@ -323,12 +323,12 @@ function getAdminOrderActions(
       {
         label: "ยืนยันออเดอร์",
         status: "confirmed",
-        tone: "bg-[var(--brand)] text-white",
+        tone: "bg-[var(--brand)] text-[var(--on-brand)]",
       },
       {
         label: "ยกเลิก",
         status: "cancelled",
-        tone: "border border-red-200 bg-red-50 text-red-700",
+        tone: "border border-red-400/40 bg-red-500/15 text-red-200",
       },
     ];
   }
@@ -338,12 +338,12 @@ function getAdminOrderActions(
       {
         label: "เริ่มจัดเตรียม",
         status: "preparing",
-        tone: "bg-[var(--brand)] text-white",
+        tone: "bg-[var(--brand)] text-[var(--on-brand)]",
       },
       {
         label: "ยกเลิก",
         status: "cancelled",
-        tone: "border border-red-200 bg-red-50 text-red-700",
+        tone: "border border-red-400/40 bg-red-500/15 text-red-200",
       },
     ];
   }
@@ -359,12 +359,12 @@ function getAdminOrderActions(
           order.delivery_method === "delivery"
             ? "out_for_delivery"
             : "ready_for_pickup",
-        tone: "bg-[var(--brand)] text-white",
+        tone: "bg-[var(--brand)] text-[var(--on-brand)]",
       },
       {
         label: "ยกเลิก",
         status: "cancelled",
-        tone: "border border-red-200 bg-red-50 text-red-700",
+        tone: "border border-red-400/40 bg-red-500/15 text-red-200",
       },
     ];
   }
@@ -374,7 +374,7 @@ function getAdminOrderActions(
       {
         label: "ปิดออเดอร์สำเร็จ",
         status: "completed",
-        tone: "bg-[var(--brand)] text-white",
+        tone: "bg-[var(--brand)] text-[var(--on-brand)]",
       },
     ];
   }
@@ -449,7 +449,7 @@ function AdminPaginationControls({
             type="number"
           />
           <button
-            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
             type="submit"
           >
             ไป
@@ -605,7 +605,7 @@ function AdminProductOrderCard({
       ) : null}
 
       {order.status === "cancelled" ? (
-        <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-700">
+        <div className="mt-4 rounded-md border border-red-400/40 bg-red-500/15 p-3 text-sm leading-6 text-red-200">
           <p className="font-semibold">ออเดอร์นี้ถูกยกเลิกแล้ว</p>
           {order.saleMovements.length > 0 ? (
             <p className="mt-1">
@@ -620,7 +620,7 @@ function AdminProductOrderCard({
       ) : null}
 
       {latestPayment?.verification_status === "submitted" ? (
-        <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-800">
+        <div className="mt-4 rounded-md border border-amber-300/40 bg-amber-400/15 p-3 text-sm leading-6 text-amber-200">
           <p className="font-semibold">รอตรวจสลิป</p>
           <p className="mt-1">
             ลูกค้าส่งหลักฐานแล้ว เปิดรายละเอียดเพื่อดูรูปสลิปและอนุมัติหรือปฏิเสธ
@@ -629,7 +629,7 @@ function AdminProductOrderCard({
       ) : null}
 
       {latestPayment?.verification_status === "rejected" ? (
-        <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-700">
+        <div className="mt-4 rounded-md border border-red-400/40 bg-red-500/15 p-3 text-sm leading-6 text-red-200">
           <p className="font-semibold">สลิปถูกปฏิเสธ</p>
           <p className="mt-1">
             {latestPayment.rejected_reason
@@ -675,7 +675,7 @@ function AdminProductOrderCard({
                 ยกเลิกการแก้ไข
               </button>
               <button
-                className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={!canSaveStatus}
                 onClick={() => onStatusChange(order, selectedStatus)}
                 type="button"
@@ -983,14 +983,14 @@ export function AdminProductOrdersPanel() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-8 pt-0">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col pb-8 pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-[var(--foreground)]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] leading-tight">
               ออเดอร์สินค้า
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -1016,11 +1016,11 @@ export function AdminProductOrdersPanel() {
 
       {loadState.status === "signed-out" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="max-w-lg rounded-lg border border-amber-300/40 bg-amber-400/15 p-5 text-sm leading-6 text-amber-200">
             <p className="font-semibold">ต้องเข้าสู่ระบบก่อน</p>
             <p className="mt-1">เข้าสู่ระบบด้วยบัญชี admin</p>
             <Link
-              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+              className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
               href="/auth"
             >
               ไปที่หน้าบัญชี
@@ -1031,7 +1031,7 @@ export function AdminProductOrdersPanel() {
 
       {loadState.status === "access-denied" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-lg rounded-lg border border-red-200 bg-red-50 p-5 text-sm leading-6 text-red-700">
+          <div className="max-w-lg rounded-lg border border-red-400/40 bg-red-500/15 p-5 text-sm leading-6 text-red-200">
             <p className="text-lg font-bold">ไม่มีสิทธิ์เข้าถึง</p>
             <p className="mt-2">{loadState.access.reason}</p>
           </div>
@@ -1040,7 +1040,7 @@ export function AdminProductOrdersPanel() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -1059,7 +1059,7 @@ export function AdminProductOrdersPanel() {
                   {loadState.result.totalPages}
                 </p>
                 {paymentFilter === "pending" ? (
-                  <p className="mt-1 text-sm font-semibold text-amber-400">
+                  <p className="mt-1 text-sm font-semibold text-amber-300">
                     กำลังดูคิวรอตรวจสลิป
                   </p>
                 ) : null}
@@ -1077,7 +1077,7 @@ export function AdminProductOrdersPanel() {
                   value={searchInput}
                 />
                 <button
-                  className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+                  className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
                   type="submit"
                 >
                   ค้นหา

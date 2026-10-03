@@ -2,7 +2,7 @@
 
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { AppImage } from "@/components/app-image";
 import { AppNav } from "@/components/app-nav";
@@ -295,7 +295,7 @@ function ServiceCard({
           <h3 className="text-lg font-semibold leading-6 text-[var(--foreground)]">
             {service.name}
           </h3>
-          <span className="shrink-0 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-[var(--brand-strong)]">
+          <span className="shrink-0 rounded-md bg-emerald-400/15 px-2.5 py-1 text-xs font-semibold text-emerald-200">
             {service.status === "active" ? "เปิดให้บริการ" : "ปิดให้บริการ"}
           </span>
         </div>
@@ -324,8 +324,8 @@ function ServiceCard({
       <button
         className={
           isSelected
-            ? "mx-5 mb-5 mt-5 min-h-10 rounded-md border border-[var(--brand)] bg-emerald-50 px-3 text-sm font-semibold text-[var(--brand-strong)]"
-            : "mx-5 mb-5 mt-5 min-h-10 rounded-md bg-[var(--brand)] px-3 text-sm font-semibold text-white"
+            ? "mx-5 mb-5 mt-5 min-h-10 rounded-md border border-[var(--brand)] bg-emerald-400/15 px-3 text-sm font-semibold text-emerald-200"
+            : "mx-5 mb-5 mt-5 min-h-10 rounded-md bg-[var(--brand)] px-3 text-sm font-semibold text-[var(--on-brand)]"
         }
         onClick={onSelect}
         type="button"
@@ -548,11 +548,11 @@ function BookingForm({
 
   if (authState.status === "signed-out") {
     return (
-      <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">
+      <div className="mt-5 rounded-lg border border-amber-300/40 bg-amber-400/15 p-4 text-sm leading-6 text-amber-200">
         <p className="font-semibold">ต้องเข้าสู่ระบบก่อน</p>
         <p className="mt-1">กรุณาเข้าสู่ระบบหรือสมัครสมาชิกก่อนสร้างการจอง</p>
         <Link
-          className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+          className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
           href="/auth"
         >
           ไปหน้าเข้าสู่ระบบ
@@ -563,13 +563,13 @@ function BookingForm({
 
   if (authState.status === "missing-profile") {
     return (
-      <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">
+      <div className="mt-5 rounded-lg border border-amber-300/40 bg-amber-400/15 p-4 text-sm leading-6 text-amber-200">
         <p className="font-semibold">ต้องมีโปรไฟล์ลูกค้าก่อน</p>
         <p className="mt-1">
           กรุณาบันทึกโปรไฟล์ลูกค้าก่อนสร้างการจอง
         </p>
         <Link
-          className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+          className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
           href="/auth"
         >
           กรอกโปรไฟล์
@@ -580,7 +580,7 @@ function BookingForm({
 
   if (authState.status === "error") {
     return (
-      <div className="mt-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">
+      <div className="mt-5 rounded-lg border border-red-400/40 bg-red-500/15 p-4 text-sm leading-6 text-red-200">
         {authState.error}
       </div>
     );
@@ -902,7 +902,7 @@ function BookingForm({
           {values.preferredDate &&
           availabilityState.status === "ready" &&
           bookingTimeOptions.length === 0 ? (
-            <p className="mt-1 text-xs text-amber-400">
+            <p className="mt-1 text-xs text-amber-300">
               {availabilityState.operatingStatus &&
               !availabilityState.operatingStatus.isOpen
                 ? getClosedDayMessage(availabilityState.operatingStatus)
@@ -942,7 +942,7 @@ function BookingForm({
       </div>
 
       <button
-        className="min-h-11 w-full rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+        className="min-h-11 w-full rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
         disabled={isSubmitDisabled}
         type="submit"
       >
@@ -954,7 +954,7 @@ function BookingForm({
       </p>
 
       {submitState.status === "success" ? (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-[var(--brand-strong)]">
+        <div className="rounded-lg border border-emerald-300/40 bg-emerald-400/15 p-4 text-sm leading-6 text-emerald-200">
           <p className="font-semibold">บันทึกคำขอจองแล้ว</p>
           <p className="mt-2">
             {values.customerName} เลือกบริการ {service.name} วันที่{" "}
@@ -970,7 +970,7 @@ function BookingForm({
               : "สร้างข้อมูลรถใหม่"}
           </p>
           <Link
-            className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white"
+            className="mt-4 block min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
             href="/my-bookings"
           >
             ดูการจองของฉัน
@@ -979,7 +979,7 @@ function BookingForm({
       ) : null}
 
       {submitState.status === "error" ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">
+        <div className="rounded-lg border border-red-400/40 bg-red-500/15 p-4 text-sm leading-6 text-red-200">
           <p className="font-semibold">ส่งคำขอจองไม่สำเร็จ</p>
           <p className="mt-2">{submitState.error}</p>
         </div>
@@ -998,6 +998,28 @@ export function ServicesListing() {
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(
     null,
   );
+  const bookingPanelRef = useRef<HTMLElement>(null);
+
+  // On phones/tablets the booking form sits below every service card, so
+  // after picking a service, scroll straight to it instead of leaving the
+  // customer to hunt for it at the bottom of the page.
+  function selectService(serviceId: string) {
+    const isDeselecting = selectedServiceId === serviceId;
+
+    setSelectedServiceId(isDeselecting ? null : serviceId);
+
+    if (
+      !isDeselecting &&
+      window.matchMedia("(max-width: 1023px)").matches
+    ) {
+      window.requestAnimationFrame(() => {
+        bookingPanelRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      });
+    }
+  }
   const [authState, setAuthState] = useState<AuthBookingState>({
     error: null,
     profile: null,
@@ -1136,14 +1158,14 @@ export function ServicesListing() {
   }, [categories, selectedCategoryId]);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-5 pb-6 pt-0 sm:px-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col pb-6 pt-0 px-4 sm:px-6 lg:px-8">
       <header className="border-b border-[var(--line)] pb-5">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <AppNav />
         </div>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 className="mt-2 text-3xl font-bold leading-tight text-[var(--foreground)]">
+            <h1 className="mt-2 text-2xl sm:text-3xl font-bold leading-tight text-[var(--foreground)]">
               บริการของ BigO-RepairCar
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
@@ -1182,7 +1204,7 @@ export function ServicesListing() {
 
       {loadState.status === "error" ? (
         <section className="grid flex-1 place-items-center py-16">
-          <div className="max-w-xl rounded-lg border border-red-200 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
+          <div className="max-w-xl rounded-lg border border-red-400/40 bg-[var(--surface)] px-5 py-4 text-sm text-[var(--danger)] shadow-sm">
             {loadState.error}
           </div>
         </section>
@@ -1195,7 +1217,7 @@ export function ServicesListing() {
               <button
                 className={
                   selectedCategoryId === "all"
-                    ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+                    ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
                     : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                 }
                 onClick={() => setSelectedCategoryId("all")}
@@ -1207,7 +1229,7 @@ export function ServicesListing() {
                 <button
                   className={
                     selectedCategoryId === category.id
-                      ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+                      ? "min-h-10 shrink-0 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
                       : "min-h-10 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
                   }
                   key={category.id}
@@ -1244,11 +1266,7 @@ export function ServicesListing() {
                         <ServiceCard
                           isSelected={selectedServiceId === service.id}
                           key={service.id}
-                          onSelect={() =>
-                            setSelectedServiceId((currentServiceId) =>
-                              currentServiceId === service.id ? null : service.id,
-                            )
-                          }
+                          onSelect={() => selectService(service.id)}
                           service={service}
                         />
                       ))}
@@ -1263,7 +1281,10 @@ export function ServicesListing() {
             </div>
           </div>
 
-          <aside className="h-fit rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm lg:sticky lg:top-6">
+          <aside
+            className="h-fit scroll-mt-48 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm lg:sticky lg:top-36"
+            ref={bookingPanelRef}
+          >
             <p className="text-sm font-semibold text-[var(--brand)]">
               บริการที่เลือก
             </p>
