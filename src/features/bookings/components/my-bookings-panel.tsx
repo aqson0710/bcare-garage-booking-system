@@ -414,7 +414,10 @@ export function MyBookingsPanel() {
     };
   }, []);
 
-  const bookings = loadState.status === "ready" ? loadState.bookings : [];
+  const bookings = useMemo(
+    () => (loadState.status === "ready" ? loadState.bookings : []),
+    [loadState],
+  );
 
   const statusCounts = useMemo(() => {
     const counts = new Map<MyBooking["status"], number>();

@@ -638,6 +638,16 @@ export async function createProductOrderFromCart(
     };
   }
 
+  // Prices and totals are recalculated by the database from the products
+  // table once the items exist (supabase/product-order-price-guard.sql), so
+  // read the order back instead of trusting the totals computed above.
+  const savedOrderResult = await supabase
+    .from("product_orders")
+    .select("*")
+    .eq("id", orderResult.data.id)
+    .single();
+  const savedOrder = savedOrderResult.data ?? orderResult.data;
+
   const cartUpdateResult = await supabase
     .from("shopping_carts")
     .update({ status: "ordered" })
@@ -655,7 +665,7 @@ export async function createProductOrderFromCart(
   return {
     data: {
       items: orderItemsResult.data ?? [],
-      order: orderResult.data,
+      order: savedOrder,
     } satisfies CheckoutResult,
     error: null,
   };

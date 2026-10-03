@@ -1135,6 +1135,10 @@ export type Database = {
     } & Record<string, GenericTable>;
     Views: Record<string, GenericTable>;
     Functions: {
+      get_admin_report_summary: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
       get_homepage_stats: {
         Args: Record<string, never>;
         Returns: {

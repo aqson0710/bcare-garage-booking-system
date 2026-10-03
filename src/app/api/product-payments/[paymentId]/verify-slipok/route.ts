@@ -440,6 +440,7 @@ async function ensureAuthorizedRequest(
     order,
     payment,
     userId: user.id,
+    verifierUserId: isAdmin ? user.id : null,
   };
 }
 
@@ -475,7 +476,12 @@ export async function POST(request: Request, context: RouteContext) {
     return authCheck.error;
   }
 
-  const adminUserId = authCheck.userId;
+    // Who to record as the verifier: only an admin who triggered this check
+    // counts as a human verifier. When a customer's own upload triggers the
+    // automatic SlipOK check, SlipOK (verification_provider) is the verifier
+    // and no user id is stored, so the record never claims the customer
+    // approved their own payment.
+  const verifierUserId = authCheck.verifierUserId;
   const order = authCheck.order;
   const payment = authCheck.payment;
 
@@ -659,7 +665,7 @@ export async function POST(request: Request, context: RouteContext) {
         }),
         verification_status: "verified",
         verified_at: now,
-        verified_by: adminUserId,
+        verified_by: verifierUserId,
       })
       .eq("id", payment.id)
       .select("*")
@@ -692,7 +698,7 @@ export async function POST(request: Request, context: RouteContext) {
           slipOkResponse.data?.transRef ?? `no-transref:${payment.id}`,
         verified_amount: amountToVerify,
         verified_by_type: "system_slipok",
-        verified_by_user_id: adminUserId,
+        verified_by_user_id: verifierUserId,
         verified_at: now,
       })
       .select("*")
@@ -760,7 +766,7 @@ export async function POST(request: Request, context: RouteContext) {
       }),
       verification_status: "rejected",
       verified_at: now,
-      verified_by: adminUserId,
+      verified_by: verifierUserId,
     })
     .eq("id", payment.id)
     .select("*")

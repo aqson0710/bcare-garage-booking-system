@@ -1,6 +1,4 @@
 export {
-  getActiveServiceCategories,
-  getActiveServices,
   getServicesWithCategories,
 } from "./queries";
 export type {

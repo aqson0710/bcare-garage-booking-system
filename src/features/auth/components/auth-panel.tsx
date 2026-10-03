@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AppImage } from "@/components/app-image";
 import { DiagonalWaves } from "@/components/diagonal-waves";
 import { getCurrentProfile, type ProfileRole } from "@/features/auth";
 import { useSiteLogoUrl } from "@/features/home";
@@ -89,11 +90,14 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
             href="/"
           >
             {logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <AppImage
                 alt="BCare"
                 className="h-12 w-auto max-w-[11rem] object-contain"
+                height={96}
+                priority
+                sizes="176px"
                 src={logoUrl}
+                width={352}
               />
             ) : null}
             <span className="text-[var(--brand-strong)]">B</span>Care

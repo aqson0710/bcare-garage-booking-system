@@ -1,9 +1,9 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { AppImage } from "@/components/app-image";
 import { AppNav } from "@/components/app-nav";
 import {
   deleteCurrentUserVehicle,
@@ -302,10 +302,13 @@ function VehicleCard({
         <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
           <div>
             {vehicle.image_url ? (
-              <img
+              <AppImage
                 alt={`รูปรถทะเบียน ${vehicle.license_plate}`}
                 className="h-40 w-full rounded-md border border-[var(--line)] bg-[var(--surface-muted)] object-cover"
+                height={320}
+                sizes="(max-width: 1024px) 100vw, 220px"
                 src={vehicle.image_url}
+                width={480}
               />
             ) : (
               <div className="grid h-40 w-full place-items-center rounded-md border border-dashed border-[var(--line)] bg-[var(--surface-muted)] px-4 text-center text-sm leading-6 text-[var(--muted)]">

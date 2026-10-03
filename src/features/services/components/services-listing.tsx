@@ -1,11 +1,10 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
-import type { SyntheticEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
+import { AppImage } from "@/components/app-image";
 import { AppNav } from "@/components/app-nav";
 import { getCurrentProfile, type Profile } from "@/features/auth";
 import {
@@ -224,17 +223,6 @@ function getClosedDayMessage(operatingStatus: BookingOperatingStatus | null) {
     : "ร้านปิดในวันที่เลือก กรุณาเลือกวันอื่น";
 }
 
-function handleServiceImageError(event: SyntheticEvent<HTMLImageElement>) {
-  const image = event.currentTarget;
-
-  if (image.src.endsWith(serviceImagePlaceholder)) {
-    return;
-  }
-
-  image.src = serviceImagePlaceholder;
-  image.alt = "Service image placeholder";
-}
-
 function ServiceImage({
   className,
   imageUrl,
@@ -245,11 +233,14 @@ function ServiceImage({
   label: string;
 }) {
   return (
-    <img
+    <AppImage
       alt={label}
       className={className}
-      onError={handleServiceImageError}
-      src={imageUrl || serviceImagePlaceholder}
+      fallbackSrc={serviceImagePlaceholder}
+      height={320}
+      sizes="(max-width: 768px) 100vw, 400px"
+      src={imageUrl}
+      width={640}
     />
   );
 }

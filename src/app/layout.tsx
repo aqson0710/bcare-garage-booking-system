@@ -10,7 +10,8 @@ const prompt = Prompt({
   display: "swap",
   subsets: ["thai", "latin"],
   variable: "--font-prompt",
-  weight: ["400", "500", "600", "700", "800", "900"],
+  // 800 (font-extrabold) isn't used anywhere, so it isn't downloaded.
+  weight: ["400", "500", "600", "700", "900"],
 });
 
 export const metadata: Metadata = {

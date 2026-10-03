@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { AppImage } from "@/components/app-image";
 import { getCurrentProfile } from "@/features/auth";
 import type { ProfileRole } from "@/features/auth";
 import { useSiteLogoUrl } from "@/features/home";
@@ -369,21 +370,36 @@ function CloseIcon() {
   );
 }
 
+// Shared across page changes: every page renders its own <AppNav />, so
+// without this the bar re-checked the session and re-downloaded the profile
+// on every click and briefly showed its loading state. The cache is tied to
+// the signed-in user id, so signing in/out (or switching accounts) always
+// loads fresh. A full page reload clears it.
+let viewerCache: { userId: string | null; viewer: ViewerState } | null = null;
+
 export function AppNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const [viewer, setViewer] = useState<ViewerState>({
-    isLoading: true,
-    isSignedIn: false,
-    role: null,
-  });
+  const [viewer, setViewer] = useState<ViewerState>(
+    () =>
+      viewerCache?.viewer ?? {
+        isLoading: true,
+        isSignedIn: false,
+        role: null,
+      },
+  );
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [expandedDrawerCategory, setExpandedDrawerCategory] = useState<
     string | null
   >(null);
   const navRef = useRef<HTMLElement>(null);
-  const [navHeight, setNavHeight] = useState(0);
+  // Start from the bar's usual height (126px, measured at phone, tablet and
+  // desktop widths) instead of 0. The server-rendered page then already
+  // reserves the right space, so the content doesn't jump down once the real
+  // height is measured after JavaScript loads (this jump was the page's main
+  // layout shift / CLS).
+  const [navHeight, setNavHeight] = useState(126);
   const logoUrl = useSiteLogoUrl();
 
   // The bar below is `fixed` so it never scrolls away, which takes it out of
@@ -420,15 +436,30 @@ export function AppNav() {
     const supabase = createClient();
 
     async function loadViewer() {
-      const userResult = await supabase.auth.getUser();
-      const user = userResult.data.user;
+      // getSession() reads the locally stored session (no network call).
+      // The bar only uses it to choose which links to show; every page and
+      // query still enforces access on its own (RLS / role checks).
+      const sessionResult = await supabase.auth.getSession();
+      const user = sessionResult.data.session?.user ?? null;
+      const userId = user?.id ?? null;
 
       if (!isMounted) {
         return;
       }
 
+      if (viewerCache && viewerCache.userId === userId) {
+        setViewer(viewerCache.viewer);
+        return;
+      }
+
       if (!user) {
-        setViewer({ isLoading: false, isSignedIn: false, role: null });
+        const signedOutViewer: ViewerState = {
+          isLoading: false,
+          isSignedIn: false,
+          role: null,
+        };
+        viewerCache = { userId: null, viewer: signedOutViewer };
+        setViewer(signedOutViewer);
         return;
       }
 
@@ -438,11 +469,17 @@ export function AppNav() {
         return;
       }
 
-      setViewer({
+      const signedInViewer: ViewerState = {
         isLoading: false,
         isSignedIn: true,
         role: profileResult.data?.role ?? "customer",
-      });
+      };
+
+      if (!profileResult.error) {
+        viewerCache = { userId: user.id, viewer: signedInViewer };
+      }
+
+      setViewer(signedInViewer);
     }
 
     void loadViewer();
@@ -459,7 +496,15 @@ export function AppNav() {
     };
   }, []);
 
-  useEffect(() => {
+  // Close the drawer and expand the active category whenever the route or
+  // the viewer's role changes. Done during render (React's "adjust state
+  // when a prop changes" pattern) instead of in an effect, so it doesn't
+  // trigger an extra cascading render.
+  const navSyncKey = `${pathname}|${viewer.role}`;
+  const [syncedNavKey, setSyncedNavKey] = useState<string | null>(null);
+
+  if (syncedNavKey !== navSyncKey) {
+    setSyncedNavKey(navSyncKey);
     setIsDrawerOpen(false);
 
     const categories =
@@ -473,7 +518,7 @@ export function AppNav() {
       category.links.some((link) => isNavLinkActive(pathname, link)),
     );
     setExpandedDrawerCategory(activeCategory?.label ?? null);
-  }, [pathname, viewer.role]);
+  }
 
   useEffect(() => {
     if (!isDrawerOpen) {
@@ -549,11 +594,14 @@ export function AppNav() {
               href="/"
             >
               {logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <AppImage
                   alt="BCare"
                   className="h-10 w-auto max-w-[9rem] object-contain"
+                  height={80}
+                  priority
+                  sizes="144px"
                   src={logoUrl}
+                  width={288}
                 />
               ) : null}
               BCare

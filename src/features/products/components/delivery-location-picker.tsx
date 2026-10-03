@@ -40,7 +40,11 @@ export function DeliveryLocationPicker({
   const [locateError, setLocateError] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
 
-  onChangeRef.current = onChange;
+  // Keep the latest onChange callback for the map's event handlers. Updated
+  // in an effect because refs must not be written during render.
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   useEffect(() => {
     let isMounted = true;

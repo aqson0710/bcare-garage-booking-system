@@ -6,8 +6,6 @@ import type {
   BookingOperatingStatus,
   BookingPaymentSlipInput,
   BookingSlotAvailability,
-  GuestBookingInput,
-  GuestBookingResult,
   MyBooking,
   MyBookingRepairJob,
 } from "./types";
@@ -449,87 +447,6 @@ export async function confirmBookingPickup(
   return supabase.rpc("confirm_booking_pickup", {
     target_booking_id: bookingId,
   });
-}
-
-export async function createGuestBooking(
-  supabase: BCareSupabaseClient,
-  input: GuestBookingInput,
-) {
-  const timeError = validateBookingTime(input.preferredTime);
-
-  if (timeError) {
-    return {
-      data: null,
-      error: timeError,
-    };
-  }
-
-  const profileResult = await supabase
-    .from("profiles")
-    .insert({
-      email: null,
-      full_name: input.customerName,
-      phone_number: input.phoneNumber,
-    })
-    .select("*")
-    .single();
-
-  if (profileResult.error) {
-    return {
-      data: null,
-      error: profileResult.error,
-    };
-  }
-
-  const vehicleResult = await supabase
-    .from("vehicles")
-    .insert({
-      brand: "Unspecified",
-      color: null,
-      customer_id: profileResult.data.id,
-      license_plate: input.vehiclePlate,
-      model: "Unspecified",
-      year: null,
-    })
-    .select("*")
-    .single();
-
-  if (vehicleResult.error) {
-    return {
-      data: null,
-      error: vehicleResult.error,
-    };
-  }
-
-  const bookingResult = await supabase
-    .from("bookings")
-    .insert({
-      booking_date: input.preferredDate,
-      booking_time: input.preferredTime,
-      customer_id: profileResult.data.id,
-      note: input.note || null,
-      service_id: input.serviceId,
-      status: "pending",
-      vehicle_id: vehicleResult.data.id,
-    })
-    .select("*")
-    .single();
-
-  if (bookingResult.error) {
-    return {
-      data: null,
-      error: bookingResult.error,
-    };
-  }
-
-  return {
-    data: {
-      booking: bookingResult.data,
-      profile: profileResult.data,
-      vehicle: vehicleResult.data,
-    } satisfies GuestBookingResult,
-    error: null,
-  };
 }
 
 export async function createAuthenticatedBooking(

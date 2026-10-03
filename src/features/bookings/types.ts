@@ -8,22 +8,6 @@ export type RepairJob = Database["public"]["Tables"]["repair_jobs"]["Row"];
 export type BookingPayment =
   Database["public"]["Tables"]["booking_payments"]["Row"];
 
-export type GuestBookingInput = {
-  customerName: string;
-  phoneNumber: string;
-  vehiclePlate: string;
-  preferredDate: string;
-  preferredTime: string;
-  note: string;
-  serviceId: string;
-};
-
-export type GuestBookingResult = {
-  booking: Booking;
-  profile: Profile;
-  vehicle: Vehicle;
-};
-
 export type AuthenticatedBookingInput = {
   customerId: string;
   vehiclePlate: string;

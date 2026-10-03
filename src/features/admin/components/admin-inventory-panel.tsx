@@ -172,12 +172,20 @@ function MovementForm({
   // click of "บันทึก" would silently log the exact same movement twice.
   // The selected product is kept as-is since counting several movements
   // for the same item in a row is the common case.
-  useEffect(() => {
+  // Adjusted during render rather than in an effect to avoid a cascading
+  // re-render.
+  const [previousCreateStatus, setPreviousCreateStatus] = useState(
+    createState.status,
+  );
+
+  if (previousCreateStatus !== createState.status) {
+    setPreviousCreateStatus(createState.status);
+
     if (createState.status === "saved") {
       setQuantity("1");
       setNote("");
     }
-  }, [createState.status]);
+  }
 
   function adjustQuantity(delta: number) {
     setQuantity((current) => {

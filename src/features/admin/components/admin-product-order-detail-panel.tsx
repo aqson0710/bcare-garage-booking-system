@@ -412,24 +412,36 @@ function PaymentProofReview({
       const supabase = createClient();
       const nextUrls: Record<string, string> = {};
 
-      for (const payment of paymentsWithSlip) {
-        if (!payment.slip_image_url) {
+      // Request every slip's signed URL at the same time instead of one
+      // after another.
+      const results = await Promise.all(
+        paymentsWithSlip.map(async (payment) => {
+          if (!payment.slip_image_url) {
+            return null;
+          }
+
+          const { data, error } = await supabase.storage
+            .from("payment-slips")
+            .createSignedUrl(payment.slip_image_url, 60 * 30);
+
+          return { data, error, paymentId: payment.id };
+        }),
+      );
+
+      for (const result of results) {
+        if (!result) {
           continue;
         }
 
-        const { data, error } = await supabase.storage
-          .from("payment-slips")
-          .createSignedUrl(payment.slip_image_url, 60 * 30);
-
-        if (error) {
+        if (result.error) {
           if (isMounted) {
-            setSignedUrlError(error.message);
+            setSignedUrlError(result.error.message);
           }
           continue;
         }
 
-        if (data?.signedUrl) {
-          nextUrls[payment.id] = data.signedUrl;
+        if (result.data?.signedUrl) {
+          nextUrls[result.paymentId] = result.data.signedUrl;
         }
       }
 

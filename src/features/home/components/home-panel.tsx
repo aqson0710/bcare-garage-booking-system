@@ -1,9 +1,9 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AppImage } from "@/components/app-image";
 import { AppNav } from "@/components/app-nav";
 import { DiagonalWaves } from "@/components/diagonal-waves";
 import {
@@ -367,9 +367,13 @@ function HeroCarousel({ slides }: { slides: HomepageSlide[] }) {
 
   return (
     <section className="relative min-h-[500px] overflow-hidden rounded-lg border border-[var(--line)] bg-[#242424] text-white">
-      <img
+      <AppImage
         alt={activeSlide.title}
-        className="absolute inset-0 h-full w-full object-cover"
+        className="object-cover"
+        fill
+        key={activeSlide.image_url}
+        priority
+        sizes="(max-width: 1152px) 100vw, 1152px"
         src={activeSlide.image_url}
       />
       <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/10" />
@@ -650,13 +654,15 @@ export function HomePanel() {
     >
       {data.appearanceSetting?.background_image_url ? (
         <>
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-            style={{
-              backgroundImage: `url(${data.appearanceSetting.background_image_url})`,
-            }}
-          />
+          <div aria-hidden="true" className="absolute inset-0">
+            <AppImage
+              alt=""
+              className="object-cover object-center"
+              fill
+              sizes="100vw"
+              src={data.appearanceSetting.background_image_url}
+            />
+          </div>
           {/* Dark scrim so page text stays readable no matter what the
               admin's chosen photo looks like. */}
           <div aria-hidden="true" className="absolute inset-0 bg-black/55" />

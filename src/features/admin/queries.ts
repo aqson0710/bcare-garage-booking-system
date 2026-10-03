@@ -841,23 +841,6 @@ export async function checkAdminAccess(
   };
 }
 
-export async function getAdminBookings(supabase: BCareSupabaseClient) {
-  const bookingsResult = await supabase
-    .from("bookings")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (bookingsResult.error) {
-    return {
-      data: null,
-      error: bookingsResult.error,
-    };
-  }
-
-  const bookings = bookingsResult.data ?? [];
-  return attachAdminBookingDetails(supabase, bookings);
-}
-
 export async function getAdminDashboardBookingCounts(
   supabase: BCareSupabaseClient,
   todayDate: string,
@@ -1273,22 +1256,6 @@ async function attachAdminRepairJobDetails(
     }),
     error: null,
   };
-}
-
-export async function getAdminRepairJobs(supabase: BCareSupabaseClient) {
-  const repairJobsResult = await supabase
-    .from("repair_jobs")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (repairJobsResult.error) {
-    return {
-      data: null,
-      error: repairJobsResult.error,
-    };
-  }
-
-  return attachAdminRepairJobDetails(supabase, repairJobsResult.data ?? []);
 }
 
 export async function getAdminRepairJobsPage(
@@ -2639,79 +2606,6 @@ export async function updateAdminTechnicianSkill(
     .single();
 }
 
-export async function getAdminCustomers(supabase: BCareSupabaseClient) {
-  const [profilesResult, vehiclesResult, bookingsResult] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("*")
-      .order("created_at", { ascending: false }),
-    supabase.from("vehicles").select("*"),
-    supabase
-      .from("bookings")
-      .select("*")
-      .order("created_at", { ascending: false }),
-  ]);
-
-  if (profilesResult.error) {
-    return {
-      data: null,
-      error: profilesResult.error,
-    };
-  }
-
-  if (vehiclesResult.error) {
-    return {
-      data: null,
-      error: vehiclesResult.error,
-    };
-  }
-
-  if (bookingsResult.error) {
-    return {
-      data: null,
-      error: bookingsResult.error,
-    };
-  }
-
-  const vehiclesByCustomerId = new Map<string, number>();
-  const bookingsByCustomerId = new Map<string, number>();
-  const latestBookingByCustomerId = new Map<
-    string,
-    Database["public"]["Tables"]["bookings"]["Row"]
-  >();
-
-  for (const vehicle of vehiclesResult.data ?? []) {
-    vehiclesByCustomerId.set(
-      vehicle.customer_id,
-      (vehiclesByCustomerId.get(vehicle.customer_id) ?? 0) + 1,
-    );
-  }
-
-  for (const booking of bookingsResult.data ?? []) {
-    bookingsByCustomerId.set(
-      booking.customer_id,
-      (bookingsByCustomerId.get(booking.customer_id) ?? 0) + 1,
-    );
-
-    if (!latestBookingByCustomerId.has(booking.customer_id)) {
-      latestBookingByCustomerId.set(booking.customer_id, booking);
-    }
-  }
-
-  return {
-    data: (profilesResult.data ?? []).map(
-      (profile) =>
-        ({
-          ...profile,
-          bookingCount: bookingsByCustomerId.get(profile.id) ?? 0,
-          latestBooking: latestBookingByCustomerId.get(profile.id) ?? null,
-          vehicleCount: vehiclesByCustomerId.get(profile.id) ?? 0,
-        }) satisfies AdminCustomerSummary,
-    ),
-    error: null,
-  };
-}
-
 export async function getAdminCustomersPage(
   supabase: BCareSupabaseClient,
   params: AdminCustomerListParams,
@@ -2927,7 +2821,125 @@ export async function getAdminCustomerById(
   };
 }
 
+type AdminReportSummaryTopCount = {
+  count: number;
+  id: string;
+};
+
+type AdminReportSummary = {
+  active_customer_count: number;
+  estimated_revenue: number;
+  revenue_booking_count: number;
+  status_counts: Partial<Record<AdminBooking["status"], number>>;
+  top_customers: AdminReportSummaryTopCount[];
+  top_services: AdminReportSummaryTopCount[];
+  top_vehicles: AdminReportSummaryTopCount[];
+  total_booking_count: number;
+  total_customer_count: number;
+  total_vehicle_count: number;
+};
+
+const adminReportStatuses: AdminReports["statusCounts"][number]["status"][] = [
+  "pending",
+  "confirmed",
+  "cancelled",
+  "completed",
+];
+
+// Reports are counted inside Postgres by get_admin_report_summary()
+// (supabase/admin-report-summary.sql), so the page stays fast and correct no
+// matter how many bookings exist. Only the top-5 rows' details are fetched
+// afterwards. If that SQL hasn't been run yet, this falls back to the older
+// in-browser counting so the page keeps working in the meantime.
 export async function getAdminReports(supabase: BCareSupabaseClient) {
+  const summaryResult = await supabase.rpc("get_admin_report_summary");
+
+  if (summaryResult.error) {
+    if (summaryResult.error.code === "PGRST202") {
+      console.warn(
+        "get_admin_report_summary() is missing - run supabase/admin-report-summary.sql. Using the slower in-browser report for now.",
+      );
+      return getAdminReportsInBrowser(supabase);
+    }
+
+    return {
+      data: null,
+      error: summaryResult.error,
+    };
+  }
+
+  const summary = summaryResult.data as unknown as AdminReportSummary;
+  const serviceIds = summary.top_services.map((item) => item.id);
+  const customerIds = summary.top_customers.map((item) => item.id);
+  const vehicleIds = summary.top_vehicles.map((item) => item.id);
+
+  const [servicesResult, profilesResult, vehiclesResult] = await Promise.all([
+    serviceIds.length > 0
+      ? supabase.from("services").select("*").in("id", serviceIds)
+      : Promise.resolve({ data: [], error: null }),
+    customerIds.length > 0
+      ? supabase.from("profiles").select("*").in("id", customerIds)
+      : Promise.resolve({ data: [], error: null }),
+    vehicleIds.length > 0
+      ? supabase.from("vehicles").select("*").in("id", vehicleIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  const detailError =
+    servicesResult.error ?? profilesResult.error ?? vehiclesResult.error;
+
+  if (detailError) {
+    return {
+      data: null,
+      error: detailError,
+    };
+  }
+
+  const servicesById = new Map(
+    (servicesResult.data ?? []).map((service) => [service.id, service]),
+  );
+  const profilesById = new Map(
+    (profilesResult.data ?? []).map((profile) => [profile.id, profile]),
+  );
+  const vehiclesById = new Map(
+    (vehiclesResult.data ?? []).map((vehicle) => [vehicle.id, vehicle]),
+  );
+  const estimatedRevenue = Number(summary.estimated_revenue) || 0;
+  const revenueBookingCount = Number(summary.revenue_booking_count) || 0;
+
+  return {
+    data: {
+      activeCustomerCount: Number(summary.active_customer_count) || 0,
+      averageBookingValue:
+        revenueBookingCount > 0
+          ? Math.round(estimatedRevenue / revenueBookingCount)
+          : 0,
+      estimatedRevenue,
+      statusCounts: adminReportStatuses.map((status) => ({
+        count: Number(summary.status_counts?.[status]) || 0,
+        status,
+      })),
+      topCustomers: summary.top_customers.map((item) => ({
+        bookingCount: item.count,
+        customer: profilesById.get(item.id) ?? null,
+      })),
+      topServices: summary.top_services.map((item) => ({
+        bookingCount: item.count,
+        service: servicesById.get(item.id) ?? null,
+      })),
+      topVehicles: summary.top_vehicles.map((item) => ({
+        bookingCount: item.count,
+        vehicle: vehiclesById.get(item.id) ?? null,
+      })),
+      totalBookingCount: Number(summary.total_booking_count) || 0,
+      totalCustomerCount: Number(summary.total_customer_count) || 0,
+      totalVehicleCount: Number(summary.total_vehicle_count) || 0,
+    } satisfies AdminReports,
+    error: null,
+  };
+}
+
+async function getAdminReportsInBrowser(supabase: BCareSupabaseClient) {
   const [bookingsResult, profilesResult, servicesResult, vehiclesResult] =
     await Promise.all([
       supabase.from("bookings").select("*"),

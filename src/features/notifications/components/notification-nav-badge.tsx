@@ -35,6 +35,31 @@ function readStoredNotificationIds(scope: NotificationBadgeScope, userId: string
   }
 }
 
+// The navigation bar (and this badge with it) is re-mounted on every page
+// change, so without a cache every click re-downloaded the customer's whole
+// booking/order history (or 5 admin queries) just to draw this number. The
+// notification ids are kept here for a short time and shared across page
+// changes; the unread count is still recomputed from localStorage on every
+// mount, so marking notifications as read shows up immediately.
+const NOTIFICATION_IDS_CACHE_MS = 60_000;
+const notificationIdsCache = new Map<
+  string,
+  { ids: string[]; loadedAt: number }
+>();
+
+function getCacheKey(scope: NotificationBadgeScope, userId: string) {
+  return `${scope}:${userId}`;
+}
+
+function countUnread(
+  scope: NotificationBadgeScope,
+  userId: string,
+  ids: string[],
+) {
+  const readIds = readStoredNotificationIds(scope, userId);
+  return ids.filter((id) => !readIds.has(id)).length;
+}
+
 function formatBadgeCount(count: number) {
   return count > 99 ? "99+" : String(count);
 }
@@ -55,11 +80,25 @@ export function NotificationNavBadge({
 
     async function loadCount() {
       const supabase = createClient();
-      const userResult = await supabase.auth.getUser();
-      const user = userResult.data.user;
+      // getSession() reads the locally stored session (no network call).
+      // This badge only decides what number to show; the data queries below
+      // are still protected by RLS on the server.
+      const sessionResult = await supabase.auth.getSession();
+      const user = sessionResult.data.session?.user ?? null;
 
       if (!isMounted || !user) {
         return;
+      }
+
+      const cacheKey = getCacheKey(scope, user.id);
+      const cached = notificationIdsCache.get(cacheKey);
+
+      if (cached) {
+        setUnreadCount(countUnread(scope, user.id, cached.ids));
+
+        if (Date.now() - cached.loadedAt < NOTIFICATION_IDS_CACHE_MS) {
+          return;
+        }
       }
 
       if (scope === "customer") {
@@ -72,16 +111,14 @@ export function NotificationNavBadge({
           return;
         }
 
-        const readIds = readStoredNotificationIds(scope, user.id);
         const notifications = buildCustomerNotifications({
           bookings: bookingsResult.data ?? [],
           orders: ordersResult.data ?? [],
         });
+        const ids = notifications.map((notification) => notification.id);
 
-        setUnreadCount(
-          notifications.filter((notification) => !readIds.has(notification.id))
-            .length,
-        );
+        notificationIdsCache.set(cacheKey, { ids, loadedAt: Date.now() });
+        setUnreadCount(countUnread(scope, user.id, ids));
         return;
       }
 
@@ -143,17 +180,15 @@ export function NotificationNavBadge({
           ...(activeOrders.data?.orders ?? []),
         ].map((order) => [order.id, order]),
       );
-      const readIds = readStoredNotificationIds(scope, user.id);
       const notifications = buildAdminNotifications({
         bookings,
         orders: [...ordersById.values()],
         repairJobs: repairJobs.data ?? [],
       });
+      const ids = notifications.map((notification) => notification.id);
 
-      setUnreadCount(
-        notifications.filter((notification) => !readIds.has(notification.id))
-          .length,
-      );
+      notificationIdsCache.set(cacheKey, { ids, loadedAt: Date.now() });
+      setUnreadCount(countUnread(scope, user.id, ids));
     }
 
     void loadCount();

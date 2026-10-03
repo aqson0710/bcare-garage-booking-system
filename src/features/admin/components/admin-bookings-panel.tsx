@@ -584,9 +584,17 @@ function AdminBookingDetailCard({
     !isSavingMechanic &&
     selectedMechanicId !== (repairJob.mechanic_id ?? "");
 
-  useEffect(() => {
+  // Keep the mechanic dropdown in sync with the loaded repair job. Adjusted
+  // during render rather than in an effect to avoid a cascading re-render.
+  const mechanicSyncKey = `${repairJob?.id ?? ""}|${repairJob?.mechanic_id ?? ""}`;
+  const [syncedMechanicKey, setSyncedMechanicKey] = useState<string | null>(
+    null,
+  );
+
+  if (syncedMechanicKey !== mechanicSyncKey) {
+    setSyncedMechanicKey(mechanicSyncKey);
     setSelectedMechanicId(repairJob?.mechanic_id ?? "");
-  }, [repairJob?.id, repairJob?.mechanic_id]);
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -602,20 +610,36 @@ function AdminBookingDetailCard({
       const supabase = createClient();
       const nextUrls: Record<string, string> = {};
 
-      for (const payment of paymentsWithSlip) {
-        const { data, error } = await supabase.storage
-          .from("payment-slips")
-          .createSignedUrl(payment.slip_image_url, 60 * 30);
+      // Request every slip's signed URL at the same time instead of one
+      // after another.
+      const results = await Promise.all(
+        paymentsWithSlip.map(async (payment) => {
+          if (!payment.slip_image_url) {
+            return null;
+          }
 
-        if (error) {
+          const { data, error } = await supabase.storage
+            .from("payment-slips")
+            .createSignedUrl(payment.slip_image_url, 60 * 30);
+
+          return { data, error, paymentId: payment.id };
+        }),
+      );
+
+      for (const result of results) {
+        if (!result) {
+          continue;
+        }
+
+        if (result.error) {
           if (isMounted) {
-            setSignedUrlError(error.message);
+            setSignedUrlError(result.error.message);
           }
           continue;
         }
 
-        if (data?.signedUrl) {
-          nextUrls[payment.id] = data.signedUrl;
+        if (result.data?.signedUrl) {
+          nextUrls[result.paymentId] = result.data.signedUrl;
         }
       }
 
@@ -1429,18 +1453,44 @@ export function AdminBookingsPanel() {
 
   // Open the popup automatically when the page is loaded with a
   // ?bookingId=... query param (e.g. from a notification deep link).
-  useEffect(() => {
+  // Adjusted during render (not in an effect) to avoid a cascading render.
+  const [syncedBookingIdParam, setSyncedBookingIdParam] = useState<
+    string | null
+  >(null);
+
+  if (syncedBookingIdParam !== bookingIdParam) {
+    setSyncedBookingIdParam(bookingIdParam);
+
     if (bookingIdParam && bookingIdParam !== selectedBookingId) {
       setSelectedBookingId(bookingIdParam);
     }
-  }, [bookingIdParam]); // eslint-disable-line react-hooks/exhaustive-deps
+  }
+
+  // When the popup closes, clear the loaded booking and repair job details.
+  // Done during render so the effects below only handle async loading.
+  const [previousSelectedBookingId, setPreviousSelectedBookingId] = useState<
+    string | null
+  >(null);
+
+  if (previousSelectedBookingId !== selectedBookingId) {
+    setPreviousSelectedBookingId(selectedBookingId);
+
+    if (!selectedBookingId) {
+      setSelectedBookingSnapshot(null);
+      setRepairJobState({
+        error: null,
+        mechanics: [],
+        repairJob: null,
+        status: "idle",
+      });
+    }
+  }
 
   // Load the booking behind the open popup directly by id, independent of
   // the (filtered/paginated) list, so the popup works for deep links and
   // stays open - unaffected by list reloads - while the admin is using it.
   useEffect(() => {
     if (!selectedBookingId) {
-      setSelectedBookingSnapshot(null);
       return;
     }
 
@@ -1477,12 +1527,6 @@ export function AdminBookingsPanel() {
   // different booking's popup is opened.
   useEffect(() => {
     if (!selectedBookingId) {
-      setRepairJobState({
-        error: null,
-        mechanics: [],
-        repairJob: null,
-        status: "idle",
-      });
       return;
     }
 

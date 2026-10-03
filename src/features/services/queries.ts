@@ -8,7 +8,7 @@ import type {
 
 type BCareSupabaseClient = SupabaseClient<Database>;
 
-export async function getActiveServiceCategories(
+async function getActiveServiceCategories(
   supabase: BCareSupabaseClient,
 ) {
   return supabase
@@ -18,7 +18,7 @@ export async function getActiveServiceCategories(
     .order("name", { ascending: true });
 }
 
-export async function getActiveServices(supabase: BCareSupabaseClient) {
+async function getActiveServices(supabase: BCareSupabaseClient) {
   return supabase
     .from("services")
     .select("*")

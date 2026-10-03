@@ -1,8 +1,16 @@
-/* eslint-disable @next/next/no-img-element */
+"use client";
 
-import type { SyntheticEvent } from "react";
+import { AppImage } from "@/components/app-image";
 
 const productImagePlaceholder = "/product-placeholder.svg";
+
+// Rendered size in CSS pixels, so the browser downloads a matching image.
+const imageSizes = {
+  card: "(max-width: 640px) 100vw, 320px",
+  lg: "96px",
+  md: "80px",
+  sm: "56px",
+};
 
 const sizeClassNames = {
   card: "h-44 w-full",
@@ -10,17 +18,6 @@ const sizeClassNames = {
   md: "h-20 w-20",
   sm: "h-14 w-14",
 };
-
-function handleProductImageError(event: SyntheticEvent<HTMLImageElement>) {
-  const image = event.currentTarget;
-
-  if (image.src.endsWith(productImagePlaceholder)) {
-    return;
-  }
-
-  image.src = productImagePlaceholder;
-  image.alt = "รูปสินค้าสำรอง";
-}
 
 export function ProductImageThumb({
   alt,
@@ -34,11 +31,14 @@ export function ProductImageThumb({
   src?: string | null;
 }) {
   return (
-    <img
+    <AppImage
       alt={alt}
       className={`${sizeClassNames[size]} shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] object-cover ${className}`}
-      onError={handleProductImageError}
-      src={src || productImagePlaceholder}
+      fallbackSrc={productImagePlaceholder}
+      height={320}
+      sizes={imageSizes[size]}
+      src={src}
+      width={320}
     />
   );
 }

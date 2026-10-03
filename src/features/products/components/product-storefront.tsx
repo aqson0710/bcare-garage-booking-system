@@ -1,11 +1,10 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
-import type { SyntheticEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
+import { AppImage } from "@/components/app-image";
 import { AppNav } from "@/components/app-nav";
 import { createClient } from "@/lib/supabase/browser";
 import {
@@ -65,17 +64,6 @@ const currencyFormatter = new Intl.NumberFormat("th-TH", {
 });
 const productImagePlaceholder = "/product-placeholder.svg";
 
-function handleProductImageError(event: SyntheticEvent<HTMLImageElement>) {
-  const image = event.currentTarget;
-
-  if (image.src.endsWith(productImagePlaceholder)) {
-    return;
-  }
-
-  image.src = productImagePlaceholder;
-  image.alt = "ภาพสินค้าเริ่มต้น";
-}
-
 function getStockInfo(product: ProductWithCategory) {
   if (product.stock_quantity <= 0) {
     return { dotClassName: "bg-red-500", label: "หมดสต๊อก" };
@@ -111,11 +99,13 @@ function ProductCard({
   return (
     <article className="group flex flex-col overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--surface)] transition-shadow hover:shadow-md">
       <div className="relative aspect-square w-full overflow-hidden bg-[var(--surface-muted)]">
-        <img
+        <AppImage
           alt={`รูปสินค้า ${product.name}`}
-          className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
-          onError={handleProductImageError}
-          src={product.image_url || productImagePlaceholder}
+          className="object-cover transition-transform duration-200 group-hover:scale-105"
+          fallbackSrc={productImagePlaceholder}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          src={product.image_url}
         />
         {isOutOfStock ? (
           <span className="absolute left-3 top-3 rounded-full bg-[var(--foreground)]/90 px-2.5 py-1 text-xs font-semibold text-white">
@@ -460,16 +450,27 @@ export function ProductStorefront() {
     [safePage, visibleProducts],
   );
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [
+  // Go back to page 1 whenever a filter or the sort order changes. Adjusted
+  // during render rather than in an effect to avoid a cascading re-render.
+  const filterValues = [
     appliedPriceMax,
     appliedPriceMin,
     inStockOnly,
     searchText,
     selectedCategoryIds,
     sortBy,
-  ]);
+  ];
+  const [previousFilterValues, setPreviousFilterValues] =
+    useState(filterValues);
+
+  if (
+    filterValues.some(
+      (value, index) => !Object.is(value, previousFilterValues[index]),
+    )
+  ) {
+    setPreviousFilterValues(filterValues);
+    setCurrentPage(1);
+  }
 
   async function handleAddToCart(product: ProductWithCategory) {
     if (authState.status !== "ready") {

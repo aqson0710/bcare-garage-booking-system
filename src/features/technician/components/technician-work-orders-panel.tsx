@@ -244,10 +244,13 @@ export function TechnicianWorkOrdersPanel() {
     };
   }, []);
 
-  const workOrders =
-    loadState.status === "ready" && loadState.result?.allowed
-      ? loadState.result.workOrders
-      : [];
+  const workOrders = useMemo(
+    () =>
+      loadState.status === "ready" && loadState.result?.allowed
+        ? loadState.result.workOrders
+        : [],
+    [loadState],
+  );
 
   const statusCounts = useMemo(() => {
     const counts = new Map<TechnicianWorkOrder["status"], number>();
