@@ -1,17 +1,17 @@
-# Deploy BCare ขึ้น Hostinger VPS (Docker + GitHub Actions)
+﻿# Deploy BCare ขึ้น Hostinger VPS (Docker + GitHub Actions)
 
 ```text
 git push (main) → CI (lint + typecheck + docker build)
                → Deploy: build image → GHCR (private: latest + sha-xxxxxxx)
                → SSH เข้า VPS: ~/bcare → docker compose pull + up -d → เช็ก /api/health
-VPS: Nginx + HTTPS (certbot) u-chang-o.com → 127.0.0.1:3301 → container app → Supabase (cloud)
+VPS: Nginx + HTTPS (certbot) u-chang-o.tech → 127.0.0.1:3301 → container app → Supabase (cloud)
 ```
 
 | ค่า | ของแอปนี้ | ของแอป Lab (ห้ามชน) |
 |---|---|---|
 | โฟลเดอร์บน VPS | `~/bcare` | `~/app` |
 | Port | `127.0.0.1:3301` | `127.0.0.1:3300` |
-| โดเมน | `u-chang-o.com`, `www.u-chang-o.com` | - |
+| โดเมน | `u-chang-o.tech`, `www.u-chang-o.tech` | - |
 | Image | `ghcr.io/aqson0710/bcare-garage-booking-system` | - |
 | Health | `GET /api/health` → 200 / 503 | - |
 
@@ -59,14 +59,14 @@ git push origin main
 
 `SUPABASE_SERVICE_ROLE_KEY` กับ `SLIPOK_*` **ห้ามใส่ใน GitHub** ให้อยู่ใน `.env` บน VPS เท่านั้น
 
-## 3. DNS (hPanel → Domains → u-chang-o.com → DNS / Nameservers)
+## 3. DNS (hPanel → Domains → u-chang-o.tech → DNS / Nameservers)
 
 | Type | Name | Points to | TTL |
 |---|---|---|---|
 | A | `@` | IP ของ VPS | 300 |
-| A (หรือ CNAME → `u-chang-o.com`) | `www` | IP ของ VPS | 300 |
+| A (หรือ CNAME → `u-chang-o.tech`) | `www` | IP ของ VPS | 300 |
 
-ถ้ามี A record เก่าที่ชี้ไป Hostinger web hosting ให้ลบทิ้งก่อน เช็กว่าชี้ถูกแล้วด้วย `nslookup u-chang-o.com`
+ถ้ามี A record เก่าที่ชี้ไป Hostinger web hosting ให้ลบทิ้งก่อน เช็กว่าชี้ถูกแล้วด้วย `nslookup u-chang-o.tech`
 ใน hPanel → VPS → Firewall ต้องเปิด port 22, 80, 443
 
 ## 4. บน VPS: เตรียมโฟลเดอร์แอป
@@ -99,22 +99,22 @@ curl -i http://127.0.0.1:3301/api/health
 ## 5. บน VPS (root): Nginx + HTTPS
 
 ```bash
-sudo cp ~/bcare/nginx.conf /etc/nginx/sites-available/u-chang-o.com
-sudo ln -s /etc/nginx/sites-available/u-chang-o.com /etc/nginx/sites-enabled/
+sudo cp ~/bcare/nginx.conf /etc/nginx/sites-available/u-chang-o.tech
+sudo ln -s /etc/nginx/sites-available/u-chang-o.tech /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d u-chang-o.com -d www.u-chang-o.com --redirect
+sudo certbot --nginx -d u-chang-o.tech -d www.u-chang-o.tech --redirect
 ```
 
 ## 6. Supabase → Authentication → URL Configuration
 
-- **Site URL:** `https://u-chang-o.com`
-- **Redirect URLs:** เพิ่ม `https://u-chang-o.com/**` และ `https://www.u-chang-o.com/**` (เก็บ `http://localhost:3000/**` ไว้สำหรับ dev)
+- **Site URL:** `https://u-chang-o.tech`
+- **Redirect URLs:** เพิ่ม `https://u-chang-o.tech/**` และ `https://www.u-chang-o.tech/**` (เก็บ `http://localhost:3000/**` ไว้สำหรับ dev)
 
 ถ้าไม่ตั้งตรงนี้ ลิงก์ยืนยันอีเมลและลิงก์ reset password จะเด้งไปที่ localhost
 
 ## 7. Deploy อัตโนมัติ
 
-GitHub → Actions → **Deploy** → **Run workflow** (หรือ push ขึ้น main ได้เลย) แล้วเปิด https://u-chang-o.com และ https://u-chang-o.com/api/health
+GitHub → Actions → **Deploy** → **Run workflow** (หรือ push ขึ้น main ได้เลย) แล้วเปิด https://u-chang-o.tech และ https://u-chang-o.tech/api/health
 
 ### Rollback
 
