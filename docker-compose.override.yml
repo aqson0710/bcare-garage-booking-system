@@ -1,0 +1,11 @@
+# Local development only (auto-loaded by `docker compose` on your machine).
+# Builds the image from source instead of pulling from GHCR.
+# Do NOT copy this file to the VPS.
+services:
+  app:
+    image: bcare-app:local
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-https://placeholder.supabase.co}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-placeholder-publishable-key}

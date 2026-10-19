@@ -1,0 +1,24 @@
+# Used both locally and on the VPS.
+#   VPS:   docker compose pull && docker compose up -d      (uses APP_IMAGE from GHCR)
+#   Local: docker compose up --build -d                     (override file adds build:)
+# Database = Supabase (hosted) -> no db / migrate service here.
+name: bcare
+
+services:
+  app:
+    image: ${APP_IMAGE:-ghcr.io/aqson0710/bcare-garage-booking-system:latest}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+    ports:
+      # Bound to localhost only; Nginx on the VPS proxies the domain to it.
+      - "127.0.0.1:${APP_PORT:-3301}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3

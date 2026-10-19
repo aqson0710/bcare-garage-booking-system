@@ -1,0 +1,128 @@
+name: Deploy
+
+# Runs after the CI workflow succeeds on main, or manually from the Actions tab.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  APP_DIR: bcare            # folder on the VPS: ~/bcare  (Lab app uses ~/app)
+  APP_PORT: "3301"          # 127.0.0.1:3301         (Lab app uses 3300)
+
+jobs:
+  build-push:
+    name: Build & push image to GHCR
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+      sha_tag: ${{ steps.meta.outputs.sha_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # deploy exactly the commit that passed CI
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Image name + tags
+        id: meta
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+          echo "sha_tag=sha-${SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Check build variables
+        env:
+          SUPA_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPA_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$SUPA_URL" ] || [ -z "$SUPA_KEY" ]; then
+            echo "::error::Set repository Variables NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (Settings > Secrets and variables > Actions > Variables)."
+            exit 1
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}:latest
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.sha_tag }}
+          build-args: |
+            NEXT_PUBLIC_SUPABASE_URL=${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to VPS
+    needs: build-push
+    runs-on: ubuntu-latest
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+    steps:
+      - name: Skip if VPS is not configured yet
+        id: guard
+        run: |
+          if [ -z "$VPS_HOST" ]; then
+            echo "::notice::VPS_HOST secret not set - skipping deploy (image was still pushed to GHCR)."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Pull + restart on VPS, then health check
+        if: steps.guard.outputs.enabled == 'true'
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          IMAGE: ${{ needs.build-push.outputs.image }}:${{ needs.build-push.outputs.sha_tag }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: IMAGE,APP_DIR,APP_PORT
+          script: |
+            set -e
+            cd "$HOME/$APP_DIR"
+            test -f .env || { echo "Missing $HOME/$APP_DIR/.env - run deploy/make-env.sh first"; exit 1; }
+            # pin this exact build so a rollback is just changing APP_IMAGE
+            if grep -q '^APP_IMAGE=' .env; then
+              sed -i "s#^APP_IMAGE=.*#APP_IMAGE=$IMAGE#" .env
+            else
+              echo "APP_IMAGE=$IMAGE" >> .env
+            fi
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker image prune -f >/dev/null || true
+            echo "Waiting for health check..."
+            for i in $(seq 1 30); do
+              if curl -fsS "http://127.0.0.1:$APP_PORT/api/health" >/dev/null; then
+                echo "Healthy after $((i*3))s"
+                curl -sS "http://127.0.0.1:$APP_PORT/api/health"; echo
+                exit 0
+              fi
+              sleep 3
+            done
+            echo "Health check failed"
+            docker compose ps
+            docker compose logs --tail=80 app
+            exit 1

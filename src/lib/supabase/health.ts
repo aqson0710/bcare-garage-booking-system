@@ -44,6 +44,8 @@ export async function checkSupabaseHealth(): Promise<SupabaseHealthResult> {
         Authorization: `Bearer ${config.publishableKey}`,
       },
       cache: "no-store",
+      // Fail fast (-> 503) instead of hanging when the database is unreachable.
+      signal: AbortSignal.timeout(5000),
     });
 
     const isReachable = response.ok || response.status === 401 || response.status === 403;

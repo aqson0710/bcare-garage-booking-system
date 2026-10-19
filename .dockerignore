@@ -1,0 +1,30 @@
+# never put secrets in the image
+.env
+.env.*
+!.env.example
+
+# build output / deps (rebuilt inside Docker)
+node_modules
+.next
+out
+build
+*.tsbuildinfo
+next-env.d.ts
+
+# not needed in the image
+.git
+.github
+.vscode
+.idea
+work
+docs
+deploy
+supabase
+Claude outputs
+README.md
+DEPLOY_GUIDE.md
+Dockerfile
+docker-compose*.yml
+npm-debug.log*
+.DS_Store
+Thumbs.db
