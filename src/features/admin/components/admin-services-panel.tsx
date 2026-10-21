@@ -6,14 +6,18 @@ import Link from "next/link";
 import type { FormEvent, SyntheticEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { AppNav } from "@/components/app-nav";
+import { AdminDeleteButton } from "@/features/admin/components/admin-delete-button";
 import {
   checkAdminAccess,
+  createAdminService,
+  deleteAdminService,
   getAdminServiceCategories,
   getAdminServices,
   updateAdminService,
   type AdminAccessResult,
   type AdminService,
   type AdminServiceCategory,
+  type AdminServiceCreateInput,
   type AdminServiceUpdateInput,
 } from "@/features/admin";
 import { createClient } from "@/lib/supabase/browser";
@@ -59,8 +63,15 @@ type LoadState =
 type ActionState =
   | { status: "idle"; serviceId: null; error: null; message: null }
   | { status: "saving"; serviceId: string; error: null; message: null }
+  | { status: "deleting"; serviceId: string; error: null; message: null }
   | { status: "error"; serviceId: string; error: string; message: null }
   | { status: "saved"; serviceId: string; error: null; message: string };
+
+type CreateState =
+  | { status: "idle"; error: null; message: null }
+  | { status: "creating"; error: null; message: null }
+  | { status: "error"; error: string; message: null }
+  | { status: "created"; error: null; message: string };
 
 type ServiceImageUploadState =
   | { status: "idle"; error: null; message: null }
@@ -100,7 +111,16 @@ function formatServiceStatus(status: StatusFilter) {
   return "ทั้งหมด";
 }
 
+
 function validateServiceInput(input: AdminServiceUpdateInput) {
+  if (!input.name.trim()) {
+    return "กรุณากรอกชื่อบริการ";
+  }
+
+  if (!input.service_category_id) {
+    return "กรุณาเลือกหมวดบริการ";
+  }
+
   if (!Number.isFinite(input.base_price) || input.base_price < 0) {
     return "ราคาเริ่มต้นต้องเป็น 0 บาทขึ้นไป";
   }
@@ -112,11 +132,35 @@ function validateServiceInput(input: AdminServiceUpdateInput) {
     return "เวลาประมาณต้องอย่างน้อย 1 นาที";
   }
 
-  if (!input.service_category_id) {
-    return "กรุณาเลือกหมวดบริการ";
-  }
-
   return null;
+}
+
+function buildServicePayload({
+  basePrice,
+  categoryId,
+  description,
+  durationMinutes,
+  imageUrl,
+  name,
+  status,
+}: {
+  basePrice: string;
+  categoryId: string;
+  description: string;
+  durationMinutes: string;
+  imageUrl: string;
+  name: string;
+  status: AdminService["status"];
+}): AdminServiceUpdateInput {
+  return {
+    base_price: Number(basePrice),
+    description: description.trim() || null,
+    estimated_duration_minutes: Number(durationMinutes),
+    image_url: imageUrl.trim() || null,
+    name: name.trim(),
+    service_category_id: categoryId,
+    status,
+  };
 }
 
 function getSafeServiceImageExtension(file: File) {
@@ -210,38 +254,186 @@ function ServiceImagePreview({
   );
 }
 
-function AdminServiceRow({
-  actionState,
+
+const inputClassName =
+  "mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]";
+
+// Same layout as ProductFormFields on the products page, shared by the
+// "add service" form and every service's edit form.
+function ServiceFormFields({
+  basePrice,
   categories,
-  onSave,
-  service,
+  categoryId,
+  description,
+  durationMinutes,
+  imageUploadState,
+  imageUrl,
+  name,
+  onImageUpload,
+  setBasePrice,
+  setCategoryId,
+  setDescription,
+  setDurationMinutes,
+  setImageUrl,
+  setName,
+  setStatus,
+  status,
 }: {
-  actionState: ActionState;
+  basePrice: string;
   categories: AdminServiceCategory[];
-  onSave: (service: AdminService, input: AdminServiceUpdateInput) => void;
-  service: AdminService;
+  categoryId: string;
+  description: string;
+  durationMinutes: string;
+  imageUploadState: ServiceImageUploadState;
+  imageUrl: string;
+  name: string;
+  onImageUpload: (file: File | null) => void;
+  setBasePrice: (value: string) => void;
+  setCategoryId: (value: string) => void;
+  setDescription: (value: string) => void;
+  setDurationMinutes: (value: string) => void;
+  setImageUrl: (value: string) => void;
+  setName: (value: string) => void;
+  setStatus: (value: AdminService["status"]) => void;
+  status: AdminService["status"];
 }) {
-  const [categoryId, setCategoryId] = useState(service.service_category_id);
-  const [basePrice, setBasePrice] = useState(String(service.base_price));
-  const [durationMinutes, setDurationMinutes] = useState(
-    String(service.estimated_duration_minutes),
+  return (
+    <>
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_150px_150px_140px] lg:items-end">
+        <label className="text-sm font-semibold text-[var(--foreground)]">
+          ชื่อบริการ
+          <input
+            className={inputClassName}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="เช่น เปลี่ยนน้ำมันเครื่อง"
+            value={name}
+          />
+        </label>
+
+        <label className="text-sm font-semibold text-[var(--foreground)]">
+          หมวดบริการ
+          <select
+            className={inputClassName}
+            onChange={(event) => setCategoryId(event.target.value)}
+            value={categoryId}
+          >
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+                {category.status === "inactive" ? " (ปิดใช้งาน)" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="text-sm font-semibold text-[var(--foreground)]">
+          ราคาเริ่มต้น
+          <input
+            className={inputClassName}
+            min={0}
+            onChange={(event) => setBasePrice(event.target.value)}
+            step="0.01"
+            type="number"
+            value={basePrice}
+          />
+        </label>
+
+        <label className="text-sm font-semibold text-[var(--foreground)]">
+          เวลาประมาณ (นาที)
+          <input
+            className={inputClassName}
+            min={1}
+            onChange={(event) => setDurationMinutes(event.target.value)}
+            type="number"
+            value={durationMinutes}
+          />
+        </label>
+
+        <label className="text-sm font-semibold text-[var(--foreground)]">
+          สถานะ
+          <select
+            className={inputClassName}
+            onChange={(event) =>
+              setStatus(event.target.value as AdminService["status"])
+            }
+            value={status}
+          >
+            <option value="active">เปิดใช้งาน</option>
+            <option value="inactive">ปิดใช้งาน</option>
+          </select>
+        </label>
+      </div>
+
+      <label className="text-sm font-semibold text-[var(--foreground)]">
+        รายละเอียด
+        <input
+          className={inputClassName}
+          onChange={(event) => setDescription(event.target.value)}
+          placeholder="คำอธิบายสั้น ๆ ที่แสดงในหน้าจองบริการของลูกค้า"
+          value={description}
+        />
+      </label>
+
+      <div className="grid gap-3 lg:grid-cols-[128px_minmax(0,1fr)_220px] lg:items-end">
+        <ServiceImagePreview imageUrl={imageUrl} label={`ตัวอย่างรูป ${name}`} />
+
+        <label className="text-sm font-semibold text-[var(--foreground)]">
+          URL รูปบริการ
+          <input
+            className={inputClassName}
+            onChange={(event) => setImageUrl(event.target.value)}
+            placeholder="https://... หรืออัปโหลดรูปจากเครื่อง"
+            value={imageUrl}
+          />
+        </label>
+
+        <label className="text-sm font-semibold text-[var(--foreground)]">
+          อัปโหลดรูปบริการ
+          <input
+            accept="image/png,image/jpeg,image/webp"
+            className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+            disabled={imageUploadState.status === "uploading"}
+            onChange={(event) => {
+              onImageUpload(event.target.files?.[0] ?? null);
+              event.target.value = "";
+            }}
+            type="file"
+          />
+        </label>
+      </div>
+
+      {imageUploadState.status === "uploading" ? (
+        <div className="rounded-md border border-amber-300/40 bg-amber-400/15 p-3 text-sm leading-6 text-amber-200">
+          กำลังอัปโหลดรูปบริการ...
+        </div>
+      ) : null}
+
+      {imageUploadState.status === "uploaded" ? (
+        <div className="rounded-md border border-emerald-300/40 bg-emerald-400/15 p-3 text-sm leading-6 text-emerald-200">
+          {imageUploadState.message}
+        </div>
+      ) : null}
+
+      {imageUploadState.status === "error" ? (
+        <div className="rounded-md border border-red-400/40 bg-red-500/15 p-3 text-sm leading-6 text-red-200">
+          {imageUploadState.error}
+        </div>
+      ) : null}
+    </>
   );
-  const [imageUrl, setImageUrl] = useState(service.image_url ?? "");
-  const [status, setStatus] = useState<AdminService["status"]>(service.status);
+}
+
+// Image upload state + handler shared by the add form and the edit rows.
+function useServiceImageUpload(
+  setImageUrl: (value: string) => void,
+  successMessage: string,
+) {
   const [imageUploadState, setImageUploadState] =
     useState<ServiceImageUploadState>({
       error: null,
       message: null,
       status: "idle",
     });
-  const isSaving =
-    actionState.status === "saving" && actionState.serviceId === service.id;
-  const hasChanges =
-    categoryId !== service.service_category_id ||
-    Number(basePrice) !== service.base_price ||
-    Number(durationMinutes) !== service.estimated_duration_minutes ||
-    imageUrl.trim() !== (service.image_url ?? "") ||
-    status !== service.status;
 
   async function handleImageUpload(file: File | null) {
     if (!file) {
@@ -268,182 +460,302 @@ function AdminServiceRow({
     setImageUrl(result.publicUrl);
     setImageUploadState({
       error: null,
-      message: "อัปโหลดรูปแล้ว กดบันทึกบริการเพื่อใช้รูปนี้",
+      message: successMessage,
       status: "uploaded",
     });
   }
 
+  return { handleImageUpload, imageUploadState };
+}
+
+function AddServiceForm({
+  categories,
+  createState,
+  onCreate,
+}: {
+  categories: AdminServiceCategory[];
+  createState: CreateState;
+  onCreate: (input: AdminServiceCreateInput) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
+  const [basePrice, setBasePrice] = useState("0");
+  const [durationMinutes, setDurationMinutes] = useState("60");
+  const [status, setStatus] = useState<AdminService["status"]>("active");
+  const { handleImageUpload, imageUploadState } = useServiceImageUpload(
+    setImageUrl,
+    "อัปโหลดรูปแล้ว กดเพิ่มบริการเพื่อบันทึกบริการ",
+  );
+  const isCreating = createState.status === "creating";
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    onSave(service, {
-      base_price: Number(basePrice),
-      estimated_duration_minutes: Number(durationMinutes),
-      image_url: imageUrl.trim() || null,
-      service_category_id: categoryId,
-      status,
-    });
+    onCreate(
+      buildServicePayload({
+        basePrice,
+        categoryId,
+        description,
+        durationMinutes,
+        imageUrl,
+        name,
+        status,
+      }),
+    );
+  }
+
+  if (!isOpen) {
+    return (
+      <button
+        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[var(--line)] bg-[var(--surface)] text-sm font-semibold text-[var(--muted)] hover:border-[var(--brand)] hover:text-[var(--foreground)]"
+        onClick={() => setIsOpen(true)}
+        type="button"
+      >
+        + เพิ่มบริการ
+      </button>
+    );
   }
 
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-[var(--line)] pb-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-          <ServiceImagePreview
-            imageUrl={service.image_url}
-            label={`${service.name} image`}
-          />
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--brand)]">
-                {service.category?.name ?? "No category"}
-              </p>
-              <span
-                className={`rounded-md px-2.5 py-1 text-xs font-semibold ${getStatusStyle(
-                  service.status,
-                )}`}
-              >
-                {formatServiceStatus(service.status)}
-              </span>
-            </div>
-            <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">
-              {service.name}
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-              {service.description ?? "-"}
-            </p>
-          </div>
-        </div>
-
-        <div className="text-sm text-[var(--muted)] lg:text-right">
-          <p className="font-semibold text-[var(--foreground)]">
-            {currencyFormatter.format(service.base_price)}
+    <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-sm">
+      <div className="flex items-start justify-between border-b border-[var(--line)] pb-4">
+        <div>
+          <p className="text-sm font-semibold text-[var(--brand)]">เพิ่มบริการ</p>
+          <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
+            บริการที่เปิดใช้งานจะแสดงในหน้าจองบริการของลูกค้าทันที
           </p>
-          <p className="mt-1">{service.estimated_duration_minutes} min</p>
         </div>
+        <button
+          className="text-sm font-semibold text-[var(--muted)]"
+          onClick={() => setIsOpen(false)}
+          type="button"
+        >
+          ปิด
+        </button>
       </div>
 
       <form className="mt-4 grid gap-3" onSubmit={handleSubmit}>
-        <div className="grid gap-3 md:grid-cols-[minmax(220px,1fr)_140px_160px_140px] md:items-end">
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            หมวดบริการ
-            <select
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              onChange={(event) => setCategoryId(event.target.value)}
-              value={categoryId}
-            >
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                  {category.status === "inactive" ? " (ปิดใช้งาน)" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
+        <ServiceFormFields
+          basePrice={basePrice}
+          categories={categories}
+          categoryId={categoryId}
+          description={description}
+          durationMinutes={durationMinutes}
+          imageUploadState={imageUploadState}
+          imageUrl={imageUrl}
+          name={name}
+          onImageUpload={handleImageUpload}
+          setBasePrice={setBasePrice}
+          setCategoryId={setCategoryId}
+          setDescription={setDescription}
+          setDurationMinutes={setDurationMinutes}
+          setImageUrl={setImageUrl}
+          setName={setName}
+          setStatus={setStatus}
+          status={status}
+        />
 
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            ราคาเริ่มต้น
-            <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              min={0}
-              onChange={(event) => setBasePrice(event.target.value)}
-              type="number"
-              value={basePrice}
-            />
-          </label>
+        {categories.length === 0 ? (
+          <p className="rounded-md bg-amber-400/15 p-3 text-sm text-amber-200">
+            ยังไม่มีหมวดบริการ กรุณาเพิ่มหมวดบริการก่อนที่หน้า &quot;หมวดบริการ&quot;
+          </p>
+        ) : null}
 
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            เวลาประมาณ
-            <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              min={1}
-              onChange={(event) => setDurationMinutes(event.target.value)}
-              type="number"
-              value={durationMinutes}
-            />
-          </label>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <button
+            className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isCreating || categories.length === 0}
+            type="submit"
+          >
+            {isCreating ? "กำลังเพิ่ม..." : "เพิ่มบริการ"}
+          </button>
 
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            สถานะ
-            <select
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              onChange={(event) =>
-                setStatus(event.target.value as AdminService["status"])
-              }
-              value={status}
-            >
-              <option value="active">เปิดใช้งาน</option>
-              <option value="inactive">ปิดใช้งาน</option>
-            </select>
-          </label>
+          {createState.status === "error" ? (
+            <p className="text-sm text-[var(--danger)]">{createState.error}</p>
+          ) : null}
+
+          {createState.status === "created" ? (
+            <p className="text-sm font-semibold text-[var(--brand)]">
+              {createState.message}
+            </p>
+          ) : null}
         </div>
-
-        <div className="grid gap-3 lg:grid-cols-[128px_minmax(0,1fr)_220px] lg:items-end">
-          <ServiceImagePreview imageUrl={imageUrl} label={`${service.name} preview`} />
-
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            URL รูปบริการ
-            <input
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]"
-              onChange={(event) => setImageUrl(event.target.value)}
-              placeholder="https://... หรืออัปโหลดรูปจากเครื่อง"
-              value={imageUrl}
-            />
-          </label>
-
-          <label className="text-sm font-semibold text-[var(--foreground)]">
-            อัปโหลดรูปบริการ
-            <input
-              accept="image/png,image/jpeg,image/webp"
-              className="mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              disabled={imageUploadState.status === "uploading"}
-              onChange={(event) => {
-                void handleImageUpload(event.target.files?.[0] ?? null);
-                event.target.value = "";
-              }}
-              type="file"
-            />
-          </label>
-        </div>
-
-        {imageUploadState.status === "uploading" ? (
-          <div className="rounded-md border border-amber-300/40 bg-amber-400/15 p-3 text-sm leading-6 text-amber-200">
-            กำลังอัปโหลดรูปบริการ...
-          </div>
-        ) : null}
-
-        {imageUploadState.status === "uploaded" ? (
-          <div className="rounded-md border border-emerald-300/40 bg-emerald-400/15 p-3 text-sm leading-6 text-emerald-200">
-            {imageUploadState.message}
-          </div>
-        ) : null}
-
-        {imageUploadState.status === "error" ? (
-          <div className="rounded-md border border-red-400/40 bg-red-500/15 p-3 text-sm leading-6 text-red-200">
-            {imageUploadState.error}
-          </div>
-        ) : null}
-
-        <button
-          className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={!hasChanges || isSaving}
-          type="submit"
-        >
-          {isSaving ? "กำลังบันทึก..." : "บันทึกบริการ"}
-        </button>
       </form>
+    </section>
+  );
+}
 
-      {actionState.status === "error" &&
-      actionState.serviceId === service.id ? (
-        <p className="mt-3 rounded-md bg-red-500/15 p-3 text-sm text-red-200">
-          {actionState.error}
-        </p>
-      ) : null}
+function AdminServiceRow({
+  actionState,
+  categories,
+  isExpanded,
+  onDelete,
+  onSave,
+  onToggle,
+  service,
+}: {
+  actionState: ActionState;
+  categories: AdminServiceCategory[];
+  isExpanded: boolean;
+  onDelete: (service: AdminService) => void;
+  onSave: (service: AdminService, input: AdminServiceUpdateInput) => void;
+  onToggle: () => void;
+  service: AdminService;
+}) {
+  const [name, setName] = useState(service.name);
+  const [description, setDescription] = useState(service.description ?? "");
+  const [categoryId, setCategoryId] = useState(service.service_category_id);
+  const [basePrice, setBasePrice] = useState(String(service.base_price));
+  const [durationMinutes, setDurationMinutes] = useState(
+    String(service.estimated_duration_minutes),
+  );
+  const [imageUrl, setImageUrl] = useState(service.image_url ?? "");
+  const [status, setStatus] = useState<AdminService["status"]>(service.status);
+  const { handleImageUpload, imageUploadState } = useServiceImageUpload(
+    setImageUrl,
+    "อัปโหลดรูปแล้ว กดบันทึกบริการเพื่อใช้รูปนี้",
+  );
+  const isSaving =
+    actionState.status === "saving" && actionState.serviceId === service.id;
+  const isDeleting =
+    actionState.status === "deleting" && actionState.serviceId === service.id;
+  const hasChanges =
+    name.trim() !== service.name ||
+    description.trim() !== (service.description ?? "") ||
+    categoryId !== service.service_category_id ||
+    Number(basePrice) !== service.base_price ||
+    Number(durationMinutes) !== service.estimated_duration_minutes ||
+    imageUrl.trim() !== (service.image_url ?? "") ||
+    status !== service.status;
 
-      {actionState.status === "saved" &&
-      actionState.serviceId === service.id ? (
-        <p className="mt-3 rounded-md bg-emerald-400/15 p-3 text-sm font-semibold text-emerald-200">
-          {actionState.message}
-        </p>
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onSave(
+      service,
+      buildServicePayload({
+        basePrice,
+        categoryId,
+        description,
+        durationMinutes,
+        imageUrl,
+        name,
+        status,
+      }),
+    );
+  }
+
+  return (
+    <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">
+      <button
+        className="flex w-full items-center gap-3 p-4 text-left"
+        onClick={onToggle}
+        type="button"
+      >
+        <img
+          alt={`รูปบริการ ${service.name}`}
+          className="h-12 w-12 shrink-0 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] object-cover"
+          onError={handleServiceImageError}
+          src={service.image_url || serviceImagePlaceholder}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="truncate text-base font-bold text-[var(--foreground)]">
+              {service.name}
+            </h2>
+            <span
+              className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold ${getStatusStyle(service.status)}`}
+            >
+              {formatServiceStatus(service.status)}
+            </span>
+          </div>
+          <p className="mt-1 truncate text-xs text-[var(--muted)]">
+            {service.category?.name ?? "ยังไม่มีหมวดบริการ"}
+            {service.description ? ` · ${service.description}` : ""}
+          </p>
+        </div>
+        <div className="hidden shrink-0 gap-4 text-right text-sm sm:flex">
+          <div>
+            <p className="text-xs text-[var(--muted)]">ราคาเริ่มต้น</p>
+            <p className="font-semibold text-[var(--foreground)]">
+              {currencyFormatter.format(service.base_price)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-[var(--muted)]">เวลาประมาณ</p>
+            <p className="font-semibold text-[var(--foreground)]">
+              {service.estimated_duration_minutes} นาที
+            </p>
+          </div>
+        </div>
+        <span className="shrink-0 text-sm font-semibold text-[var(--muted)]">
+          {isExpanded ? "ย่อ" : "แก้ไข"}
+        </span>
+      </button>
+
+      {isExpanded ? (
+        <form
+          className="grid gap-3 border-t border-[var(--line)] p-4"
+          onSubmit={handleSubmit}
+        >
+          <ServiceFormFields
+            basePrice={basePrice}
+            categories={categories}
+            categoryId={categoryId}
+            description={description}
+            durationMinutes={durationMinutes}
+            imageUploadState={imageUploadState}
+            imageUrl={imageUrl}
+            name={name}
+            onImageUpload={handleImageUpload}
+            setBasePrice={setBasePrice}
+            setCategoryId={setCategoryId}
+            setDescription={setDescription}
+            setDurationMinutes={setDurationMinutes}
+            setImageUrl={setImageUrl}
+            setName={setName}
+            setStatus={setStatus}
+            status={status}
+          />
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-2">
+              <button
+                className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={!hasChanges || isSaving || isDeleting}
+                type="submit"
+              >
+                {isSaving ? "กำลังบันทึก..." : "บันทึกบริการ"}
+              </button>
+              <AdminDeleteButton
+                confirmMessage={`ต้องการลบบริการ "${service.name}" ใช่หรือไม่?\n\nลบแล้วกู้คืนไม่ได้ (บริการที่เคยมีการจองแล้วจะลบไม่ได้ ให้ใช้ "ปิดใช้งาน" แทน)`}
+                disabled={isSaving}
+                isDeleting={isDeleting}
+                label="ลบบริการ"
+                onConfirm={() => onDelete(service)}
+              />
+            </div>
+
+            <p className="text-xs text-[var(--muted)]">
+              อัปเดตล่าสุด {new Date(service.updated_at).toLocaleString("th-TH")}
+            </p>
+          </div>
+
+          {actionState.status === "error" &&
+          actionState.serviceId === service.id ? (
+            <p className="rounded-md bg-red-500/15 p-3 text-sm text-red-200">
+              {actionState.error}
+            </p>
+          ) : null}
+
+          {actionState.status === "saved" &&
+          actionState.serviceId === service.id ? (
+            <p className="rounded-md bg-emerald-400/15 p-3 text-sm font-semibold text-emerald-200">
+              {actionState.message}
+            </p>
+          ) : null}
+        </form>
       ) : null}
     </article>
   );
@@ -459,10 +771,19 @@ export function AdminServicesPanel() {
   });
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchInput, setSearchInput] = useState("");
+  const [expandedServiceId, setExpandedServiceId] = useState<string | null>(
+    null,
+  );
+  const [deleteNotice, setDeleteNotice] = useState<string | null>(null);
   const [actionState, setActionState] = useState<ActionState>({
     error: null,
     message: null,
     serviceId: null,
+    status: "idle",
+  });
+  const [createState, setCreateState] = useState<CreateState>({
+    error: null,
+    message: null,
     status: "idle",
   });
 
@@ -630,6 +951,91 @@ export function AdminServicesPanel() {
     return counts;
   }, [loadState, searchInput]);
 
+
+  function withCategory(
+    service: Omit<AdminService, "category">,
+    categories: AdminServiceCategory[],
+  ): AdminService {
+    return {
+      ...service,
+      category:
+        categories.find(
+          (category) => category.id === service.service_category_id,
+        ) ?? null,
+    };
+  }
+
+  function findDuplicateName(
+    services: AdminService[],
+    input: AdminServiceUpdateInput,
+    ignoreServiceId: string | null,
+  ) {
+    return services.find(
+      (service) =>
+        service.id !== ignoreServiceId &&
+        service.service_category_id === input.service_category_id &&
+        service.name.toLowerCase() === input.name.toLowerCase(),
+    );
+  }
+
+  async function handleCreateService(input: AdminServiceCreateInput) {
+    if (loadState.status !== "ready") {
+      return;
+    }
+
+    const validationError = validateServiceInput(input);
+
+    if (validationError) {
+      setCreateState({
+        error: validationError,
+        message: null,
+        status: "error",
+      });
+      return;
+    }
+
+    if (findDuplicateName(loadState.services, input, null)) {
+      setCreateState({
+        error: "มีบริการชื่อนี้อยู่ในหมวดนี้แล้ว",
+        message: null,
+        status: "error",
+      });
+      return;
+    }
+
+    setDeleteNotice(null);
+    setCreateState({
+      error: null,
+      message: null,
+      status: "creating",
+    });
+
+    const supabase = createClient();
+    const { data, error } = await createAdminService(supabase, input);
+
+    if (error || !data) {
+      setCreateState({
+        error: error?.message ?? "เพิ่มบริการไม่สำเร็จ",
+        message: null,
+        status: "error",
+      });
+      return;
+    }
+
+    setLoadState({
+      ...loadState,
+      services: [
+        ...loadState.services,
+        withCategory(data, loadState.categories),
+      ].sort((a, b) => a.name.localeCompare(b.name, "th")),
+    });
+    setCreateState({
+      error: null,
+      message: "เพิ่มบริการเรียบร้อยแล้ว",
+      status: "created",
+    });
+  }
+
   async function handleSaveService(
     service: AdminService,
     input: AdminServiceUpdateInput,
@@ -643,6 +1049,16 @@ export function AdminServicesPanel() {
     if (validationError) {
       setActionState({
         error: validationError,
+        message: null,
+        serviceId: service.id,
+        status: "error",
+      });
+      return;
+    }
+
+    if (findDuplicateName(loadState.services, input, service.id)) {
+      setActionState({
+        error: "มีบริการชื่อนี้อยู่ในหมวดนี้แล้ว",
         message: null,
         serviceId: service.id,
         status: "error",
@@ -664,6 +1080,48 @@ export function AdminServicesPanel() {
       input,
     );
 
+    if (error || !data) {
+      setActionState({
+        error: error?.message ?? "บันทึกบริการไม่สำเร็จ",
+        message: null,
+        serviceId: service.id,
+        status: "error",
+      });
+      return;
+    }
+
+    setLoadState({
+      ...loadState,
+      services: loadState.services.map((currentService) =>
+        currentService.id === service.id
+          ? withCategory(data, loadState.categories)
+          : currentService,
+      ),
+    });
+    setActionState({
+      error: null,
+      message: "บันทึกบริการเรียบร้อยแล้ว",
+      serviceId: service.id,
+      status: "saved",
+    });
+  }
+
+  async function handleDeleteService(service: AdminService) {
+    if (loadState.status !== "ready") {
+      return;
+    }
+
+    setDeleteNotice(null);
+    setActionState({
+      error: null,
+      message: null,
+      serviceId: service.id,
+      status: "deleting",
+    });
+
+    const supabase = createClient();
+    const { error } = await deleteAdminService(supabase, service.id);
+
     if (error) {
       setActionState({
         error: error.message,
@@ -676,30 +1134,18 @@ export function AdminServicesPanel() {
 
     setLoadState({
       ...loadState,
-      services: loadState.services.map((currentService) =>
-        currentService.id === service.id
-          ? {
-              ...currentService,
-              base_price: data.base_price,
-              estimated_duration_minutes: data.estimated_duration_minutes,
-              image_url: data.image_url,
-              service_category_id: data.service_category_id,
-              category:
-                loadState.categories.find(
-                  (category) => category.id === data.service_category_id,
-                ) ?? null,
-              status: data.status,
-              updated_at: data.updated_at,
-            }
-          : currentService,
+      services: loadState.services.filter(
+        (currentService) => currentService.id !== service.id,
       ),
     });
+    setExpandedServiceId(null);
     setActionState({
       error: null,
-      message: "บันทึกบริการเรียบร้อยแล้ว",
-      serviceId: service.id,
-      status: "saved",
+      message: null,
+      serviceId: null,
+      status: "idle",
     });
+    setDeleteNotice(`ลบบริการ "${service.name}" เรียบร้อยแล้ว`);
   }
 
   return (
@@ -714,15 +1160,23 @@ export function AdminServicesPanel() {
               จัดการบริการ
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-              จัดการราคา ระยะเวลาโดยประมาณ และสถานะบริการที่แสดงในหน้าจองของลูกค้า
+              จัดการชื่อ ราคา ระยะเวลาโดยประมาณ และสถานะบริการที่แสดงในหน้าจองของลูกค้า
             </p>
           </div>
-          <Link
-            className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
-            href="/admin"
-          >
-            หน้าแอดมิน
-          </Link>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Link
+              className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
+              href="/admin/service-categories"
+            >
+              หมวดบริการ
+            </Link>
+            <Link
+              className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-center text-sm font-semibold text-[var(--muted)]"
+              href="/admin"
+            >
+              หน้าแอดมิน
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -764,11 +1218,24 @@ export function AdminServicesPanel() {
 
       {loadState.status === "ready" ? (
         <section className="py-6">
-          <div className="flex flex-col gap-4 border-b border-[var(--line)] pb-4">
+          <AddServiceForm
+            categories={loadState.categories}
+            createState={createState}
+            key={`${loadState.categories.length}-${loadState.services.length}`}
+            onCreate={handleCreateService}
+          />
+
+          {deleteNotice ? (
+            <p className="mt-3 rounded-md bg-emerald-400/15 p-3 text-sm font-semibold text-emerald-200">
+              {deleteNotice}
+            </p>
+          ) : null}
+
+          <div className="mt-5 flex flex-col gap-4 border-b border-[var(--line)] pb-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <p className="text-sm font-semibold text-[var(--foreground)]">
-                  {filteredServices.length} of {loadState.services.length}{" "}
+                  {filteredServices.length} จาก {loadState.services.length}{" "}
                   บริการ
                 </p>
                 <p className="mt-1 text-sm text-[var(--muted)]">
@@ -809,13 +1276,20 @@ export function AdminServicesPanel() {
           </div>
 
           {filteredServices.length > 0 ? (
-            <div className="mt-5 space-y-4">
+            <div className="mt-5 space-y-3">
               {filteredServices.map((service) => (
                 <AdminServiceRow
                   actionState={actionState}
                   categories={loadState.categories}
+                  isExpanded={expandedServiceId === service.id}
                   key={service.id}
+                  onDelete={handleDeleteService}
                   onSave={handleSaveService}
+                  onToggle={() =>
+                    setExpandedServiceId((current) =>
+                      current === service.id ? null : service.id,
+                    )
+                  }
                   service={service}
                 />
               ))}

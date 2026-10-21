@@ -1234,6 +1234,12 @@ export type Database = {
         };
         Returns: number;
       };
+      admin_delete_product: {
+        Args: {
+          target_product_id: string;
+        };
+        Returns: undefined;
+      };
       cancel_product_order_with_inventory_return: {
         Args: {
           target_order_id: string;

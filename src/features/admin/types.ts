@@ -103,11 +103,15 @@ export type AdminService = Service & {
 
 export type AdminServiceUpdateInput = {
   base_price: number;
+  description: string | null;
   estimated_duration_minutes: number;
   image_url: string | null;
+  name: string;
   service_category_id: string;
   status: AdminService["status"];
 };
+
+export type AdminServiceCreateInput = AdminServiceUpdateInput;
 
 export type AdminServiceCategory = ServiceCategory;
 

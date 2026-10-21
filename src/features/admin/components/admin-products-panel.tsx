@@ -6,9 +6,11 @@ import Link from "next/link";
 import type { FormEvent, SyntheticEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { AppNav } from "@/components/app-nav";
+import { AdminDeleteButton } from "@/features/admin/components/admin-delete-button";
 import {
   checkAdminAccess,
   createAdminProduct,
+  deleteAdminProduct,
   getAdminProductCategories,
   getAdminProducts,
   updateAdminProduct,
@@ -61,6 +63,7 @@ type LoadState =
 type ActionState =
   | { status: "idle"; productId: null; error: null; message: null }
   | { status: "saving"; productId: string; error: null; message: null }
+  | { status: "deleting"; productId: string; error: null; message: null }
   | { status: "error"; productId: string; error: string; message: null }
   | { status: "saved"; productId: string; error: null; message: string };
 
@@ -589,6 +592,7 @@ function AdminProductRow({
   actionState,
   categories,
   isExpanded,
+  onDelete,
   onSave,
   onToggle,
   product,
@@ -596,6 +600,7 @@ function AdminProductRow({
   actionState: ActionState;
   categories: AdminProductCategory[];
   isExpanded: boolean;
+  onDelete: (product: AdminProduct) => void;
   onSave: (product: AdminProduct, input: AdminProductUpdateInput) => void;
   onToggle: () => void;
   product: AdminProduct;
@@ -618,6 +623,8 @@ function AdminProductRow({
     });
   const isSaving =
     actionState.status === "saving" && actionState.productId === product.id;
+  const isDeleting =
+    actionState.status === "deleting" && actionState.productId === product.id;
   const hasChanges =
     name.trim() !== product.name ||
     description.trim() !== (product.description ?? "") ||
@@ -756,13 +763,22 @@ function AdminProductRow({
           />
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <button
-              className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={!hasChanges || isSaving}
-              type="submit"
-            >
-              {isSaving ? "กำลังบันทึก..." : "บันทึกสินค้า"}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={!hasChanges || isSaving || isDeleting}
+                type="submit"
+              >
+                {isSaving ? "กำลังบันทึก..." : "บันทึกสินค้า"}
+              </button>
+              <AdminDeleteButton
+                confirmMessage={`ต้องการลบสินค้า "${product.name}" ใช่หรือไม่?\n\nลบแล้วกู้คืนไม่ได้ (สินค้าที่เคยขายแล้วจะลบไม่ได้ ให้ใช้ "ปิดใช้งาน" แทน)`}
+                disabled={isSaving}
+                isDeleting={isDeleting}
+                label="ลบสินค้า"
+                onConfirm={() => onDelete(product)}
+              />
+            </div>
 
             <p className="text-xs text-[var(--muted)]">
               สต๊อกปัจจุบัน {product.stock_quantity} ชิ้น · ปรับสต๊อกได้ที่หน้าคลังสินค้า
@@ -801,6 +817,7 @@ export function AdminProductsPanel() {
   const [expandedProductId, setExpandedProductId] = useState<string | null>(
     null,
   );
+  const [deleteNotice, setDeleteNotice] = useState<string | null>(null);
   const [actionState, setActionState] = useState<ActionState>({
     error: null,
     message: null,
@@ -1060,6 +1077,48 @@ export function AdminProductsPanel() {
     });
   }
 
+  async function handleDeleteProduct(product: AdminProduct) {
+    if (loadState.status !== "ready") {
+      return;
+    }
+
+    setDeleteNotice(null);
+    setActionState({
+      error: null,
+      message: null,
+      productId: product.id,
+      status: "deleting",
+    });
+
+    const supabase = createClient();
+    const { error } = await deleteAdminProduct(supabase, product.id);
+
+    if (error) {
+      setActionState({
+        error: error.message,
+        message: null,
+        productId: product.id,
+        status: "error",
+      });
+      return;
+    }
+
+    setLoadState({
+      ...loadState,
+      products: loadState.products.filter(
+        (currentProduct) => currentProduct.id !== product.id,
+      ),
+    });
+    setExpandedProductId(null);
+    setActionState({
+      error: null,
+      message: null,
+      productId: null,
+      status: "idle",
+    });
+    setDeleteNotice(`ลบสินค้า "${product.name}" เรียบร้อยแล้ว`);
+  }
+
   async function handleSaveProduct(
     product: AdminProduct,
     input: AdminProductUpdateInput,
@@ -1233,6 +1292,12 @@ export function AdminProductsPanel() {
             onCreate={handleCreateProduct}
           />
 
+          {deleteNotice ? (
+            <p className="mt-3 rounded-md bg-emerald-400/15 p-3 text-sm font-semibold text-emerald-200">
+              {deleteNotice}
+            </p>
+          ) : null}
+
           <div className="mt-5 flex divide-x divide-[var(--line)] overflow-x-auto rounded-lg border border-[var(--line)] bg-[var(--surface)] shadow-sm">
             <div className="min-w-[8rem] flex-1 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
@@ -1310,6 +1375,7 @@ export function AdminProductsPanel() {
                   categories={loadState.categories}
                   isExpanded={expandedProductId === product.id}
                   key={product.id}
+                  onDelete={handleDeleteProduct}
                   onSave={handleSaveProduct}
                   onToggle={() =>
                     setExpandedProductId((current) =>

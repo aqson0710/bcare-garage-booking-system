@@ -41,6 +41,7 @@ import type {
   AdminService,
   AdminServiceCategoryCreateInput,
   AdminServiceCategoryUpdateInput,
+  AdminServiceCreateInput,
   AdminServiceUpdateInput,
   AdminTechnicianSkillCreateInput,
   AdminTechnicianSkillUpdateInput,
@@ -2098,12 +2099,21 @@ export async function updateAdminService(
   serviceId: string,
   input: AdminServiceUpdateInput,
 ) {
-  return supabase
+  const result = await supabase
     .from("services")
     .update(input)
     .eq("id", serviceId)
     .select("*")
     .single();
+
+  if (result.error?.code === "23505") {
+    return {
+      data: null,
+      error: new Error("มีบริการชื่อนี้อยู่ในหมวดนี้แล้ว"),
+    };
+  }
+
+  return result;
 }
 
 export async function getAdminServiceCategories(
@@ -2281,6 +2291,207 @@ export async function updateAdminProduct(
     .eq("id", productId)
     .select("*")
     .single();
+}
+
+// Turns database errors from the admin delete actions into messages an
+// admin can act on (still linked to other records / SQL not run yet).
+function toAdminDeleteError(
+  error: { code?: string; message: string },
+  linkedRecordsMessage: string,
+) {
+  if (error.code === "23503") {
+    return new Error(linkedRecordsMessage);
+  }
+
+  if (error.code === "PGRST202" || error.code === "42883") {
+    return new Error(
+      "ยังไม่ได้ติดตั้งฟังก์ชันลบในฐานข้อมูล กรุณารันไฟล์ supabase/admin-catalog-delete.sql ใน Supabase SQL Editor ก่อน",
+    );
+  }
+
+  return new Error(error.message);
+}
+
+const deleteNotAllowedMessage =
+  "ลบไม่สำเร็จ: บัญชีนี้ไม่มีสิทธิ์ลบ หรือยังไม่ได้รันไฟล์ supabase/admin-catalog-delete.sql ใน Supabase";
+
+// Deletes a product through the admin_delete_product() database function
+// (see supabase/admin-catalog-delete.sql). It runs in one transaction: it
+// refuses products that were ever sold or used in a repair, otherwise it
+// removes the product's stock-adjustment history and the product itself.
+export async function deleteAdminProduct(
+  supabase: BCareSupabaseClient,
+  productId: string,
+) {
+  const { error } = await supabase.rpc("admin_delete_product", {
+    target_product_id: productId,
+  });
+
+  if (error) {
+    return {
+      data: null,
+      error: toAdminDeleteError(
+        error,
+        "ลบสินค้านี้ไม่ได้ เพราะยังมีข้อมูลอื่นอ้างอิงอยู่ ให้เปลี่ยนสถานะเป็น \"ปิดใช้งาน\" แทน",
+      ),
+    };
+  }
+
+  return { data: { id: productId }, error: null };
+}
+
+// Category deletes check the linked records first so the admin gets a
+// clear count, and the RESTRICT foreign key still blocks the delete in the
+// database if anything was added in between.
+export async function deleteAdminProductCategory(
+  supabase: BCareSupabaseClient,
+  categoryId: string,
+) {
+  const linkedResult = await supabase
+    .from("products")
+    .select("id", { count: "exact", head: true })
+    .eq("product_category_id", categoryId);
+
+  if (linkedResult.error) {
+    return { data: null, error: new Error(linkedResult.error.message) };
+  }
+
+  const linkedCount = linkedResult.count ?? 0;
+  const linkedMessage = `ลบหมวดนี้ไม่ได้ เพราะยังมีสินค้า ${linkedCount || ""} รายการอยู่ในหมวดนี้ ให้ย้ายสินค้าไปหมวดอื่นหรือลบสินค้าก่อน หรือเปลี่ยนสถานะหมวดเป็น "ปิดใช้งาน" แทน`;
+
+  if (linkedCount > 0) {
+    return { data: null, error: new Error(linkedMessage) };
+  }
+
+  const deleteResult = await supabase
+    .from("product_categories")
+    .delete()
+    .eq("id", categoryId)
+    .select("id");
+
+  if (deleteResult.error) {
+    return {
+      data: null,
+      error: toAdminDeleteError(deleteResult.error, linkedMessage),
+    };
+  }
+
+  if (!deleteResult.data || deleteResult.data.length === 0) {
+    return { data: null, error: new Error(deleteNotAllowedMessage) };
+  }
+
+  return { data: deleteResult.data[0], error: null };
+}
+
+export async function deleteAdminServiceCategory(
+  supabase: BCareSupabaseClient,
+  categoryId: string,
+) {
+  const linkedResult = await supabase
+    .from("services")
+    .select("id", { count: "exact", head: true })
+    .eq("service_category_id", categoryId);
+
+  if (linkedResult.error) {
+    return { data: null, error: new Error(linkedResult.error.message) };
+  }
+
+  const linkedCount = linkedResult.count ?? 0;
+  const linkedMessage = `ลบหมวดนี้ไม่ได้ เพราะยังมีบริการ ${linkedCount || ""} รายการอยู่ในหมวดนี้ ให้ย้ายบริการไปหมวดอื่นหรือลบบริการก่อน หรือเปลี่ยนสถานะหมวดเป็น "ปิดใช้งาน" แทน`;
+
+  if (linkedCount > 0) {
+    return { data: null, error: new Error(linkedMessage) };
+  }
+
+  const deleteResult = await supabase
+    .from("service_categories")
+    .delete()
+    .eq("id", categoryId)
+    .select("id");
+
+  if (deleteResult.error) {
+    return {
+      data: null,
+      error: toAdminDeleteError(deleteResult.error, linkedMessage),
+    };
+  }
+
+  if (!deleteResult.data || deleteResult.data.length === 0) {
+    return { data: null, error: new Error(deleteNotAllowedMessage) };
+  }
+
+  return { data: deleteResult.data[0], error: null };
+}
+
+export async function createAdminService(
+  supabase: BCareSupabaseClient,
+  input: AdminServiceCreateInput,
+) {
+  const result = await supabase
+    .from("services")
+    .insert({
+      base_price: input.base_price,
+      description: input.description,
+      estimated_duration_minutes: input.estimated_duration_minutes,
+      image_url: input.image_url,
+      name: input.name,
+      service_category_id: input.service_category_id,
+      status: input.status,
+    })
+    .select("*")
+    .single();
+
+  if (result.error?.code === "23505") {
+    return {
+      data: null,
+      error: new Error("มีบริการชื่อนี้อยู่ในหมวดนี้แล้ว"),
+    };
+  }
+
+  return result;
+}
+
+// A service that was ever booked cannot be deleted (bookings keep a
+// RESTRICT link to it); the admin is told how many bookings use it and
+// can set it to inactive instead.
+export async function deleteAdminService(
+  supabase: BCareSupabaseClient,
+  serviceId: string,
+) {
+  const linkedResult = await supabase
+    .from("bookings")
+    .select("id", { count: "exact", head: true })
+    .eq("service_id", serviceId);
+
+  if (linkedResult.error) {
+    return { data: null, error: new Error(linkedResult.error.message) };
+  }
+
+  const linkedCount = linkedResult.count ?? 0;
+  const linkedMessage = `ลบบริการนี้ไม่ได้ เพราะมีประวัติการจอง ${linkedCount || ""} รายการ ให้เปลี่ยนสถานะเป็น "ปิดใช้งาน" แทน`;
+
+  if (linkedCount > 0) {
+    return { data: null, error: new Error(linkedMessage) };
+  }
+
+  const deleteResult = await supabase
+    .from("services")
+    .delete()
+    .eq("id", serviceId)
+    .select("id");
+
+  if (deleteResult.error) {
+    return {
+      data: null,
+      error: toAdminDeleteError(deleteResult.error, linkedMessage),
+    };
+  }
+
+  if (!deleteResult.data || deleteResult.data.length === 0) {
+    return { data: null, error: new Error(deleteNotAllowedMessage) };
+  }
+
+  return { data: deleteResult.data[0], error: null };
 }
 
 export async function getAdminInventoryMovements(
