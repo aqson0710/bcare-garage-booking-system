@@ -20,6 +20,10 @@ import {
   type AdminProductOrderStatusAction,
   type AdminProductOrderStatusCounts,
 } from "@/features/admin";
+import {
+  getPaymentGateError,
+  isProductOrderPaid,
+} from "@/features/admin/product-order-payment-gate";
 import { ProductImageThumb } from "@/features/products/components/product-image-thumb";
 import { createClient } from "@/lib/supabase/browser";
 import { PageSkeleton } from "@/components/page-skeleton";
@@ -319,13 +323,20 @@ function getAdminOrderActions(
   status: AdminProductOrderStatusAction;
   tone: string;
 }> {
+  // Confirming happens on the order's detail page, after the admin has
+  // looked at the items and the payment. The list only offers "cancel".
   if (order.status === "pending") {
     return [
       {
-        label: "ยืนยันออเดอร์",
-        status: "confirmed",
-        tone: "bg-[var(--brand)] text-[var(--on-brand)]",
+        label: "ยกเลิก",
+        status: "cancelled",
+        tone: "border border-red-400/40 bg-red-500/15 text-red-200",
       },
+    ];
+  }
+
+  if (order.status === "confirmed" && !isProductOrderPaid(order)) {
+    return [
       {
         label: "ยกเลิก",
         status: "cancelled",
@@ -496,6 +507,9 @@ function AdminProductOrderCard({
   const isUpdating =
     actionState.status === "updating" && actionState.orderId === order.id;
   const canSaveStatus = selectedStatus !== order.status && !isUpdating;
+  const needsReview =
+    order.status === "pending" ||
+    (order.status === "confirmed" && !isProductOrderPaid(order));
 
   function cancelStatusEdit() {
     setSelectedStatus(order.status);
@@ -625,6 +639,15 @@ function AdminProductOrderCard({
         </div>
       ) : null}
 
+      {needsReview && !isProductOrderPaid(order) ? (
+        <div className="mt-4 rounded-md border border-amber-300/40 bg-amber-400/15 p-3 text-sm leading-6 text-amber-200">
+          <p className="font-semibold">ยังไม่ได้รับชำระเงิน</p>
+          <p className="mt-1">
+            ต้องตรวจสลิปให้ผ่านก่อน จึงจะยืนยันออเดอร์และเริ่มจัดเตรียมได้
+          </p>
+        </div>
+      ) : null}
+
       {latestPayment?.verification_status === "submitted" ? (
         <div className="mt-4 rounded-md border border-amber-300/40 bg-amber-400/15 p-3 text-sm leading-6 text-amber-200">
           <p className="font-semibold">รอตรวจสลิป</p>
@@ -692,6 +715,16 @@ function AdminProductOrderCard({
           </div>
         ) : actions.length > 0 ? (
           <div className="flex flex-wrap gap-2">
+            {needsReview ? (
+              <Link
+                className="inline-flex min-h-10 items-center rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)]"
+                href={`/admin/product-orders/${order.id}`}
+              >
+                {isProductOrderPaid(order)
+                  ? "ตรวจออเดอร์และยืนยัน"
+                  : "ตรวจการชำระเงิน"}
+              </Link>
+            ) : null}
             {actions.map((action) => (
               <button
                 className={`min-h-10 rounded-md px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${action.tone}`}
@@ -946,6 +979,17 @@ export function AdminProductOrdersPanel() {
     nextStatus: AdminProductOrderStatusAction,
   ) {
     if (loadState.status !== "ready") {
+      return;
+    }
+
+    const gateError = getPaymentGateError(order, nextStatus);
+
+    if (gateError) {
+      setActionState({
+        error: gateError,
+        orderId: order.id,
+        status: "error",
+      });
       return;
     }
 

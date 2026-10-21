@@ -46,6 +46,10 @@ import type {
   AdminTechnicianSkillUpdateInput,
   RepairJob,
 } from "./types";
+import {
+  getPaymentGateError,
+  statusRequiresPayment,
+} from "./product-order-payment-gate";
 
 type BCareSupabaseClient = SupabaseClient<Database>;
 
@@ -1878,6 +1882,26 @@ export async function updateAdminProductOrderStatus(
       .eq("id", orderId)
       .select("*")
       .single();
+  }
+
+  // Re-check payment against the database (not the possibly stale order the
+  // page has loaded) before moving the order into confirmed/preparing/etc.
+  if (statusRequiresPayment(status)) {
+    const currentOrderResult = await supabase
+      .from("product_orders")
+      .select("payment_status")
+      .eq("id", orderId)
+      .single();
+
+    if (currentOrderResult.error) {
+      return { data: null, error: currentOrderResult.error };
+    }
+
+    const gateError = getPaymentGateError(currentOrderResult.data, status);
+
+    if (gateError) {
+      return { data: null, error: new Error(gateError) };
+    }
   }
 
   return supabase

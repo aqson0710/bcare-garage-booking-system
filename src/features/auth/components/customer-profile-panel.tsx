@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { AppNav } from "@/components/app-nav";
+import { AppNav, clearViewerCache } from "@/components/app-nav";
 import {
   getCurrentProfile,
+  needsProfileSetup,
   upsertCurrentProfile,
   type Profile,
 } from "@/features/auth";
@@ -177,6 +179,7 @@ function ProfileFormRow({
 }
 
 export function CustomerProfilePanel() {
+  const router = useRouter();
   const [loadState, setLoadState] = useState<LoadState>({
     email: null,
     error: null,
@@ -323,6 +326,7 @@ export function CustomerProfilePanel() {
       status: "saving",
     });
 
+    const wasSetupRequired = needsProfileSetup(loadState.profile);
     const supabase = createClient();
     const { data, error } = await upsertCurrentProfile(supabase, {
       email: loadState.email,
@@ -348,6 +352,20 @@ export function CustomerProfilePanel() {
       ...loadState,
       profile: data,
     });
+    if (wasSetupRequired) {
+      // First-time setup finished: let the nav reload the profile (which
+      // lifts the redirect to /profile) and continue to the home page.
+      clearViewerCache();
+      setSaveState({
+        error: null,
+        message: "บันทึกข้อมูลเรียบร้อยแล้ว กำลังพาไปหน้าแรก...",
+        status: "success",
+      });
+      router.push("/");
+      router.refresh();
+      return;
+    }
+
     setSaveState({
       error: null,
       message: "บันทึกโปรไฟล์เรียบร้อยแล้ว",
@@ -469,6 +487,8 @@ export function CustomerProfilePanel() {
       ? formatMemberSince(loadState.profile?.created_at)
       : null;
   const isUploading = uploadState.status === "uploading";
+  const isSetupRequired =
+    loadState.status === "ready" && needsProfileSetup(loadState.profile);
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col pb-8 pt-0 px-4 sm:px-6 lg:px-8">
@@ -525,6 +545,16 @@ export function CustomerProfilePanel() {
                 จัดการข้อมูลติดต่อที่ใช้กับการจองบริการ คำสั่งซื้อ และงานซ่อมของคุณ
               </p>
             </div>
+
+            {isSetupRequired ? (
+              <div className="mt-4 rounded-md border border-amber-300/40 bg-amber-400/15 p-3 text-sm leading-6 text-amber-200">
+                <p className="font-bold">กรุณากรอกข้อมูลส่วนตัวก่อนเริ่มใช้งาน</p>
+                <p>
+                  กรอกชื่อ-นามสกุลและเบอร์โทรศัพท์ให้ครบ แล้วกด
+                  &quot;บันทึกโปรไฟล์&quot; เพื่อใช้งานการจองบริการและสั่งซื้อสินค้า
+                </p>
+              </div>
+            ) : null}
 
             <form
               className="grid gap-6 pt-2 lg:grid-cols-[minmax(0,1fr)_200px]"

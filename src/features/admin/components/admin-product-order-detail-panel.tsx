@@ -14,6 +14,10 @@ import {
   type AdminProductOrder,
   type AdminProductOrderStatusAction,
 } from "@/features/admin";
+import {
+  getPaymentGateError,
+  isProductOrderPaid,
+} from "@/features/admin/product-order-payment-gate";
 import { ProductImageThumb } from "@/features/products/components/product-image-thumb";
 import { createClient } from "@/lib/supabase/browser";
 import { PageSkeleton } from "@/components/page-skeleton";
@@ -291,6 +295,20 @@ function getQuickActions(
   status: AdminProductOrderStatusAction;
   tone: string;
 }> {
+  // Unpaid orders can only be cancelled until the payment is verified.
+  if (
+    (order.status === "pending" || order.status === "confirmed") &&
+    !isProductOrderPaid(order)
+  ) {
+    return [
+      {
+        label: "ยกเลิก",
+        status: "cancelled",
+        tone: "border border-red-400/40 bg-red-500/15 text-red-200",
+      },
+    ];
+  }
+
   if (order.status === "pending") {
     return [
       {
@@ -1062,6 +1080,16 @@ export function AdminProductOrderDetailPanel({
       return;
     }
 
+    const gateError = getPaymentGateError(loadState.order, nextStatus);
+
+    if (gateError) {
+      setActionState({
+        error: gateError,
+        status: "error",
+      });
+      return;
+    }
+
     if (
       nextStatus === "cancelled" &&
       !window.confirm(
@@ -1362,6 +1390,20 @@ export function AdminProductOrderDetailPanel({
               <p className="text-sm font-semibold text-[var(--brand)]">
                 จัดการสถานะ
               </p>
+
+              {!isProductOrderPaid(loadState.order) &&
+              (loadState.order.status === "pending" ||
+                loadState.order.status === "confirmed") ? (
+                <div className="mt-4 rounded-md border border-amber-300/40 bg-amber-400/15 p-3 text-sm leading-6 text-amber-200">
+                  <p className="font-semibold">รอการชำระเงิน</p>
+                  <p className="mt-1">
+                    ตรวจสลิปในส่วน &quot;หลักฐานการชำระเงิน&quot; ด้านล่างก่อน
+                    (กดตรวจด้วย SlipOK หรือเปิดดูรูปสลิปแล้วอนุมัติ)
+                    เมื่อสถานะชำระเงินเป็น &quot;ชำระแล้ว&quot;
+                    จึงจะยืนยันออเดอร์และเริ่มจัดเตรียมได้
+                  </p>
+                </div>
+              ) : null}
 
               {isEditingStatus ? (
                 <div className="mt-4 rounded-md border border-[var(--line)] bg-[var(--surface-muted)] p-3">

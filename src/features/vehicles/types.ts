@@ -12,6 +12,8 @@ export type VehicleInput = {
   year: string;
 };
 
+export type NewVehicleInput = Omit<VehicleInput, "id">;
+
 export type VehicleImageInput = {
   customerId: string;
   id: string;

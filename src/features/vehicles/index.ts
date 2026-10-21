@@ -1,7 +1,13 @@
 export {
+  createCurrentUserVehicle,
   deleteCurrentUserVehicle,
   getCurrentUserVehicles,
   updateCurrentUserVehicle,
   updateCurrentUserVehicleImage,
 } from "./queries";
-export type { Vehicle, VehicleImageInput, VehicleInput } from "./types";
+export type {
+  NewVehicleInput,
+  Vehicle,
+  VehicleImageInput,
+  VehicleInput,
+} from "./types";

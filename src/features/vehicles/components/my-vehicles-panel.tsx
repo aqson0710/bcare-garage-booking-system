@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { AppImage } from "@/components/app-image";
 import { AppNav } from "@/components/app-nav";
 import {
+  createCurrentUserVehicle,
   deleteCurrentUserVehicle,
   getCurrentUserVehicles,
   updateCurrentUserVehicle,
@@ -508,7 +509,154 @@ function VehicleCard({
   );
 }
 
+const emptyVehicleValues: VehicleFormValues = {
+  brand: "",
+  color: "",
+  licensePlate: "",
+  model: "",
+  year: "",
+};
+
+function NewVehicleForm({
+  customerId,
+  onCancel,
+  onCreated,
+}: {
+  customerId: string;
+  onCancel: () => void;
+  onCreated: (vehicle: Vehicle) => void;
+}) {
+  const [values, setValues] = useState<VehicleFormValues>(emptyVehicleValues);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function updateValue(field: keyof VehicleFormValues, value: string) {
+    setValues((currentValues) => ({ ...currentValues, [field]: value }));
+    setError(null);
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const validationError = validateVehicle(values);
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setIsSaving(true);
+    const supabase = createClient();
+    const result = await createCurrentUserVehicle(supabase, {
+      brand: values.brand,
+      color: values.color,
+      customerId,
+      licensePlate: values.licensePlate,
+      model: values.model,
+      year: values.year,
+    });
+    setIsSaving(false);
+
+    if (result.error || !result.data) {
+      setError(result.error?.message ?? "เพิ่มรถไม่สำเร็จ กรุณาลองใหม่");
+      return;
+    }
+
+    onCreated(result.data);
+  }
+
+  const inputClassName =
+    "mt-2 min-h-10 w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)]";
+
+  return (
+    <form
+      className="rounded-lg border border-[var(--brand)] bg-[var(--surface)] p-5 shadow-sm"
+      onSubmit={handleSubmit}
+    >
+      <h2 className="text-lg font-bold text-[var(--foreground)]">เพิ่มรถใหม่</h2>
+      <p className="mt-1 text-sm text-[var(--muted)]">
+        กรอกทะเบียนรถ (จำเป็น) ส่วนข้อมูลอื่นกรอกเพิ่มหรือแก้ไขภายหลังได้
+      </p>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <label className="text-sm font-medium text-[var(--foreground)] sm:col-span-2">
+          ทะเบียนรถ *
+          <input
+            autoFocus
+            className={inputClassName}
+            onChange={(event) => updateValue("licensePlate", event.target.value)}
+            placeholder="เช่น 1กข 1234 กรุงเทพมหานคร"
+            value={values.licensePlate}
+          />
+        </label>
+        <label className="text-sm font-medium text-[var(--foreground)]">
+          ยี่ห้อรถ
+          <input
+            className={inputClassName}
+            onChange={(event) => updateValue("brand", event.target.value)}
+            placeholder="เช่น Toyota"
+            value={values.brand}
+          />
+        </label>
+        <label className="text-sm font-medium text-[var(--foreground)]">
+          รุ่นรถ
+          <input
+            className={inputClassName}
+            onChange={(event) => updateValue("model", event.target.value)}
+            placeholder="เช่น Yaris"
+            value={values.model}
+          />
+        </label>
+        <label className="text-sm font-medium text-[var(--foreground)]">
+          ปีรถ
+          <input
+            className={inputClassName}
+            inputMode="numeric"
+            onChange={(event) => updateValue("year", event.target.value)}
+            placeholder="เช่น 2020"
+            value={values.year}
+          />
+        </label>
+        <label className="text-sm font-medium text-[var(--foreground)]">
+          สีรถ
+          <input
+            className={inputClassName}
+            onChange={(event) => updateValue("color", event.target.value)}
+            placeholder="เช่น ขาว"
+            value={values.color}
+          />
+        </label>
+      </div>
+
+      {error ? (
+        <div className="mt-4 rounded-md border border-red-400/40 bg-red-500/15 p-3 text-sm text-red-200">
+          {error}
+        </div>
+      ) : null}
+
+      <div className="mt-5 flex justify-end gap-2">
+        <button
+          className="min-h-10 rounded-md border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--muted)]"
+          disabled={isSaving}
+          onClick={onCancel}
+          type="button"
+        >
+          ยกเลิก
+        </button>
+        <button
+          className="min-h-10 rounded-md bg-[var(--brand)] px-4 text-sm font-semibold text-[var(--on-brand)] disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={isSaving}
+          type="submit"
+        >
+          {isSaving ? "กำลังบันทึก..." : "บันทึกรถ"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export function MyVehiclesPanel() {
+  const [isAddingVehicle, setIsAddingVehicle] = useState(false);
   const [loadState, setLoadState] = useState<LoadState>({
     error: null,
     status: "loading",
@@ -611,6 +759,18 @@ export function MyVehiclesPanel() {
     });
   }
 
+  function handleVehicleCreated(nextVehicle: Vehicle) {
+    if (loadState.status !== "ready") {
+      return;
+    }
+
+    setLoadState({
+      ...loadState,
+      vehicles: [nextVehicle, ...loadState.vehicles],
+    });
+    setIsAddingVehicle(false);
+  }
+
   function handleVehicleDeleted(vehicleId: string) {
     if (loadState.status !== "ready") {
       return;
@@ -639,12 +799,26 @@ export function MyVehiclesPanel() {
               ตรวจสอบและแก้ไขข้อมูลรถที่เชื่อมกับโปรไฟล์ลูกค้าของคุณ
             </p>
           </div>
-          <Link
-            className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
-            href="/services"
-          >
-            จองบริการใหม่
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            {loadState.status === "ready" ? (
+              <button
+                aria-label="เพิ่มรถ"
+                className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-[var(--brand)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--brand)] hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isAddingVehicle}
+                onClick={() => setIsAddingVehicle(true)}
+                type="button"
+              >
+                <span aria-hidden="true" className="text-lg leading-none">+</span>
+                เพิ่มรถ
+              </button>
+            ) : null}
+            <Link
+              className="min-h-10 rounded-md bg-[var(--brand)] px-4 py-2 text-center text-sm font-semibold text-[var(--on-brand)]"
+              href="/services"
+            >
+              จองบริการใหม่
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -676,7 +850,15 @@ export function MyVehiclesPanel() {
       ) : null}
 
       {loadState.status === "ready" ? (
-        <section className="py-6">
+        <section className="space-y-4 py-6">
+          {isAddingVehicle ? (
+            <NewVehicleForm
+              customerId={loadState.userId}
+              onCancel={() => setIsAddingVehicle(false)}
+              onCreated={handleVehicleCreated}
+            />
+          ) : null}
+
           {loadState.vehicles.length > 0 ? (
             <div className="space-y-4">
               {loadState.vehicles.map((vehicle) => (
@@ -691,7 +873,8 @@ export function MyVehiclesPanel() {
             </div>
           ) : (
             <div className="rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-sm leading-6 text-[var(--muted)]">
-              ยังไม่มีข้อมูลรถ เริ่มจองบริการก่อน แล้วข้อมูลรถจะมาแสดงที่นี่
+              ยังไม่มีข้อมูลรถ กดปุ่ม &quot;+ เพิ่มรถ&quot; ด้านบนเพื่อเพิ่มรถของคุณ
+              หรือรถจะถูกเพิ่มให้อัตโนมัติเมื่อจองบริการ
             </div>
           )}
         </section>

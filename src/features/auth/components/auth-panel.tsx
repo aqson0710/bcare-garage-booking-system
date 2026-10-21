@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AppImage } from "@/components/app-image";
 import { DiagonalWaves } from "@/components/diagonal-waves";
-import { getCurrentProfile, type ProfileRole } from "@/features/auth";
+import {
+  getCurrentProfile,
+  needsProfileSetup,
+  type ProfileRole,
+} from "@/features/auth";
 import { useSiteLogoUrl } from "@/features/home";
 import { createClient } from "@/lib/supabase/browser";
 
@@ -209,10 +213,19 @@ export function AuthPanel() {
         return;
       }
 
+      // Supabase signs the new account in straight away when email
+      // confirmation is off. Sign it out again so every new customer goes
+      // through the login form, which then sends them to fill in their
+      // profile.
+      if (data.session) {
+        await supabase.auth.signOut({ scope: "local" });
+      }
+
+      resetForm("login");
       setMessage({
         text: data.session
-          ? "สมัครบัญชีและเข้าสู่ระบบเรียบร้อยแล้ว"
-          : "สมัครบัญชีเรียบร้อยแล้ว หากเปิดยืนยันอีเมลไว้ กรุณาตรวจสอบอีเมลของคุณ",
+          ? "สมัครบัญชีเรียบร้อยแล้ว กรุณาเข้าสู่ระบบด้วยอีเมลและรหัสผ่านที่เพิ่งสมัคร"
+          : "สมัครบัญชีเรียบร้อยแล้ว กรุณายืนยันอีเมลจากลิงก์ในกล่องจดหมาย แล้วเข้าสู่ระบบ",
         tone: "success",
       });
       return;
@@ -234,7 +247,13 @@ export function AuthPanel() {
     const profileResult = data.user
       ? await getCurrentProfile(supabase, data.user.id)
       : null;
-    router.push(getPostLoginPath(profileResult?.data?.role));
+    const profile = profileResult?.data ?? null;
+    const mustCompleteProfile =
+      !profileResult?.error && needsProfileSetup(profile);
+
+    router.push(
+      mustCompleteProfile ? "/profile?setup=1" : getPostLoginPath(profile?.role),
+    );
     router.refresh();
   }
 

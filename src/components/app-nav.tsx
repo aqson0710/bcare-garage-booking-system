@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { AppImage } from "@/components/app-image";
-import { getCurrentProfile } from "@/features/auth";
+import { getCurrentProfile, needsProfileSetup } from "@/features/auth";
 import type { ProfileRole } from "@/features/auth";
 import { useSiteLogoUrl } from "@/features/home";
 import { NotificationNavBadge } from "@/features/notifications/components/notification-nav-badge";
@@ -42,6 +42,9 @@ type ViewerState = {
   isLoading: boolean;
   isSignedIn: boolean;
   role: ProfileRole | null;
+  // New customer accounts without a name/phone yet. While true, every page
+  // except /profile redirects to /profile so the details get filled in first.
+  needsProfileSetup?: boolean;
 };
 
 const publicGroup: NavGroup = {
@@ -378,6 +381,12 @@ function CloseIcon() {
 // loads fresh. A full page reload clears it.
 let viewerCache: { userId: string | null; viewer: ViewerState } | null = null;
 
+// Called after the profile is saved so the next page reloads the viewer
+// (and drops the "must complete profile" redirect).
+export function clearViewerCache() {
+  viewerCache = null;
+}
+
 export function AppNav() {
   const pathname = usePathname();
   const router = useRouter();
@@ -474,6 +483,8 @@ export function AppNav() {
         isLoading: false,
         isSignedIn: true,
         role: profileResult.data?.role ?? "customer",
+        needsProfileSetup:
+          !profileResult.error && needsProfileSetup(profileResult.data),
       };
 
       if (!profileResult.error) {
@@ -496,6 +507,12 @@ export function AppNav() {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (viewer.needsProfileSetup && pathname !== "/profile") {
+      router.replace("/profile?setup=1");
+    }
+  }, [pathname, router, viewer.needsProfileSetup]);
 
   // Close the drawer and expand the active category whenever the route or
   // the viewer's role changes. Done during render (React's "adjust state

@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import type { VehicleImageInput, VehicleInput } from "./types";
+import type {
+  NewVehicleInput,
+  VehicleImageInput,
+  VehicleInput,
+} from "./types";
 
 type BCareSupabaseClient = SupabaseClient<Database>;
 
@@ -37,6 +41,54 @@ export async function getCurrentUserVehicles(
     .select("*")
     .eq("customer_id", customerId)
     .order("created_at", { ascending: false });
+}
+
+// Lets a customer add a car straight from "My vehicles" (before booking).
+// A car with the same plate already on this account is reported instead of
+// hitting the (customer_id, license_plate) unique constraint error.
+export async function createCurrentUserVehicle(
+  supabase: BCareSupabaseClient,
+  input: NewVehicleInput,
+) {
+  const licensePlate = normalizeLicensePlate(input.licensePlate);
+
+  const existingResult = await supabase
+    .from("vehicles")
+    .select("id")
+    .eq("customer_id", input.customerId)
+    .eq("license_plate", licensePlate)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingResult.error) {
+    return { data: null, error: existingResult.error };
+  }
+
+  if (existingResult.data) {
+    return {
+      data: null,
+      error: new Error(`มีรถทะเบียน ${licensePlate} อยู่ในบัญชีของคุณแล้ว`),
+    };
+  }
+
+  const insertResult = await supabase
+    .from("vehicles")
+    .insert({
+      brand: normalizeRequiredVehicleText(input.brand),
+      color: normalizeOptionalText(input.color),
+      customer_id: input.customerId,
+      license_plate: licensePlate,
+      model: normalizeRequiredVehicleText(input.model),
+      year: normalizeYear(input.year),
+    })
+    .select("*")
+    .single();
+
+  if (insertResult.error) {
+    return { data: null, error: insertResult.error };
+  }
+
+  return { data: insertResult.data, error: null };
 }
 
 export async function updateCurrentUserVehicle(
